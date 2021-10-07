@@ -1,4 +1,22 @@
 import { build, files, timestamp } from '$service-worker';
+import Dexie from 'dexie';
+
+interface IMeta {
+	nid: string;
+	installed: string;
+	updated: string;
+}
+
+class NodeDatabase extends Dexie {
+	meta: Dexie.Table<IMeta, number>;
+
+	constructor() {
+		super('NodeDatabase');
+		this.version(1).stores({
+			meta: 'nid, installed, updated'
+		});
+	}
+}
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const FILES = `cache${timestamp}`;
@@ -7,6 +25,15 @@ const to_cache = build.concat(files);
 const staticAssets = new Set(to_cache);
 
 worker.addEventListener('install', (event) => {
+	// Install node local DB.
+	const db = new NodeDatabase();
+
+	db.meta.put({
+		nid: 'nodeA',
+		installed: Date.now().toString(),
+		updated: Date.now().toString()
+	});
+
 	event.waitUntil(
 		caches
 			.open(FILES)
