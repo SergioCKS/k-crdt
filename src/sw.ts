@@ -1,23 +1,7 @@
-import { build, files, timestamp } from '$service-worker';
-import Dexie from 'dexie';
-import init, { generate_id } from './packages/pkg/crdts';
-
-interface IMeta {
-	nid: string;
-	installed: string;
-	updated: string;
-}
-
-class NodeDatabase extends Dexie {
-	meta: Dexie.Table<IMeta, number>;
-
-	constructor() {
-		super('NodeDatabase');
-		this.version(1).stores({
-			meta: 'nid, installed, updated'
-		});
-	}
-}
+import { build, files, timestamp } from "$service-worker";
+import init, { generate_id } from "./packages/pkg/crdts";
+import { NodeDatabase } from "./models/nodedb";
+import Dexie from "dexie";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
 const FILES = `cache${timestamp}`;
@@ -25,17 +9,24 @@ const FILES = `cache${timestamp}`;
 const to_cache = build.concat(files);
 const staticAssets = new Set(to_cache);
 
-worker.addEventListener('install', async (event) => {
-	await init();
+worker.addEventListener("install", async (event) => {
+	//#region Indexed DB
+	const nodeDbExists = await Dexie.exists("NodeDatabase");
 
-	// Install node local DB.
-	const db = new NodeDatabase();
+	if (!nodeDbExists) {
+		// Generate node ID
+		await init();
+		const nodeId = generate_id();
 
-	db.meta.put({
-		nid: generate_id(),
-		installed: Date.now().toString(),
-		updated: Date.now().toString()
-	});
+		// Initialize local DB
+		const nodeDb = new NodeDatabase();
+		await nodeDb.meta.put({
+			nid: nodeId,
+			installed: Date.now().toString(),
+			updated: Date.now().toString()
+		});
+	}
+	//#endregion
 
 	event.waitUntil(
 		caches
@@ -47,7 +38,7 @@ worker.addEventListener('install', async (event) => {
 	);
 });
 
-worker.addEventListener('activate', (event) => {
+worker.addEventListener("activate", (event) => {
 	event.waitUntil(
 		caches.keys().then(async (keys) => {
 			// delete old caches
@@ -78,17 +69,17 @@ async function fetchAndCache(request: Request) {
 	}
 }
 
-worker.addEventListener('fetch', (event) => {
-	if (event.request.method !== 'GET' || event.request.headers.has('range')) return;
+worker.addEventListener("fetch", (event) => {
+	if (event.request.method !== "GET" || event.request.headers.has("range")) return;
 
 	const url = new URL(event.request.url);
 
 	// don't try to handle e.g. data: URIs
-	const isHttp = url.protocol.startsWith('http');
+	const isHttp = url.protocol.startsWith("http");
 	const isDevServerRequest =
 		url.hostname === self.location.hostname && url.port !== self.location.port;
 	const isStaticAsset = url.host === self.location.host && staticAssets.has(url.pathname);
-	const skipBecauseUncached = event.request.cache === 'only-if-cached' && !isStaticAsset;
+	const skipBecauseUncached = event.request.cache === "only-if-cached" && !isStaticAsset;
 
 	if (isHttp && !isDevServerRequest && !skipBecauseUncached) {
 		event.respondWith(
