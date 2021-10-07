@@ -1,5 +1,6 @@
 import { build, files, timestamp } from '$service-worker';
 import Dexie from 'dexie';
+import init, { generate_id } from './packages/pkg/crdts';
 
 interface IMeta {
 	nid: string;
@@ -24,12 +25,14 @@ const FILES = `cache${timestamp}`;
 const to_cache = build.concat(files);
 const staticAssets = new Set(to_cache);
 
-worker.addEventListener('install', (event) => {
+worker.addEventListener('install', async (event) => {
+	await init();
+
 	// Install node local DB.
 	const db = new NodeDatabase();
 
 	db.meta.put({
-		nid: 'nodeA',
+		nid: generate_id(),
 		installed: Date.now().toString(),
 		updated: Date.now().toString()
 	});
