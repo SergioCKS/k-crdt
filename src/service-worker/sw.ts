@@ -1,54 +1,28 @@
 import { build, files, timestamp } from "$service-worker";
-import init, { generate_id } from "./packages/pkg/crdts";
-import { NodeDatabase } from "./models/nodedb";
-import Dexie from "dexie";
+import { swOnInstall, swOnActivate } from "./event-handlers";
 
 const worker = self as unknown as ServiceWorkerGlobalScope;
-const FILES = `cache${timestamp}`;
 
 const to_cache = build.concat(files);
 const staticAssets = new Set(to_cache);
 
-worker.addEventListener("install", async (event) => {
-	//#region Indexed DB
-	const nodeDbExists = await Dexie.exists("NodeDatabase");
-
-	if (!nodeDbExists) {
-		// Generate node ID
-		await init();
-		const nodeId = generate_id();
-
-		// Initialize local DB
-		const nodeDb = new NodeDatabase();
-		await nodeDb.meta.put({
-			nid: nodeId,
-			installed: Date.now().toString(),
-			updated: Date.now().toString()
-		});
-	}
-	//#endregion
-
+//#region Setup SW event handlers
+worker.addEventListener("install", (event) => {
 	event.waitUntil(
-		caches
-			.open(FILES)
-			.then((cache) => cache.addAll(to_cache))
-			.then(() => {
-				worker.skipWaiting();
-			})
+		swOnInstall().then(() => {
+			worker.skipWaiting();
+		})
 	);
 });
 
 worker.addEventListener("activate", (event) => {
 	event.waitUntil(
-		caches.keys().then(async (keys) => {
-			// delete old caches
-			for (const key of keys) {
-				if (key !== FILES) await caches.delete(key);
-			}
+		swOnActivate().then(() => {
 			worker.clients.claim();
 		})
 	);
 });
+//#endregion
 
 /**
  * Fetch the asset from the network and store it in the cache.
