@@ -1,33 +1,32 @@
 {
-	"name": "k-crdt-svelte-cloudflare",
-	"short-name": "k-crdt",
-	"start_url": "/",
-	"icons": [
-		{
-			"src": "favicon.png",
-			"type": "image/png",
-			"sizes": "128x128"
-		}
-	],
-	"background_color": "#3367D6",
+	"theme_color": "#f69435",
+	"background_color": "#f69435",
 	"display": "standalone",
 	"scope": "/",
-	"theme_color": "#3367D6",
-	"shortcuts": [
+	"start_url": "/",
+	"name": "k-crdt-svelte-cloudflare",
+	"short_name": "k-crdt",
+	"description": "Allows the user to access the hello page.",
+	"icons": [
 		{
-			"name": "How's weather today?",
-			"short_name": "Today",
-			"description": "View weather information for today",
-			"url": "/today?source=pwa",
-			"icons": [{ "src": "/favicon.png", "sizes": "128x128" }]
+			"src": "/icon-192x192.png",
+			"sizes": "192x192",
+			"type": "image/png"
 		},
 		{
-			"name": "How's weather tomorrow?",
-			"short_name": "Tomorrow",
-			"description": "View weather information for tomorrow",
-			"url": "/tomorrow?source=pwa",
-			"icons": [{ "src": "/favicon.png", "sizes": "128x128" }]
+			"src": "/icon-256x256.png",
+			"sizes": "256x256",
+			"type": "image/png"
+		},
+		{
+			"src": "/icon-384x384.png",
+			"sizes": "384x384",
+			"type": "image/png"
+		},
+		{
+			"src": "/icon-512x512.png",
+			"sizes": "512x512",
+			"type": "image/png"
 		}
-	],
-	"description": "Lofi to lofi beats, while using the scratchpad to list down tasks and thoughts"
+	]
 }
