@@ -1,70 +1,73 @@
-import { build, files, timestamp } from "$service-worker";
-import { swOnInstall, swOnActivate } from "./event-handlers";
+/**
+ * # Service Worker Script
+ *
+ * Service worker registration script.
+ *
+ * * Adds event listeners (`install`, `activate`, `message`)
+ */
+import { onInstall, onActivate, onMessage, onFetch } from "./event-listeners";
+import type { MsgData } from "./models";
 
+/**
+ * ## Worker Scope
+ *
+ * Typed `self` assuming the script is run on a service worker context.
+ */
 const worker = self as unknown as ServiceWorkerGlobalScope;
 
-const to_cache = build.concat(files);
-const staticAssets = new Set(to_cache);
-
-//#region Setup SW event handlers
+//#region Setup SW event listeners
+/**
+ * ## Add `install` event listener
+ *
+ * Adds the `install` event handler and indicates when the process is running/finished.
+ */
 worker.addEventListener("install", (event) => {
 	event.waitUntil(
-		swOnInstall().then(() => {
+		onInstall().then(() => {
 			worker.skipWaiting();
 		})
 	);
 });
 
+/**
+ * ## Add `activate` event listener
+ *
+ * Adds the `activate` event handler and indicates when the process is running. Once the process is finished, the new worker overrides the previous one.
+ */
 worker.addEventListener("activate", (event) => {
 	event.waitUntil(
-		swOnActivate().then(() => {
+		onActivate().then(() => {
 			worker.clients.claim();
 		})
 	);
 });
-//#endregion
 
 /**
- * Fetch the asset from the network and store it in the cache.
- * Fall back to the cache if the user is offline.
+ * ## Add `message` event listener
+ *
+ * Adds te `message` event listener and handles exceptions.
  */
-async function fetchAndCache(request: Request) {
-	const cache = await caches.open(`offline${timestamp}`);
-
+worker.addEventListener("message", async (event) => {
+	const client = event.source as Client;
+	const msgData = event.data as MsgData;
 	try {
-		const response = await fetch(request);
-		cache.put(request, response.clone());
-		return response;
-	} catch (err) {
-		const response = await cache.match(request);
-		if (response) return response;
-
-		throw err;
-	}
-}
-
-worker.addEventListener("fetch", (event) => {
-	if (event.request.method !== "GET" || event.request.headers.has("range")) return;
-
-	const url = new URL(event.request.url);
-
-	// don't try to handle e.g. data: URIs
-	const isHttp = url.protocol.startsWith("http");
-	const isDevServerRequest =
-		url.hostname === self.location.hostname && url.port !== self.location.port;
-	const isStaticAsset = url.host === self.location.host && staticAssets.has(url.pathname);
-	const skipBecauseUncached = event.request.cache === "only-if-cached" && !isStaticAsset;
-
-	if (isHttp && !isDevServerRequest && !skipBecauseUncached) {
-		event.respondWith(
-			(async () => {
-				// always serve static files and bundler-generated assets from cache.
-				// if your application has other URLs with data that will never change,
-				// set this variable to true for them and they will only be fetched once.
-				const cachedAsset = isStaticAsset && (await caches.match(event.request));
-
-				return cachedAsset || fetchAndCache(event.request);
-			})()
-		);
+		await onMessage(client, msgData);
+	} catch (error) {
+		console.log(`Error while handling '${msgData.msgCode}'' message!`);
 	}
 });
+
+/**
+ * ## Add `fetch` event listener
+ *
+ * Adds the `fetch` event listener and handles exceptions.
+ */
+worker.addEventListener("fetch", async (event) => {
+	const request = event.request;
+	try {
+		await onFetch(event);
+	} catch (error) {
+		console.log(`Error while trying to fetch '${request.url}'.`);
+	}
+});
+//#endregion

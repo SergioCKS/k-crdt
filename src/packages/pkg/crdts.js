@@ -54,6 +54,11 @@ function getInt32Memory0() {
     return cachegetInt32Memory0;
 }
 /**
+* ## Generate ID
+* > Generates a universally unique ID.
+*
+* IDs consist of 21 uniformly random characters from the alphabet `A-Za-z0-9_-`.
+* To generate random data, a `ThreadRNG` is used.
 * @returns {string}
 */
 export function generate_id() {
@@ -69,9 +74,60 @@ export function generate_id() {
     }
 }
 
-const u32CvtShim = new Uint32Array(2);
+let WASM_VECTOR_LEN = 0;
 
-const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
+let cachedTextEncoder = new TextEncoder('utf-8');
+
+const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
+    ? function (arg, view) {
+    return cachedTextEncoder.encodeInto(arg, view);
+}
+    : function (arg, view) {
+    const buf = cachedTextEncoder.encode(arg);
+    view.set(buf);
+    return {
+        read: arg.length,
+        written: buf.length
+    };
+});
+
+function passStringToWasm0(arg, malloc, realloc) {
+
+    if (realloc === undefined) {
+        const buf = cachedTextEncoder.encode(arg);
+        const ptr = malloc(buf.length);
+        getUint8Memory0().subarray(ptr, ptr + buf.length).set(buf);
+        WASM_VECTOR_LEN = buf.length;
+        return ptr;
+    }
+
+    let len = arg.length;
+    let ptr = malloc(len);
+
+    const mem = getUint8Memory0();
+
+    let offset = 0;
+
+    for (; offset < len; offset++) {
+        const code = arg.charCodeAt(offset);
+        if (code > 0x7F) break;
+        mem[ptr + offset] = code;
+    }
+
+    if (offset !== len) {
+        if (offset !== 0) {
+            arg = arg.slice(offset);
+        }
+        ptr = realloc(ptr, len, len = offset + arg.length * 3);
+        const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
+        const ret = encodeString(arg, view);
+
+        offset += ret.written;
+    }
+
+    WASM_VECTOR_LEN = offset;
+    return ptr;
+}
 
 function handleError(f, args) {
     try {
@@ -107,35 +163,44 @@ export class GCounter {
         wasm.__wbg_gcounter_free(ptr);
     }
     /**
+    * @param {string} node_id
     * @returns {GCounter}
     */
-    static default() {
-        var ret = wasm.gcounter_default();
+    static init(node_id) {
+        var ptr0 = passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.gcounter_init(ptr0, len0);
         return GCounter.__wrap(ret);
     }
     /**
-    * @returns {BigInt}
+    * @returns {string}
     */
-    get_count() {
+    get_id() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.gcounter_get_count(retptr, this.ptr);
+            wasm.gcounter_get_id(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
-            u32CvtShim[0] = r0;
-            u32CvtShim[1] = r1;
-            const n0 = uint64CvtShim[0];
-            return n0;
+            return getStringFromWasm0(r0, r1);
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
         }
     }
     /**
-    * @returns {boolean}
+    * @returns {string}
     */
-    is_empty() {
-        var ret = wasm.gcounter_is_empty(this.ptr);
-        return ret !== 0;
+    get_node_id() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.gcounter_get_node_id(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
+        }
     }
 }
 
