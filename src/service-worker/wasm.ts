@@ -1,11 +1,11 @@
-import init, { GCounter } from "../packages/pkg/crdts";
+import init, { Engine } from "../packages/pkg/crdts";
 
 class Wasm {
-	state: GCounter;
+	engine: Engine;
 
 	constructor() {
 		init().then(() => {
-			this.state = GCounter.init("a");
+			this.engine = Engine.new("some-node-id");
 		});
 	}
 }

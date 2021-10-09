@@ -142,6 +142,54 @@ function getArrayU8FromWasm0(ptr, len) {
 }
 /**
 */
+export class Engine {
+
+    static __wrap(ptr) {
+        const obj = Object.create(Engine.prototype);
+        obj.ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_engine_free(ptr);
+    }
+    /**
+    * @param {string} node_id
+    * @returns {Engine}
+    */
+    static new(node_id) {
+        var ptr0 = passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.engine_new(ptr0, len0);
+        return Engine.__wrap(ret);
+    }
+    /**
+    * @returns {string}
+    */
+    get_node_id() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.engine_get_node_id(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
+        }
+    }
+}
+/**
+*/
 export class GCounter {
 
     static __wrap(ptr) {

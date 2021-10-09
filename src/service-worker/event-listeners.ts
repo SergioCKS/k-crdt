@@ -78,9 +78,13 @@ export async function onActivate(): Promise<void> {
  * @param data - The data attached to the message.
  */
 export async function onMessage(client: Client, data: MsgData): Promise<void> {
-	// Create GCounter
-	if (data.msgCode === "print-gcounter") {
-		console.log("GCounter ID:", wasm.state.get_id());
+	// Get node ID
+	if (data.msgCode === "get-node-id") {
+		const nodeId = wasm.engine.get_node_id();
+		client.postMessage({
+			msgCode: "node-id",
+			payload: { nodeId }
+		});
 	}
 }
 

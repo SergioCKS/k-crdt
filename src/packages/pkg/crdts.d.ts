@@ -11,6 +11,20 @@
 export function generate_id(): string;
 /**
 */
+export class Engine {
+  free(): void;
+/**
+* @param {string} node_id
+* @returns {Engine}
+*/
+  static new(node_id: string): Engine;
+/**
+* @returns {string}
+*/
+  get_node_id(): string;
+}
+/**
+*/
 export class GCounter {
   free(): void;
 /**
@@ -37,6 +51,9 @@ export interface InitOutput {
   readonly gcounter_init: (a: number, b: number) => number;
   readonly gcounter_get_id: (a: number, b: number) => void;
   readonly gcounter_get_node_id: (a: number, b: number) => void;
+  readonly __wbg_engine_free: (a: number) => void;
+  readonly engine_new: (a: number, b: number) => number;
+  readonly engine_get_node_id: (a: number, b: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
