@@ -11,6 +11,7 @@
  */
 import { build, files, timestamp } from "$service-worker";
 import { wasm } from "./wasm";
+import { localDb } from "./db";
 import type { MsgData } from "./models";
 
 const CACHE_KEY = `cache${timestamp}`;
@@ -48,9 +49,36 @@ async function fetchAndCache(request: Request): Promise<Response> {
  * * TODO: Set up the local database (IndexedDB).
  */
 export async function onInstall(): Promise<void> {
-	//#region Cache static assets
+	// 1. WASM initialization
+	await wasm.initialize();
+
+	//#region 2. IndexedDB initialization
+	const nodeId = await localDb.initialize();
+	if (localDb.status === "inactive" || !nodeId) {
+		console.log("Failed to open IndexedDB. Aborting installation.");
+		return;
+	}
+	if (localDb.status === "active") {
+		console.log("LocalDB opened.");
+	}
+	//#endregion
+
+	//#region 3. Start CRDT engine.
+	await wasm.startEngine(nodeId);
+
+	if (wasm.status === "inactive") {
+		console.log("Failed to start WASM engine. Aborting installation.");
+		return;
+	}
+	if (wasm.status === "active") {
+		console.log("WASM engine started.");
+	}
+	//#endregion
+
+	//#region 3. Cache static assets
 	const cache = await caches.open(CACHE_KEY);
 	await cache.addAll(build.concat(files));
+	console.log("Static assets cached.");
 	//#endregion
 }
 
