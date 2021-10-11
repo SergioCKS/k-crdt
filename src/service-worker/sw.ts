@@ -53,7 +53,7 @@ worker.addEventListener("message", async (event) => {
 	try {
 		await onMessage(client, msgData);
 	} catch (error) {
-		console.log(`Error while handling '${msgData.msgCode}'' message!`);
+		console.error(`Error while handling '${msgData.msgCode}'' message! Error:`, error);
 	}
 });
 

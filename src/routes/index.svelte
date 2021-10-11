@@ -14,6 +14,11 @@
 			msgCode: "increment-gcounter"
 		});
 	}
+	function initWasm() {
+		swRegistration?.active.postMessage({
+			msgCode: "initialize"
+		});
+	}
 
 	onMount(async () => {
 		swRegistration = await navigator.serviceWorker.ready;
@@ -22,5 +27,6 @@
 
 <button on:click={printWasm}>Print WASM</button>
 <button on:click={incrementCounter}>Increment Counter</button>
+<button on:click={initWasm}>Initialize WASM</button>
 Node ID: {$nodeId}
 Counter: {$counterValue}

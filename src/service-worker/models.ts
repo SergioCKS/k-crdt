@@ -4,7 +4,12 @@ export interface MsgData {
 }
 
 export interface ClientMsgData extends MsgData {
-	msgCode: "create-gcounter" | "get-gcounter-value" | "get-node-id" | "increment-gcounter";
+	msgCode:
+		| "create-gcounter"
+		| "get-gcounter-value"
+		| "get-node-id"
+		| "increment-gcounter"
+		| "initialize";
 }
 
 export interface SwMsgData extends MsgData {

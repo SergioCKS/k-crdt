@@ -8,10 +8,11 @@
  * * `install`: Called on worker registration.
  * * `activate`: Called once the worker is active.
  * * `message`: Called on incoming messages from clients.
+ * * `fetch`: Intercepts outgoing HTTP requests.
  */
 import { build, files, timestamp } from "$service-worker";
-import { wasm } from "./wasm";
-import { localDb } from "./db";
+import { Wasm } from "./wasm";
+import { LocalDb } from "./db";
 import type { ClientMsgData, SwMsgData } from "./models";
 
 /**
@@ -21,11 +22,19 @@ import type { ClientMsgData, SwMsgData } from "./models";
  */
 const worker = self as unknown as ServiceWorkerGlobalScope;
 
+//#region Interface objects
+let wasm: Wasm;
+let db: LocalDb;
+//#endregion
+
+//#region Cache keys
 const CACHE_KEY = `cache${timestamp}`;
 const OFFLINE_KEY = `offline${timestamp}`;
+//#endregion
 
+//#region Helper functions
 /**
- * ## Fetch and Cache
+ * ## Fetch and cache
  *
  * Attempts to fetch a request and places it on cache. If the request fails (client is offline), attempt to get response from cache.
  *
@@ -48,6 +57,47 @@ async function fetchAndCache(request: Request): Promise<Response> {
 }
 
 /**
+ * ## Initialize interfaces
+ *
+ * Resets and initializes the interface objects (WASM & IndexedDB). Steps:
+ *
+ * 1. Renew the interface objects.
+ * 2. Initialize WASM module.
+ * 3. Open local database.
+ * 4. Start the CRDT engine.
+ */
+async function initializeInterfaces(): Promise<void> {
+	// 1. Renew interface objects
+	wasm = new Wasm();
+	db = new LocalDb();
+
+	// 2. Initialize WASM
+	await wasm.initialize();
+
+	//#region 3. Open DB
+	const nodeId = await db.initialize(wasm);
+
+	if (db.status === "inactive" || !nodeId) {
+		console.log("Failed to open IndexedDB. Aborting installation.");
+		return;
+	}
+	if (db.status === "active") {
+		console.log("LocalDB opened.");
+	}
+	//#endregion
+
+	//#region 4. Start CRDT engine.
+	await wasm.startEngine(nodeId);
+
+	if (wasm.status === "active") {
+		console.log("WASM engine started.");
+	}
+	//#endregion
+}
+//#endregion
+
+//#region Event listeners
+/**
  * ## Service worker `install` event handler
  *
  * Service worker installation process that runs on service worker registration.
@@ -56,21 +106,9 @@ async function fetchAndCache(request: Request): Promise<Response> {
  * * TODO: Set up the local database (IndexedDB).
  */
 export async function onInstall(): Promise<void> {
-	// 1. WASM initialization
-	await wasm.initialize();
+	await initializeInterfaces();
 
-	//#region 2. IndexedDB initialization
-	const nodeId = await localDb.initialize();
-	if (localDb.status === "inactive" || !nodeId) {
-		console.log("Failed to open IndexedDB. Aborting installation.");
-		return;
-	}
-	if (localDb.status === "active") {
-		console.log("LocalDB opened.");
-	}
-	//#endregion
-
-	//#region 3. Cache static assets
+	//#region Cache static assets
 	const cache = await caches.open(CACHE_KEY);
 	await cache.addAll(build.concat(files));
 	console.log("Static assets cached.");
@@ -85,21 +123,6 @@ export async function onInstall(): Promise<void> {
  * * Clears old caches.
  */
 export async function onActivate(): Promise<void> {
-	// 1. WASM initialization
-	await wasm.initialize();
-
-	//#region 2. Start CRDT engine.
-	await wasm.startEngine(localDb.db.name.split("-")[1]);
-
-	if (wasm.status === "inactive") {
-		console.log("Failed to start WASM engine. Aborting installation.");
-		return;
-	}
-	if (wasm.status === "active") {
-		console.log("WASM engine started.");
-	}
-	//#endregion
-
 	//#region Clear old caches
 	for (const key in await caches.keys()) {
 		if (key !== CACHE_KEY) await caches.delete(key);
@@ -117,6 +140,10 @@ export async function onActivate(): Promise<void> {
  */
 export async function onMessage(client: Client, data: ClientMsgData): Promise<void> {
 	const clients = await worker.clients.matchAll();
+	// Initialize
+	if (data.msgCode === "initialize") {
+		await initializeInterfaces();
+	}
 	// Get node ID
 	if (data.msgCode === "get-node-id") {
 		const nodeId = wasm.engine.get_node_id();
@@ -174,3 +201,4 @@ export async function onFetch(event: FetchEvent): Promise<void> {
 		);
 	}
 }
+//#endregion

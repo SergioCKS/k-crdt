@@ -4,7 +4,7 @@
  * Interface to IndexedDB.
  * @module
  */
-import { wasm } from "./wasm";
+import type { Wasm } from "./wasm";
 
 /**
  * ## Worker Scope
@@ -49,7 +49,7 @@ async function openDb(dbName: string): Promise<IDBDatabase> {
  *
  * Class providing streamlined access to the CRDT IndexedDB database.
  */
-class LocalDb {
+export class LocalDb {
 	/**
 	 * ### Database
 	 *
@@ -78,7 +78,7 @@ class LocalDb {
 	 *
 	 * @returns Node ID.
 	 */
-	async initialize(): Promise<string | void> {
+	async initialize(wasm: Wasm): Promise<string | void> {
 		// Check browser support.
 		if (!worker.indexedDB) {
 			console.error("Your browser doesn't support a stable version of IndexedDB.");
@@ -86,16 +86,19 @@ class LocalDb {
 		}
 
 		//#region 1. Get DB name or generate a new one.
-		// The name of the database has the format `KCRDT-{nodeID}`.
+		// The name of the database has the format `KCRDT:{nodeID}`.
 		const databases = await worker.indexedDB.databases();
-		const crdtDbNames = databases
-			.map((dbInfo) => (dbInfo.name ? dbInfo.name.split("-")[0] : ""))
+		const crdtDbNames = databases.map((dbInfo) => (dbInfo.name ? dbInfo.name : ""));
+		const filteredCrdtDbNames = crdtDbNames
+			.map((dbName) => dbName.split(":")[0])
 			.filter((dbName) => dbName === "KCRDT");
 
+		console.log(crdtDbNames);
+
 		let nodeId: string;
-		if (crdtDbNames.length === 0) {
+		if (filteredCrdtDbNames.length === 0) {
 			nodeId = wasm.generateId();
-		} else if (crdtDbNames.length === 1) {
+		} else if (filteredCrdtDbNames.length === 1) {
 			nodeId = crdtDbNames[0].substring(6);
 		} else {
 			console.error("Inconsistent state. Multiple CRDT databases found.");
@@ -105,7 +108,7 @@ class LocalDb {
 
 		//#region 2. Open database.
 		try {
-			this.db = await openDb(`KCRDT-${nodeId}`);
+			this.db = await openDb(`KCRDT:${nodeId}`);
 			this.status = "active";
 		} catch (exception) {
 			console.log(exception);

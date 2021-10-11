@@ -10,7 +10,7 @@ import init, { Engine, generate_id } from "../packages/pkg/crdts";
  *
  * Class providing access to WASM objects and methods.
  */
-class Wasm {
+export class Wasm {
 	/**
 	 * ### CRDT Engine
 	 *
@@ -33,7 +33,7 @@ class Wasm {
 	 *
 	 * Initialize WASM. Once initialized, WASM objects become interactive.
 	 */
-	public async initialize() {
+	public async initialize(): Promise<void> {
 		try {
 			await init();
 		} catch (exception) {
@@ -48,7 +48,7 @@ class Wasm {
 	 *
 	 * * Requires `initialize()` to have been called.
 	 */
-	public startEngine(nodeId: string) {
+	public startEngine(nodeId: string): void {
 		try {
 			this.engine = Engine.new(nodeId);
 			this.status = "active";
