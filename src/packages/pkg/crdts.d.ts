@@ -10,54 +10,58 @@
 */
 export function generate_id(): string;
 /**
+* ## CRDT Engine
+*
+* Representation of a CRDT engine.
 */
 export class Engine {
   free(): void;
 /**
-* @param {string} node_id
+* ### New CRDT engine
+*
+* Creates an engine instance.
+*
+* * `node_id` - The ID of the node in the system. If omitted, a newly generated ID is used.
+* @param {string | undefined} node_id
 * @returns {Engine}
 */
-  static new(node_id: string): Engine;
+  static new(node_id?: string): Engine;
 /**
+* ### Get node ID
+*
+* Returns the node ID associated with the engine.
 * @returns {string}
 */
   get_node_id(): string;
-}
 /**
+* ### Get counter value
+*
+* Returns the current value of the counter.
+* @returns {number}
 */
-export class GCounter {
-  free(): void;
+  get_counter_value(): number;
 /**
-* @param {string} node_id
-* @returns {GCounter}
+* ### Increment counter
+*
+* Increments the counter by 1 as the node associated with the engine.
 */
-  static init(node_id: string): GCounter;
-/**
-* @returns {string}
-*/
-  get_id(): string;
-/**
-* @returns {string}
-*/
-  get_node_id(): string;
+  increment_counter(): void;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly generate_id: (a: number) => void;
-  readonly __wbg_gcounter_free: (a: number) => void;
-  readonly gcounter_init: (a: number, b: number) => number;
-  readonly gcounter_get_id: (a: number, b: number) => void;
-  readonly gcounter_get_node_id: (a: number, b: number) => void;
   readonly __wbg_engine_free: (a: number) => void;
   readonly engine_new: (a: number, b: number) => number;
   readonly engine_get_node_id: (a: number, b: number) => void;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
-  readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly engine_get_counter_value: (a: number) => number;
+  readonly engine_increment_counter: (a: number) => void;
+  readonly generate_id: (a: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
+  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
 }
 

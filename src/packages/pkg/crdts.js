@@ -46,34 +46,6 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
-let cachegetInt32Memory0 = null;
-function getInt32Memory0() {
-    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
-        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
-    }
-    return cachegetInt32Memory0;
-}
-/**
-* ## Generate ID
-* > Generates a universally unique ID.
-*
-* IDs consist of 21 uniformly random characters from the alphabet `A-Za-z0-9_-`.
-* To generate random data, a `ThreadRNG` is used.
-* @returns {string}
-*/
-export function generate_id() {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.generate_id(retptr);
-        var r0 = getInt32Memory0()[retptr / 4 + 0];
-        var r1 = getInt32Memory0()[retptr / 4 + 1];
-        return getStringFromWasm0(r0, r1);
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_free(r0, r1);
-    }
-}
-
 let WASM_VECTOR_LEN = 0;
 
 let cachedTextEncoder = new TextEncoder('utf-8');
@@ -129,6 +101,38 @@ function passStringToWasm0(arg, malloc, realloc) {
     return ptr;
 }
 
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
+let cachegetInt32Memory0 = null;
+function getInt32Memory0() {
+    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
+        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
+    }
+    return cachegetInt32Memory0;
+}
+/**
+* ## Generate ID
+* > Generates a universally unique ID.
+*
+* IDs consist of 21 uniformly random characters from the alphabet `A-Za-z0-9_-`.
+* To generate random data, a `ThreadRNG` is used.
+* @returns {string}
+*/
+export function generate_id() {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.generate_id(retptr);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        return getStringFromWasm0(r0, r1);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_free(r0, r1);
+    }
+}
+
 function handleError(f, args) {
     try {
         return f.apply(this, args);
@@ -141,6 +145,9 @@ function getArrayU8FromWasm0(ptr, len) {
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 /**
+* ## CRDT Engine
+*
+* Representation of a CRDT engine.
 */
 export class Engine {
 
@@ -163,16 +170,24 @@ export class Engine {
         wasm.__wbg_engine_free(ptr);
     }
     /**
-    * @param {string} node_id
+    * ### New CRDT engine
+    *
+    * Creates an engine instance.
+    *
+    * * `node_id` - The ID of the node in the system. If omitted, a newly generated ID is used.
+    * @param {string | undefined} node_id
     * @returns {Engine}
     */
     static new(node_id) {
-        var ptr0 = passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var ptr0 = isLikeNone(node_id) ? 0 : passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         var ret = wasm.engine_new(ptr0, len0);
         return Engine.__wrap(ret);
     }
     /**
+    * ### Get node ID
+    *
+    * Returns the node ID associated with the engine.
     * @returns {string}
     */
     get_node_id() {
@@ -187,68 +202,23 @@ export class Engine {
             wasm.__wbindgen_free(r0, r1);
         }
     }
-}
-/**
-*/
-export class GCounter {
-
-    static __wrap(ptr) {
-        const obj = Object.create(GCounter.prototype);
-        obj.ptr = ptr;
-
-        return obj;
-    }
-
-    __destroy_into_raw() {
-        const ptr = this.ptr;
-        this.ptr = 0;
-
-        return ptr;
-    }
-
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_gcounter_free(ptr);
+    /**
+    * ### Get counter value
+    *
+    * Returns the current value of the counter.
+    * @returns {number}
+    */
+    get_counter_value() {
+        var ret = wasm.engine_get_counter_value(this.ptr);
+        return ret >>> 0;
     }
     /**
-    * @param {string} node_id
-    * @returns {GCounter}
+    * ### Increment counter
+    *
+    * Increments the counter by 1 as the node associated with the engine.
     */
-    static init(node_id) {
-        var ptr0 = passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len0 = WASM_VECTOR_LEN;
-        var ret = wasm.gcounter_init(ptr0, len0);
-        return GCounter.__wrap(ret);
-    }
-    /**
-    * @returns {string}
-    */
-    get_id() {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.gcounter_get_id(retptr, this.ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            return getStringFromWasm0(r0, r1);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-            wasm.__wbindgen_free(r0, r1);
-        }
-    }
-    /**
-    * @returns {string}
-    */
-    get_node_id() {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.gcounter_get_node_id(retptr, this.ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            return getStringFromWasm0(r0, r1);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-            wasm.__wbindgen_free(r0, r1);
-        }
+    increment_counter() {
+        wasm.engine_increment_counter(this.ptr);
     }
 }
 
@@ -319,10 +289,6 @@ async function init(input) {
         var ret = typeof(getObject(arg0)) === 'string';
         return ret;
     };
-    imports.wbg.__wbg_modulerequire_3440a4bcf44437db = function() { return handleError(function (arg0, arg1) {
-        var ret = module.require(getStringFromWasm0(arg0, arg1));
-        return addHeapObject(ret);
-    }, arguments) };
     imports.wbg.__wbg_crypto_98fc271021c7d2ad = function(arg0) {
         var ret = getObject(arg0).crypto;
         return addHeapObject(ret);
@@ -331,6 +297,10 @@ async function init(input) {
         var ret = getObject(arg0).msCrypto;
         return addHeapObject(ret);
     };
+    imports.wbg.__wbg_modulerequire_3440a4bcf44437db = function() { return handleError(function (arg0, arg1) {
+        var ret = module.require(getStringFromWasm0(arg0, arg1));
+        return addHeapObject(ret);
+    }, arguments) };
     imports.wbg.__wbg_newnoargs_be86524d73f67598 = function(arg0, arg1) {
         var ret = new Function(getStringFromWasm0(arg0, arg1));
         return addHeapObject(ret);

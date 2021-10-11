@@ -6,7 +6,7 @@
  * * Adds event listeners (`install`, `activate`, `message`)
  */
 import { onInstall, onActivate, onMessage, onFetch } from "./event-listeners";
-import type { MsgData } from "./models";
+import type { ClientMsgData } from "./models";
 
 /**
  * ## Worker Scope
@@ -49,7 +49,7 @@ worker.addEventListener("activate", (event) => {
  */
 worker.addEventListener("message", async (event) => {
 	const client = event.source as Client;
-	const msgData = event.data as MsgData;
+	const msgData = event.data as ClientMsgData;
 	try {
 		await onMessage(client, msgData);
 	} catch (error) {

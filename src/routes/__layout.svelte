@@ -7,14 +7,25 @@
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { nodeId } from "../stores/engine";
+	import { nodeId, counterValue } from "../stores/engine";
+	import type { SwMsgData } from "../service-worker/models";
 
-	onMount(() => {
+	onMount(async () => {
 		navigator.serviceWorker.addEventListener("message", (event) => {
-			const msgData = event.data;
+			const msgData = event.data as SwMsgData;
+			// Incoming node ID
 			if (msgData.msgCode === "node-id") {
-				$nodeId = msgData.payload.nodeId;
+				$nodeId = msgData.payload.nodeId as string;
 			}
+			// Incoming counter value
+			if (msgData.msgCode === "counter-value") {
+				$counterValue = msgData.payload.value as number;
+			}
+		});
+
+		const registration = await navigator.serviceWorker.ready;
+		registration.active.postMessage({
+			msgCode: "get-gcounter-value"
 		});
 	});
 </script>

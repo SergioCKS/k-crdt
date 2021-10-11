@@ -12,7 +12,14 @@
 import { build, files, timestamp } from "$service-worker";
 import { wasm } from "./wasm";
 import { localDb } from "./db";
-import type { MsgData } from "./models";
+import type { ClientMsgData, SwMsgData } from "./models";
+
+/**
+ * ## Worker Scope
+ *
+ * Typed `self` assuming the script is run on a service worker context.
+ */
+const worker = self as unknown as ServiceWorkerGlobalScope;
 
 const CACHE_KEY = `cache${timestamp}`;
 const OFFLINE_KEY = `offline${timestamp}`;
@@ -105,14 +112,35 @@ export async function onActivate(): Promise<void> {
  * @param client - The client sending the message.
  * @param data - The data attached to the message.
  */
-export async function onMessage(client: Client, data: MsgData): Promise<void> {
+export async function onMessage(client: Client, data: ClientMsgData): Promise<void> {
+	const clients = await worker.clients.matchAll();
 	// Get node ID
 	if (data.msgCode === "get-node-id") {
 		const nodeId = wasm.engine.get_node_id();
-		client.postMessage({
+		const msgData: SwMsgData = {
 			msgCode: "node-id",
 			payload: { nodeId }
-		});
+		};
+		client.postMessage(msgData);
+	}
+	// Get counter value
+	if (data.msgCode === "get-gcounter-value") {
+		const value = wasm.engine.get_counter_value();
+		const msgData: SwMsgData = {
+			msgCode: "counter-value",
+			payload: { value }
+		};
+		client.postMessage(msgData);
+	}
+	// Increment counter
+	if (data.msgCode === "increment-gcounter") {
+		wasm.engine.increment_counter();
+		const value = wasm.engine.get_counter_value();
+		const msgData: SwMsgData = {
+			msgCode: "counter-value",
+			payload: { value }
+		};
+		clients.forEach((client) => client.postMessage(msgData));
 	}
 }
 

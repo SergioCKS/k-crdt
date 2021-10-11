@@ -1,14 +1,26 @@
 <script lang="ts">
-	import { nodeId } from "../stores/engine";
+	import { onMount } from "svelte";
+	import { nodeId, counterValue } from "../stores/engine";
 
-	async function printWasm() {
-		const registration = await navigator.serviceWorker.ready;
+	let swRegistration: ServiceWorkerRegistration;
 
-		registration.active.postMessage({
+	function printWasm() {
+		swRegistration?.active.postMessage({
 			msgCode: "get-node-id"
 		});
 	}
+	function incrementCounter() {
+		swRegistration?.active.postMessage({
+			msgCode: "increment-gcounter"
+		});
+	}
+
+	onMount(async () => {
+		swRegistration = await navigator.serviceWorker.ready;
+	});
 </script>
 
 <button on:click={printWasm}>Print WASM</button>
+<button on:click={incrementCounter}>Increment Counter</button>
 Node ID: {$nodeId}
+Counter: {$counterValue}
