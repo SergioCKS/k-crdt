@@ -1,6 +1,6 @@
 export interface MsgData {
 	msgCode: string;
-	payload: Record<string, unknown>;
+	payload?: Record<string, unknown>;
 }
 
 export interface ClientMsgData extends MsgData {
@@ -13,5 +13,5 @@ export interface ClientMsgData extends MsgData {
 }
 
 export interface SwMsgData extends MsgData {
-	msgCode: "node-id" | "counter-value";
+	msgCode: "initialized" | "node-id" | "counter-value";
 }

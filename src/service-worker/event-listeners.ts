@@ -106,7 +106,25 @@ async function initializeInterfaces(): Promise<void> {
  * * TODO: Set up the local database (IndexedDB).
  */
 export async function onInstall(): Promise<void> {
-	await initializeInterfaces();
+	// await initializeInterfaces();
+	// 1. Renew interface objects
+	wasm = new Wasm();
+	db = new LocalDb();
+
+	// 2. Initialize WASM
+	await wasm.initialize();
+
+	//#region 3. Open DB
+	const nodeId = await db.initialize(wasm);
+
+	if (db.status === "inactive" || !nodeId) {
+		console.log("Failed to open IndexedDB. Aborting installation.");
+		return;
+	}
+	if (db.status === "active") {
+		console.log("LocalDB opened.");
+	}
+	//#endregion
 
 	//#region Cache static assets
 	const cache = await caches.open(CACHE_KEY);
@@ -143,6 +161,8 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 	// Initialize
 	if (data.msgCode === "initialize") {
 		await initializeInterfaces();
+		const msgData: SwMsgData = { msgCode: "initialized" };
+		clients.forEach((client) => client.postMessage(msgData));
 	}
 	// Get node ID
 	if (data.msgCode === "get-node-id") {

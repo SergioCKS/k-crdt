@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { nodeId, counterValue } from "../stores/engine";
+	import { nodeId, counterValue, initialized } from "../stores/engine";
 
 	let swRegistration: ServiceWorkerRegistration;
 
@@ -25,6 +25,9 @@
 	});
 </script>
 
+{#if !$initialized}
+	Initializing ...
+{/if}
 <button on:click={printWasm}>Print WASM</button>
 <button on:click={incrementCounter}>Increment Counter</button>
 <button on:click={initWasm}>Initialize WASM</button>
