@@ -70,18 +70,6 @@ export async function onInstall(): Promise<void> {
 	}
 	//#endregion
 
-	//#region 3. Start CRDT engine.
-	await wasm.startEngine(nodeId);
-
-	if (wasm.status === "inactive") {
-		console.log("Failed to start WASM engine. Aborting installation.");
-		return;
-	}
-	if (wasm.status === "active") {
-		console.log("WASM engine started.");
-	}
-	//#endregion
-
 	//#region 3. Cache static assets
 	const cache = await caches.open(CACHE_KEY);
 	await cache.addAll(build.concat(files));
@@ -97,6 +85,21 @@ export async function onInstall(): Promise<void> {
  * * Clears old caches.
  */
 export async function onActivate(): Promise<void> {
+	// 1. WASM initialization
+	await wasm.initialize();
+
+	//#region 2. Start CRDT engine.
+	await wasm.startEngine(localDb.db.name.split("-")[1]);
+
+	if (wasm.status === "inactive") {
+		console.log("Failed to start WASM engine. Aborting installation.");
+		return;
+	}
+	if (wasm.status === "active") {
+		console.log("WASM engine started.");
+	}
+	//#endregion
+
 	//#region Clear old caches
 	for (const key in await caches.keys()) {
 		if (key !== CACHE_KEY) await caches.delete(key);
