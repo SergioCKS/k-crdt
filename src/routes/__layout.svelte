@@ -15,20 +15,22 @@
 	onMount(async () => {
 		navigator.serviceWorker.addEventListener("message", (event) => {
 			const msgData = event.data as SwMsgData;
-			// Engine initialized
-			if (msgData.msgCode === "initialized") {
-				$initialized = true;
-				registration.active.postMessage({
-					msgCode: "get-gcounter-value"
-				});
-			}
-			// Incoming node ID
-			if (msgData.msgCode === "node-id") {
-				$nodeId = msgData.payload.nodeId as string;
-			}
-			// Incoming counter value
-			if (msgData.msgCode === "counter-value") {
-				$counterValue = msgData.payload.value as number;
+			switch (msgData.msgCode) {
+				case "initialized": {
+					$initialized = true;
+					registration.active.postMessage({
+						msgCode: "get-gcounter-value"
+					});
+					break;
+				}
+				case "node-id": {
+					$nodeId = msgData.payload.nodeId as string;
+					break;
+				}
+				case "counter-value": {
+					$counterValue = msgData.payload.value as number;
+					break;
+				}
 			}
 		});
 
