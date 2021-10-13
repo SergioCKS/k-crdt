@@ -174,7 +174,8 @@ export class Engine {
     *
     * Creates an engine instance.
     *
-    * * `node_id` - The ID of the node in the system. If omitted, a newly generated ID is used.
+    * * `node_id` - The ID of the node in the system.
+    *     Can be omitted and set after engine creation.
     * @param {string | undefined} node_id
     * @returns {Engine}
     */
@@ -185,10 +186,21 @@ export class Engine {
         return Engine.__wrap(ret);
     }
     /**
+    * ### Set node ID
+    *
+    * Sets the ID of the node in the system.
+    * @param {string | undefined} node_id
+    */
+    set_node_id(node_id) {
+        var ptr0 = isLikeNone(node_id) ? 0 : passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.engine_set_node_id(this.ptr, ptr0, len0);
+    }
+    /**
     * ### Get node ID
     *
     * Returns the node ID associated with the engine.
-    * @returns {string}
+    * @returns {string | undefined}
     */
     get_node_id() {
         try {
@@ -196,10 +208,14 @@ export class Engine {
             wasm.engine_get_node_id(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
-            return getStringFromWasm0(r0, r1);
+            let v0;
+            if (r0 !== 0) {
+                v0 = getStringFromWasm0(r0, r1).slice();
+                wasm.__wbindgen_free(r0, r1 * 1);
+            }
+            return v0;
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
-            wasm.__wbindgen_free(r0, r1);
         }
     }
     /**

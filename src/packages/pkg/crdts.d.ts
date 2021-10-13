@@ -21,18 +21,26 @@ export class Engine {
 *
 * Creates an engine instance.
 *
-* * `node_id` - The ID of the node in the system. If omitted, a newly generated ID is used.
+* * `node_id` - The ID of the node in the system.
+*     Can be omitted and set after engine creation.
 * @param {string | undefined} node_id
 * @returns {Engine}
 */
   static new(node_id?: string): Engine;
 /**
+* ### Set node ID
+*
+* Sets the ID of the node in the system.
+* @param {string | undefined} node_id
+*/
+  set_node_id(node_id?: string): void;
+/**
 * ### Get node ID
 *
 * Returns the node ID associated with the engine.
-* @returns {string}
+* @returns {string | undefined}
 */
-  get_node_id(): string;
+  get_node_id(): string | undefined;
 /**
 * ### Get counter value
 *
@@ -54,6 +62,7 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_engine_free: (a: number) => void;
   readonly engine_new: (a: number, b: number) => number;
+  readonly engine_set_node_id: (a: number, b: number, c: number) => void;
   readonly engine_get_node_id: (a: number, b: number) => void;
   readonly engine_get_counter_value: (a: number) => number;
   readonly engine_increment_counter: (a: number) => void;

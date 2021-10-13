@@ -3,7 +3,7 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, { Engine, generate_id } from "../packages/pkg/crdts";
+import init, { Engine, generate_id } from "../packages/pkg";
 
 /**
  * ## WASM
@@ -19,14 +19,15 @@ export class Wasm {
 	engine: Engine = undefined;
 
 	/**
-	 * ### Status
+	 * ### Generate ID
 	 *
-	 * Status of the interface.
+	 * Generates a globally unique ID of 21 characters from the alphabet `A-Za-z0-9_-`.
 	 *
-	 * * `active`: WASM was initialized properly and objects in memory are interacted.
-	 * * `inactive`: WASM was not initialized yet. WASM objects do not exist in memory and trying to interact with them will throw exceptions.
+	 * * Requires `initialize()` to have been called. Doesn't require `setNodeId()`.
+	 *
+	 * @returns Unique identifier.
 	 */
-	status: "active" | "inactive" = "inactive";
+	public generateId: () => string = undefined;
 
 	/**
 	 * ### Initialize WASM
@@ -36,39 +37,23 @@ export class Wasm {
 	public async initialize(): Promise<void> {
 		try {
 			await init();
+			this.engine = Engine.new();
+			this.generateId = generate_id;
 		} catch (exception) {
 			console.log(exception);
 		}
 	}
 
 	/**
-	 * ### Start CRDT engine
+	 * ### Set node ID
 	 *
-	 * Starts the CRDT engine object.
+	 * Set the node ID for the WASM engine.
 	 *
-	 * * Requires `initialize()` to have been called.
+	 * @param nodeId - ID of the node in the system.
 	 */
-	public startEngine(nodeId: string): void {
-		try {
-			this.engine = Engine.new(nodeId);
-			this.status = "active";
-		} catch (exception) {
-			console.log(exception);
+	public async setNodeId(nodeId: string): Promise<void> {
+		if (this.engine) {
+			this.engine.set_node_id(nodeId);
 		}
-	}
-
-	/**
-	 * ### Generate ID
-	 *
-	 * Generates a globally unique ID of 21 characters from the alphabet `A-Za-z0-9_-`.
-	 *
-	 * * Requires `initialize()` to have been called. Doesn't require `startEngine()` to have been called.
-	 *
-	 * @returns Unique identifier.
-	 */
-	public generateId(): string {
-		return generate_id();
 	}
 }
-
-export const wasm = new Wasm();

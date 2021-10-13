@@ -60,25 +60,13 @@ export class LocalDb {
 	db: IDBDatabase = undefined;
 
 	/**
-	 * ### Status
-	 *
-	 * Status of the interface.
-	 *
-	 * * `active`: The database was successfully opened and is ready to handle requests.
-	 * * `inactive`: The database was not yet opened.
-	 */
-	status: "active" | "inactive" = "inactive";
-
-	/**
 	 * ## Initialize local database
 	 *
 	 * Initializes the IndexedDB CRDT database. Must be called before attempting to perform any request to the database.
 	 *
-	 * * Failure to initialize the database will be signaled by the `status` field. In such cases, an error message will be logged in the console.
-	 *
-	 * @returns Node ID.
+	 * @returns ID of the Node in the system.
 	 */
-	async initialize(wasm: Wasm): Promise<string | void> {
+	async initialize(wasm: Wasm): Promise<string> {
 		// Check browser support.
 		if (!worker.indexedDB) {
 			console.error("Your browser doesn't support a stable version of IndexedDB.");
@@ -87,29 +75,29 @@ export class LocalDb {
 
 		//#region 1. Get DB name or generate a new one.
 		// The name of the database has the format `KCRDT:{nodeID}`.
-		const databases = await worker.indexedDB.databases();
-		const crdtDbNames = databases.map((dbInfo) => (dbInfo.name ? dbInfo.name : ""));
-		const filteredCrdtDbNames = crdtDbNames
+		const dbs = await worker.indexedDB.databases();
+		const dbNames = dbs.map((dbInfo) => dbInfo.name || "");
+		const numCrdtDbs = dbNames
 			.map((dbName) => dbName.split(":")[0])
-			.filter((dbName) => dbName === "KCRDT");
-
-		console.log(crdtDbNames);
+			.filter((dbName) => dbName === "KCRDT").length;
 
 		let nodeId: string;
-		if (filteredCrdtDbNames.length === 0) {
-			nodeId = wasm.generateId();
-		} else if (filteredCrdtDbNames.length === 1) {
-			nodeId = crdtDbNames[0].substring(6);
-		} else {
-			console.error("Inconsistent state. Multiple CRDT databases found.");
-			return;
+		switch (numCrdtDbs) {
+			case 0:
+				nodeId = wasm.generateId();
+				break;
+			case 1:
+				nodeId = dbNames[0].substring(6);
+				break;
+			default:
+				console.error("Inconsistent state. Multiple CRDT databases found.");
+				return;
 		}
 		//#endregion
 
 		//#region 2. Open database.
 		try {
 			this.db = await openDb(`KCRDT:${nodeId}`);
-			this.status = "active";
 		} catch (exception) {
 			console.log(exception);
 			return;
@@ -124,10 +112,3 @@ export class LocalDb {
 		return nodeId;
 	}
 }
-
-/**
- * ## Local database
- *
- * Interface to the IndexedDB CRDT database.
- */
-export const localDb = new LocalDb();

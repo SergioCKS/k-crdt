@@ -59,12 +59,7 @@ async function fetchAndCache(request: Request): Promise<Response> {
 /**
  * ## Initialize interfaces
  *
- * Resets and initializes the interface objects (WASM & IndexedDB). Steps:
- *
- * 1. Renew the interface objects.
- * 2. Initialize WASM module.
- * 3. Open local database.
- * 4. Start the CRDT engine.
+ * Resets and initializes the interface objects (WASM & IndexedDB).
  */
 async function initializeInterfaces(): Promise<void> {
 	// 1. Renew interface objects
@@ -74,25 +69,11 @@ async function initializeInterfaces(): Promise<void> {
 	// 2. Initialize WASM
 	await wasm.initialize();
 
-	//#region 3. Open DB
+	// 3. Open DB
 	const nodeId = await db.initialize(wasm);
 
-	if (db.status === "inactive" || !nodeId) {
-		console.log("Failed to open IndexedDB. Aborting installation.");
-		return;
-	}
-	if (db.status === "active") {
-		console.log("LocalDB opened.");
-	}
-	//#endregion
-
-	//#region 4. Start CRDT engine.
-	await wasm.startEngine(nodeId);
-
-	if (wasm.status === "active") {
-		console.log("WASM engine started.");
-	}
-	//#endregion
+	// 4. Set node ID in WASM engine.
+	wasm.setNodeId(nodeId);
 }
 //#endregion
 
@@ -103,28 +84,9 @@ async function initializeInterfaces(): Promise<void> {
  * Service worker installation process that runs on service worker registration.
  *
  * * Caches static assets for offline support.
- * * TODO: Set up the local database (IndexedDB).
  */
 export async function onInstall(): Promise<void> {
-	// await initializeInterfaces();
-	// 1. Renew interface objects
-	wasm = new Wasm();
-	db = new LocalDb();
-
-	// 2. Initialize WASM
-	await wasm.initialize();
-
-	//#region 3. Open DB
-	const nodeId = await db.initialize(wasm);
-
-	if (db.status === "inactive" || !nodeId) {
-		console.log("Failed to open IndexedDB. Aborting installation.");
-		return;
-	}
-	if (db.status === "active") {
-		console.log("LocalDB opened.");
-	}
-	//#endregion
+	await initializeInterfaces();
 
 	//#region Cache static assets
 	const cache = await caches.open(CACHE_KEY);
