@@ -28,6 +28,13 @@ export class Engine {
 */
   static new(node_id?: string): Engine;
 /**
+* ### Restore state
+*
+* Restores the state of the counter from a serialized string.
+* @param {string} serialized
+*/
+  restore_state(serialized: string): void;
+/**
 * ### Set node ID
 *
 * Sets the ID of the node in the system.
@@ -69,6 +76,7 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_engine_free: (a: number) => void;
   readonly engine_new: (a: number, b: number) => number;
+  readonly engine_restore_state: (a: number, b: number, c: number) => void;
   readonly engine_set_node_id: (a: number, b: number, c: number) => void;
   readonly engine_get_node_id: (a: number, b: number) => void;
   readonly engine_get_counter_value: (a: number) => number;

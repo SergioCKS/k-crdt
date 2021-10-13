@@ -14,11 +14,6 @@
 			msgCode: "increment-gcounter"
 		});
 	}
-	function serializeCounter() {
-		swRegistration?.active.postMessage({
-			msgCode: "serialize-counter"
-		});
-	}
 
 	onMount(async () => {
 		swRegistration = await navigator.serviceWorker.ready;
@@ -30,6 +25,5 @@
 {/if}
 <button on:click={printWasm}>Print WASM</button>
 <button on:click={incrementCounter}>Increment Counter</button>
-<button on:click={serializeCounter}>Serialize Counter</button>
 Node ID: {$nodeId}
 Counter: {$counterValue}

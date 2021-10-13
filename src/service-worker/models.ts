@@ -9,7 +9,6 @@ export interface ClientMsgData extends MsgData {
 		| "get-gcounter-value"
 		| "get-node-id"
 		| "increment-gcounter"
-		| "serialize-counter"
 		| "initialize";
 }
 

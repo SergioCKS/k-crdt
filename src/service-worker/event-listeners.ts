@@ -74,6 +74,17 @@ async function initializeInterfaces(): Promise<void> {
 
 	// 4. Set node ID in WASM engine.
 	wasm.setNodeId(nodeId);
+
+	// 5. Recover state from local storage.
+	const transaction = db.db.transaction(["crdts"], "readonly");
+	const objectStore = transaction.objectStore("crdts");
+	const request = objectStore.get("counter");
+	request.onsuccess = () => {
+		if (request.result) {
+			const counterState = request.result.state;
+			wasm.engine.restore_state(counterState);
+		}
+	};
 }
 //#endregion
 
@@ -164,11 +175,6 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 				id: "counter",
 				state: serializedCounter
 			});
-			break;
-		}
-		case "serialize-counter": {
-			const serializedCounter = wasm.engine.serialize_counter();
-			console.log(serializedCounter);
 			break;
 		}
 	}

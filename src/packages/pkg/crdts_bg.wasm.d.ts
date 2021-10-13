@@ -3,6 +3,7 @@
 export const memory: WebAssembly.Memory;
 export function __wbg_engine_free(a: number): void;
 export function engine_new(a: number, b: number): number;
+export function engine_restore_state(a: number, b: number, c: number): void;
 export function engine_set_node_id(a: number, b: number, c: number): void;
 export function engine_get_node_id(a: number, b: number): void;
 export function engine_get_counter_value(a: number): number;
