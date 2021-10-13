@@ -112,7 +112,7 @@ export class LocalDb {
 				break;
 			default:
 				Promise.all(crdtDbNames.map((dbName) => deleteDb(dbName)));
-				return;
+				nodeId = wasm.generateId();
 		}
 		//#endregion
 

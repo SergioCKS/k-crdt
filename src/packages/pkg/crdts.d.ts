@@ -54,6 +54,13 @@ export class Engine {
 * Increments the counter by 1 as the node associated with the engine.
 */
   increment_counter(): void;
+/**
+* ### Serialize counter
+*
+* Serialize the counter as JSON.
+* @returns {string}
+*/
+  serialize_counter(): string;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -66,6 +73,7 @@ export interface InitOutput {
   readonly engine_get_node_id: (a: number, b: number) => void;
   readonly engine_get_counter_value: (a: number) => number;
   readonly engine_increment_counter: (a: number) => void;
+  readonly engine_serialize_counter: (a: number, b: number) => void;
   readonly generate_id: (a: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;

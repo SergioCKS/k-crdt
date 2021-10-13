@@ -120,39 +120,57 @@ export async function onActivate(): Promise<void> {
  */
 export async function onMessage(client: Client, data: ClientMsgData): Promise<void> {
 	const clients = await worker.clients.matchAll();
-	// Initialize
-	if (data.msgCode === "initialize") {
-		await initializeInterfaces();
-		const msgData: SwMsgData = { msgCode: "initialized" };
+	function broadcast(msgData: SwMsgData) {
 		clients.forEach((client) => client.postMessage(msgData));
 	}
-	// Get node ID
-	if (data.msgCode === "get-node-id") {
-		const nodeId = wasm.engine.get_node_id();
-		const msgData: SwMsgData = {
-			msgCode: "node-id",
-			payload: { nodeId }
-		};
-		client.postMessage(msgData);
-	}
-	// Get counter value
-	if (data.msgCode === "get-gcounter-value") {
-		const value = wasm.engine.get_counter_value();
-		const msgData: SwMsgData = {
-			msgCode: "counter-value",
-			payload: { value }
-		};
-		client.postMessage(msgData);
-	}
-	// Increment counter
-	if (data.msgCode === "increment-gcounter") {
-		wasm.engine.increment_counter();
-		const value = wasm.engine.get_counter_value();
-		const msgData: SwMsgData = {
-			msgCode: "counter-value",
-			payload: { value }
-		};
-		clients.forEach((client) => client.postMessage(msgData));
+	switch (data.msgCode) {
+		case "initialize": {
+			await initializeInterfaces();
+			broadcast({ msgCode: "initialized" });
+			break;
+		}
+		case "get-node-id": {
+			const nodeId = wasm.engine.get_node_id();
+			broadcast({
+				msgCode: "node-id",
+				payload: { nodeId }
+			});
+			break;
+		}
+		case "get-gcounter-value": {
+			const value = wasm.engine.get_counter_value();
+			broadcast({
+				msgCode: "counter-value",
+				payload: { value }
+			});
+			break;
+		}
+		case "increment-gcounter": {
+			// 1. Increment counter.
+			wasm.engine.increment_counter();
+			// 2. Get counter value.
+			const value = wasm.engine.get_counter_value();
+			// 3. Broadcast value.
+			broadcast({
+				msgCode: "counter-value",
+				payload: { value }
+			});
+			// 4. Serialize counter state.
+			const serializedCounter = wasm.engine.serialize_counter();
+			// 5. Persist counter state.
+			const transaction = db.db.transaction(["crdts"], "readwrite");
+			const objectStore = transaction.objectStore("crdts");
+			objectStore.put({
+				id: "counter",
+				state: serializedCounter
+			});
+			break;
+		}
+		case "serialize-counter": {
+			const serializedCounter = wasm.engine.serialize_counter();
+			console.log(serializedCounter);
+			break;
+		}
 	}
 }
 

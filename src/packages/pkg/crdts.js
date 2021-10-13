@@ -236,6 +236,24 @@ export class Engine {
     increment_counter() {
         wasm.engine_increment_counter(this.ptr);
     }
+    /**
+    * ### Serialize counter
+    *
+    * Serialize the counter as JSON.
+    * @returns {string}
+    */
+    serialize_counter() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.engine_serialize_counter(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
+        }
+    }
 }
 
 async function load(module, imports) {
