@@ -13,6 +13,7 @@ import type { Wasm } from "./wasm";
  */
 const worker = self as unknown as ServiceWorkerGlobalScope;
 
+//#region IndexedDB async wrappers
 /**
  * ## Open Database
  *
@@ -43,6 +44,28 @@ async function openDb(dbName: string): Promise<IDBDatabase> {
 		};
 	});
 }
+
+/**
+ * ## Delete Database
+ *
+ * Delete the IndexedDB database with a given name.
+ *
+ * * Async wrapper that resolves on success or failure of the operation.
+ *
+ * @param dbName - Database name
+ */
+async function deleteDb(dbName: string): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const dbDeleteRequest = worker.indexedDB.deleteDatabase(dbName);
+		dbDeleteRequest.onerror = () => {
+			reject("Error while attempting to delete a database.");
+		};
+		dbDeleteRequest.onsuccess = () => {
+			resolve();
+		};
+	});
+}
+//#endregion
 
 /**
  * ## Local Database
@@ -77,12 +100,10 @@ export class LocalDb {
 		// The name of the database has the format `KCRDT:{nodeID}`.
 		const dbs = await worker.indexedDB.databases();
 		const dbNames = dbs.map((dbInfo) => dbInfo.name || "");
-		const numCrdtDbs = dbNames
-			.map((dbName) => dbName.split(":")[0])
-			.filter((dbName) => dbName === "KCRDT").length;
+		const crdtDbNames = dbNames.filter((dbName) => dbName.split(":")[0] === "KCRDT");
 
 		let nodeId: string;
-		switch (numCrdtDbs) {
+		switch (crdtDbNames.length) {
 			case 0:
 				nodeId = wasm.generateId();
 				break;
@@ -90,7 +111,7 @@ export class LocalDb {
 				nodeId = dbNames[0].substring(6);
 				break;
 			default:
-				console.error("Inconsistent state. Multiple CRDT databases found.");
+				Promise.all(crdtDbNames.map((dbName) => deleteDb(dbName)));
 				return;
 		}
 		//#endregion
