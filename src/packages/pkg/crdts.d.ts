@@ -31,9 +31,11 @@ export class Engine {
 * ### Restore state
 *
 * Restores the state of the counter from a serialized string.
-* @param {string} serialized
+*
+* * `serialized` - JSON-serialized counter state.
+* @param {string | undefined} serialized
 */
-  restore_state(serialized: string): void;
+  restore_state(serialized?: string): void;
 /**
 * ### Set node ID
 *

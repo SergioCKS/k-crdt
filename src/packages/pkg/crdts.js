@@ -189,10 +189,12 @@ export class Engine {
     * ### Restore state
     *
     * Restores the state of the counter from a serialized string.
-    * @param {string} serialized
+    *
+    * * `serialized` - JSON-serialized counter state.
+    * @param {string | undefined} serialized
     */
     restore_state(serialized) {
-        var ptr0 = passStringToWasm0(serialized, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var ptr0 = isLikeNone(serialized) ? 0 : passStringToWasm0(serialized, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         wasm.engine_restore_state(this.ptr, ptr0, len0);
     }

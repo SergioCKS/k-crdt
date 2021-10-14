@@ -56,6 +56,24 @@ async function fetchAndCache(request: Request): Promise<Response> {
 	}
 }
 
+async function retrieveState(db: IDBDatabase, storeName: string): Promise<string | null> {
+	return new Promise((resolve, reject) => {
+		const transaction = db.transaction([storeName], "readonly");
+		const objectStore = transaction.objectStore(storeName);
+		const request = objectStore.get("counter");
+		request.onerror = () => {
+			reject("Error while attempting to retrieve the state of the counter.");
+		};
+		request.onsuccess = () => {
+			if (request.result) {
+				resolve(request.result.state);
+			} else {
+				resolve(null);
+			}
+		};
+	});
+}
+
 /**
  * ## Initialize interfaces
  *
@@ -76,15 +94,12 @@ async function initializeInterfaces(): Promise<void> {
 	wasm.setNodeId(nodeId);
 
 	// 5. Recover state from local storage.
-	const transaction = db.db.transaction(["crdts"], "readonly");
-	const objectStore = transaction.objectStore("crdts");
-	const request = objectStore.get("counter");
-	request.onsuccess = () => {
-		if (request.result) {
-			const counterState = request.result.state;
-			wasm.engine.restore_state(counterState);
-		}
-	};
+	try {
+		const counterState = await retrieveState(db.db, "crdts");
+		wasm.engine.restore_state(counterState);
+	} catch (exception) {
+		console.error(exception);
+	}
 }
 //#endregion
 
@@ -130,10 +145,17 @@ export async function onActivate(): Promise<void> {
  * @param data - The data attached to the message.
  */
 export async function onMessage(client: Client, data: ClientMsgData): Promise<void> {
+	// 1. Get currently connected clients.
 	const clients = await worker.clients.matchAll();
 	function broadcast(msgData: SwMsgData) {
 		clients.forEach((client) => client.postMessage(msgData));
 	}
+	// 2. Ensure WASM is initialized.
+	if (!wasm) {
+		await initializeInterfaces();
+		// broadcast({ msgCode: "initialized" });
+	}
+	// 3. Handle incoming message.
 	switch (data.msgCode) {
 		case "initialize": {
 			await initializeInterfaces();
