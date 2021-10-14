@@ -13,60 +13,6 @@ import type { Wasm } from "./wasm";
  */
 const worker = self as unknown as ServiceWorkerGlobalScope;
 
-//#region IndexedDB async wrappers
-/**
- * ## Open Database
- *
- * Opens the CRDT IndexedDB database.
- *
- * * Async wrapper that resolves on success or failure of the operation.
- * * Handles schema changes on version upgrades.
- *
- * @param dbName - Database name
- * @returns IndexDB Database
- */
-async function openDb(dbName: string): Promise<IDBDatabase> {
-	return new Promise((resolve, reject) => {
-		const dbOpenRequest = worker.indexedDB.open(dbName);
-		dbOpenRequest.onerror = () => {
-			reject("Error while attempting to open the local database.");
-		};
-		dbOpenRequest.onupgradeneeded = (event) => {
-			const request = event.target as IDBOpenDBRequest;
-			const db = request.result;
-
-			if (db.version === 1) {
-				db.createObjectStore("crdts", { keyPath: "id" });
-			}
-		};
-		dbOpenRequest.onsuccess = () => {
-			resolve(dbOpenRequest.result);
-		};
-	});
-}
-
-/**
- * ## Delete Database
- *
- * Delete the IndexedDB database with a given name.
- *
- * * Async wrapper that resolves on success or failure of the operation.
- *
- * @param dbName - Database name
- */
-async function deleteDb(dbName: string): Promise<void> {
-	return new Promise((resolve, reject) => {
-		const dbDeleteRequest = worker.indexedDB.deleteDatabase(dbName);
-		dbDeleteRequest.onerror = () => {
-			reject("Error while attempting to delete a database.");
-		};
-		dbDeleteRequest.onsuccess = () => {
-			resolve();
-		};
-	});
-}
-//#endregion
-
 /**
  * ## Local Database
  *
@@ -80,16 +26,16 @@ export class LocalDb {
 	 *
 	 * * Accessible after successful opening.
 	 */
-	db: IDBDatabase = undefined;
+	public db: IDBDatabase = undefined;
 
 	/**
-	 * ## Initialize local database
+	 * ### Initialize local database
 	 *
 	 * Initializes the IndexedDB CRDT database. Must be called before attempting to perform any request to the database.
 	 *
 	 * @returns ID of the Node in the system.
 	 */
-	async initialize(wasm: Wasm): Promise<string> {
+	public async initialize(wasm: Wasm): Promise<string> {
 		// Check browser support.
 		if (!worker.indexedDB) {
 			console.error("Your browser doesn't support a stable version of IndexedDB.");
@@ -111,14 +57,14 @@ export class LocalDb {
 				nodeId = dbNames[0].substring(6);
 				break;
 			default:
-				Promise.all(crdtDbNames.map((dbName) => deleteDb(dbName)));
+				Promise.all(crdtDbNames.map((dbName) => LocalDb.deleteDb(dbName)));
 				nodeId = wasm.generateId();
 		}
 		//#endregion
 
 		//#region 2. Open database.
 		try {
-			this.db = await openDb(`KCRDT:${nodeId}`);
+			await this.openDb(`KCRDT:${nodeId}`);
 		} catch (exception) {
 			console.log(exception);
 			return;
@@ -131,5 +77,83 @@ export class LocalDb {
 		};
 
 		return nodeId;
+	}
+
+	/**
+	 * ### Retrieve counter state
+	 *
+	 * Retrieves the serialized state of the counter from the database.
+	 *
+	 * @returns State of the counter if found.
+	 */
+	public async retrieveState(): Promise<string | null> {
+		return new Promise((resolve, reject) => {
+			const transaction = this.db.transaction(["crdts"], "readonly");
+			const objectStore = transaction.objectStore("crdts");
+			const request = objectStore.get("counter");
+			request.onerror = () => {
+				reject("Error while attempting to retrieve the state of the counter.");
+			};
+			request.onsuccess = () => {
+				if (request.result) {
+					resolve(request.result.state);
+				} else {
+					resolve(null);
+				}
+			};
+		});
+	}
+
+	/**
+	 * ## Open Database
+	 *
+	 * Opens the CRDT IndexedDB database.
+	 *
+	 * * Async wrapper that resolves on success or failure of the operation.
+	 * * Handles schema changes on version upgrades.
+	 *
+	 * @param dbName - Database name
+	 * @returns IndexDB Database
+	 */
+	private async openDb(dbName: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const dbOpenRequest = worker.indexedDB.open(dbName);
+			dbOpenRequest.onerror = () => {
+				reject("Error while attempting to open the local database.");
+			};
+			dbOpenRequest.onupgradeneeded = (event) => {
+				const request = event.target as IDBOpenDBRequest;
+				const db = request.result;
+
+				if (db.version === 1) {
+					db.createObjectStore("crdts", { keyPath: "id" });
+				}
+			};
+			dbOpenRequest.onsuccess = () => {
+				this.db = dbOpenRequest.result;
+				resolve();
+			};
+		});
+	}
+
+	/**
+	 * ### Delete Database
+	 *
+	 * Delete the IndexedDB database with a given name.
+	 *
+	 * * Async wrapper that resolves on success or failure of the operation.
+	 *
+	 * @param dbName - Database name
+	 */
+	public static async deleteDb(dbName: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const dbDeleteRequest = worker.indexedDB.deleteDatabase(dbName);
+			dbDeleteRequest.onerror = () => {
+				reject("Error while attempting to delete a database.");
+			};
+			dbDeleteRequest.onsuccess = () => {
+				resolve();
+			};
+		});
 	}
 }

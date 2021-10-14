@@ -24,7 +24,7 @@ const worker = self as unknown as ServiceWorkerGlobalScope;
 
 //#region Interface objects
 let wasm: Wasm;
-let db: LocalDb;
+let localDb: LocalDb;
 //#endregion
 
 //#region Cache keys
@@ -56,24 +56,6 @@ async function fetchAndCache(request: Request): Promise<Response> {
 	}
 }
 
-async function retrieveState(db: IDBDatabase, storeName: string): Promise<string | null> {
-	return new Promise((resolve, reject) => {
-		const transaction = db.transaction([storeName], "readonly");
-		const objectStore = transaction.objectStore(storeName);
-		const request = objectStore.get("counter");
-		request.onerror = () => {
-			reject("Error while attempting to retrieve the state of the counter.");
-		};
-		request.onsuccess = () => {
-			if (request.result) {
-				resolve(request.result.state);
-			} else {
-				resolve(null);
-			}
-		};
-	});
-}
-
 /**
  * ## Initialize interfaces
  *
@@ -82,24 +64,29 @@ async function retrieveState(db: IDBDatabase, storeName: string): Promise<string
 async function initializeInterfaces(): Promise<void> {
 	// 1. Renew interface objects
 	wasm = new Wasm();
-	db = new LocalDb();
+	localDb = new LocalDb();
 
 	// 2. Initialize WASM
 	await wasm.initialize();
 
 	// 3. Open DB
-	const nodeId = await db.initialize(wasm);
+	const nodeId = await localDb.initialize(wasm);
 
 	// 4. Set node ID in WASM engine.
 	wasm.setNodeId(nodeId);
 
-	// 5. Recover state from local storage.
+	//#region 5. Recover state from local storage.
+	let counterState: string | null;
 	try {
-		const counterState = await retrieveState(db.db, "crdts");
-		wasm.engine.restore_state(counterState);
+		counterState = await localDb.retrieveState();
 	} catch (exception) {
 		console.error(exception);
+		return;
 	}
+	//#endregion
+
+	// 6. Restore counter from serialized state.
+	wasm.engine.restore_state(counterState);
 }
 //#endregion
 
@@ -112,12 +99,9 @@ async function initializeInterfaces(): Promise<void> {
  * * Caches static assets for offline support.
  */
 export async function onInstall(): Promise<void> {
-	await initializeInterfaces();
-
 	//#region Cache static assets
 	const cache = await caches.open(CACHE_KEY);
 	await cache.addAll(build.concat(files));
-	console.log("Static assets cached.");
 	//#endregion
 }
 
@@ -191,7 +175,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			// 4. Serialize counter state.
 			const serializedCounter = wasm.engine.serialize_counter();
 			// 5. Persist counter state.
-			const transaction = db.db.transaction(["crdts"], "readwrite");
+			const transaction = localDb.db.transaction(["crdts"], "readwrite");
 			const objectStore = transaction.objectStore("crdts");
 			objectStore.put({
 				id: "counter",
