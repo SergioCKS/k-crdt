@@ -93,7 +93,10 @@ async function initializeInterfaces(): Promise<void> {
 	webSocket.addEventListener("message", (event) => {
 		console.log("Message received from server", event.data);
 	});
-	webSocket.send("Hey there!");
+	webSocket.addEventListener("open", (event) => {
+		console.log("'open' event.");
+	});
+	// webSocket.send("Hey there!");
 	//#endregion
 }
 //#endregion
