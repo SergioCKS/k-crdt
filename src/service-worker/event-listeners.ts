@@ -87,6 +87,14 @@ async function initializeInterfaces(): Promise<void> {
 
 	// 6. Restore counter from serialized state.
 	wasm.engine.restore_state(counterState);
+
+	//#region Establish WebSocket connection with Sync Manager
+	const webSocket = new WebSocket("wss://crdt-sync.zeda.workers.dev");
+	webSocket.addEventListener("message", (event) => {
+		console.log("Message received from server", event.data);
+	});
+	webSocket.send("Hey there!");
+	//#endregion
 }
 //#endregion
 
