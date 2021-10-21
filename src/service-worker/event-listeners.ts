@@ -89,7 +89,7 @@ async function initializeInterfaces(): Promise<void> {
 	wasm.engine.restore_state(counterState);
 
 	//#region Establish WebSocket connection with Sync Manager
-	const webSocket = new WebSocket("wss://crdt-sync.zeda.workers.dev");
+	const webSocket = new WebSocket("wss://crdt.zeda.tech");
 	webSocket.addEventListener("message", (event) => {
 		console.log("Message received from server", event.data);
 	});
