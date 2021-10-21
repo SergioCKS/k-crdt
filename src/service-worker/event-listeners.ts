@@ -25,6 +25,7 @@ const worker = self as unknown as ServiceWorkerGlobalScope;
 //#region Interface objects
 let wasm: Wasm;
 let localDb: LocalDb;
+let webSocket: WebSocket;
 //#endregion
 
 //#region Cache keys
@@ -89,12 +90,22 @@ async function initializeInterfaces(): Promise<void> {
 	wasm.engine.restore_state(counterState);
 
 	//#region Establish WebSocket connection with Sync Manager
-	const webSocket = new WebSocket("wss://crdt.zeda.tech");
+	// if (webSocket && webSocket.readyState === 1) return;
+	if (webSocket) return;
+
+	webSocket = new WebSocket("wss://websocket-template.zeda.workers.dev/ws");
+	if (!webSocket) {
+		console.error("server didn't accept ws");
+		return;
+	}
 	webSocket.addEventListener("message", (event) => {
 		console.log("Message received from server", event.data);
 	});
-	webSocket.addEventListener("open", (event) => {
-		console.log("'open' event.");
+	webSocket.addEventListener("open", () => {
+		console.log("Opened websocket");
+	});
+	webSocket.addEventListener("close", () => {
+		console.log("Closed websocket");
 	});
 	// webSocket.send("Hey there!");
 	//#endregion
