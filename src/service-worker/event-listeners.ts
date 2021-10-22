@@ -13,6 +13,7 @@
 import { build, files, timestamp } from "$service-worker";
 import { Wasm } from "./wasm";
 import { LocalDb } from "./db";
+import { SyncConnection } from "./sync";
 import type { ClientMsgData, SwMsgData } from "./models";
 
 /**
@@ -25,7 +26,7 @@ const worker = self as unknown as ServiceWorkerGlobalScope;
 //#region Interface objects
 let wasm: Wasm;
 let localDb: LocalDb;
-let webSocket: WebSocket;
+let syncConnection: SyncConnection;
 //#endregion
 
 //#region Cache keys
@@ -60,12 +61,15 @@ async function fetchAndCache(request: Request): Promise<Response> {
 /**
  * ## Initialize interfaces
  *
- * Resets and initializes the interface objects (WASM & IndexedDB).
+ * Resets and initializes the interface objects (WASM, IndexedDB, and WebSocket connection).
  */
-async function initializeInterfaces(): Promise<void> {
+async function initializeInterfaces(forceRestart = false): Promise<void> {
 	// 1. Renew interface objects
 	wasm = new Wasm();
 	localDb = new LocalDb();
+	if (!syncConnection) {
+		syncConnection = new SyncConnection(new URL("wss://crdt.zeda.tech/ws"));
+	}
 
 	// 2. Initialize WASM
 	await wasm.initialize();
@@ -89,26 +93,8 @@ async function initializeInterfaces(): Promise<void> {
 	// 6. Restore counter from serialized state.
 	wasm.engine.restore_state(counterState);
 
-	//#region Establish WebSocket connection with Sync Manager
-	// if (webSocket && webSocket.readyState === 1) return;
-	if (webSocket) return;
-
-	webSocket = new WebSocket("wss://websocket-template.zeda.workers.dev/ws");
-	if (!webSocket) {
-		console.error("server didn't accept ws");
-		return;
-	}
-	webSocket.addEventListener("message", (event) => {
-		console.log("Message received from server", event.data);
-	});
-	webSocket.addEventListener("open", () => {
-		console.log("Opened websocket");
-	});
-	webSocket.addEventListener("close", () => {
-		console.log("Closed websocket");
-	});
-	// webSocket.send("Hey there!");
-	//#endregion
+	// 7. Initialize connection to sync manager.
+	syncConnection.initialize(forceRestart);
 }
 //#endregion
 
