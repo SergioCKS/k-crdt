@@ -1,4 +1,9 @@
-import type { Wasm } from "./wasm";
+/**
+ * ## Worker Scope
+ *
+ * Typed `self` assuming the script is run on a service worker context.
+ */
+const worker = self as unknown as ServiceWorkerGlobalScope;
 
 /**
  * ## Sync Connection
@@ -38,7 +43,7 @@ export class SyncConnection {
 	 *
 	 * Initializes the connection to the sync manager.
 	 */
-	public initialize(wasm: Wasm, forceRestart = false): void {
+	public initialize(forceRestart = false): void {
 		// Restart if web socket is active.
 		if (this._ws && [0, 1].includes(this._ws.readyState)) {
 			if (forceRestart) {
@@ -62,7 +67,10 @@ export class SyncConnection {
 		});
 
 		ws.addEventListener("message", async ({ data }) => {
-			wasm.engine.merge_from_message(data);
+			worker.registration.active.postMessage({
+				msgCode: "incoming-update",
+				payload: { state: data }
+			});
 		});
 
 		ws.addEventListener("close", () => {
