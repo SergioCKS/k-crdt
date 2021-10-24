@@ -31,6 +31,10 @@
 					$counterValue = msgData.payload.value as number;
 					break;
 				}
+				case "error": {
+					console.error("Error received.", msgData.payload.value);
+					break;
+				}
 			}
 		});
 

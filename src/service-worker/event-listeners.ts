@@ -94,7 +94,7 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	wasm.engine.restore_state(counterState);
 
 	// 7. Initialize connection to sync manager.
-	syncConnection.initialize(forceRestart);
+	syncConnection.initialize(wasm, forceRestart);
 }
 //#endregion
 
@@ -175,13 +175,23 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			wasm.engine.increment_counter();
 			// 2. Get counter value.
 			const value = wasm.engine.get_counter_value();
-			// 3. Broadcast value.
+			// 3. Serialize counter state.
+			let serializedCounter: string;
+			try {
+				serializedCounter = wasm.engine.serialize_counter();
+				console.log(serializedCounter);
+			} catch (e) {
+				console.error(e);
+				client.postMessage({
+					msgCode: "error",
+					payload: e
+				});
+			}
+			// 4. Broadcast value.
 			broadcast({
 				msgCode: "counter-value",
 				payload: { value }
 			});
-			// 4. Serialize counter state.
-			const serializedCounter = wasm.engine.serialize_counter();
 			// 5. Persist counter state.
 			const transaction = localDb.db.transaction(["crdts"], "readwrite");
 			const objectStore = transaction.objectStore("crdts");
@@ -189,6 +199,8 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 				id: "counter",
 				state: serializedCounter
 			});
+			// 6. Send state message to sync manager.
+			syncConnection.sendMessage(serializedCounter);
 			break;
 		}
 	}

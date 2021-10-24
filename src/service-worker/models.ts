@@ -13,5 +13,5 @@ export interface ClientMsgData extends MsgData {
 }
 
 export interface SwMsgData extends MsgData {
-	msgCode: "initialized" | "node-id" | "counter-value";
+	msgCode: "initialized" | "node-id" | "counter-value" | "error";
 }

@@ -1,3 +1,5 @@
+import type { Wasm } from "./wasm";
+
 /**
  * ## Sync Connection
  *
@@ -36,11 +38,11 @@ export class SyncConnection {
 	 *
 	 * Initializes the connection to the sync manager.
 	 */
-	public initialize(forceRestart = false): void {
+	public initialize(wasm: Wasm, forceRestart = false): void {
 		// Restart if web socket is active.
-		if (this.ws && [0, 1].includes(this.ws.readyState)) {
+		if (this._ws && [0, 1].includes(this._ws.readyState)) {
 			if (forceRestart) {
-				this.ws.close(1012, "Restarting connection.");
+				this._ws.close(1012, "Restarting connection.");
 			} else {
 				return;
 			}
@@ -59,9 +61,8 @@ export class SyncConnection {
 			console.log("Opened connection to the synchronization manager.");
 		});
 
-		ws.addEventListener("message", ({ data }) => {
-			const { count, tz, error } = JSON.parse(data);
-			console.log(count, tz, error);
+		ws.addEventListener("message", async ({ data }) => {
+			wasm.engine.merge_from_message(data);
 		});
 
 		ws.addEventListener("close", () => {
@@ -91,6 +92,24 @@ export class SyncConnection {
 		return this._syncUrl;
 	}
 	//#endregion
+
+	/**
+	 * ### Send Message
+	 *
+	 * Send a message to the sync manager.
+	 *
+	 * @param msg Message
+	 * @throws Error - If the WebSocket connection is not active.
+	 */
+	public sendMessage(msg: string | ArrayBufferLike | Blob): void {
+		if (this._ws && this._ws.readyState === 1) {
+			this._ws.send(msg);
+		} else {
+			throw Error(
+				"WebSocket connection is not active. The connection may not have been initialized properly."
+			);
+		}
+	}
 
 	/**
 	 * ### Close sync connection

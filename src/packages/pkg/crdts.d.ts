@@ -70,6 +70,15 @@ export class Engine {
 * @returns {string}
 */
   serialize_counter(): string;
+/**
+* ### Merge from message
+*
+* Merge the state of the counter with the state of another
+*
+* * `msg` - Serialized state of another coutner (update message from sync manage).
+* @param {string | undefined} msg
+*/
+  merge_from_message(msg?: string): void;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -84,6 +93,7 @@ export interface InitOutput {
   readonly engine_get_counter_value: (a: number) => number;
   readonly engine_increment_counter: (a: number) => void;
   readonly engine_serialize_counter: (a: number, b: number) => void;
+  readonly engine_merge_from_message: (a: number, b: number, c: number) => void;
   readonly generate_id: (a: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
