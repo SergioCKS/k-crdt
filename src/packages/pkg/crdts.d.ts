@@ -64,6 +64,12 @@ export class Engine {
 */
   increment_counter(): void;
 /**
+* ### Decrement counter
+*
+* Decrements the counter by 1 as the node associated with the engine.
+*/
+  decrement_counter(): void;
+/**
 * ### Serialize counter
 *
 * Serialize the counter as JSON.
@@ -92,6 +98,7 @@ export interface InitOutput {
   readonly engine_get_node_id: (a: number, b: number) => void;
   readonly engine_get_counter_value: (a: number) => number;
   readonly engine_increment_counter: (a: number) => void;
+  readonly engine_decrement_counter: (a: number) => void;
   readonly engine_serialize_counter: (a: number, b: number) => void;
   readonly engine_merge_from_message: (a: number, b: number, c: number) => void;
   readonly generate_id: (a: number) => void;

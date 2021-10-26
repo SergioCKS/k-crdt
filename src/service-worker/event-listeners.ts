@@ -170,9 +170,42 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			});
 			break;
 		}
-		case "increment-gcounter": {
+		case "increment-counter": {
 			// 1. Increment counter.
 			wasm.engine.increment_counter();
+			// 2. Get counter value.
+			const value = wasm.engine.get_counter_value();
+			// 3. Serialize counter state.
+			let serializedCounter: string;
+			try {
+				serializedCounter = wasm.engine.serialize_counter();
+				console.log(serializedCounter);
+			} catch (e) {
+				console.error(e);
+				client.postMessage({
+					msgCode: "error",
+					payload: e
+				});
+			}
+			// 4. Broadcast value.
+			broadcast({
+				msgCode: "counter-value",
+				payload: { value }
+			});
+			// 5. Persist counter state.
+			const transaction = localDb.db.transaction(["crdts"], "readwrite");
+			const objectStore = transaction.objectStore("crdts");
+			objectStore.put({
+				id: "counter",
+				state: serializedCounter
+			});
+			// 6. Send state message to sync manager.
+			syncConnection.sendMessage(serializedCounter);
+			break;
+		}
+		case "decrement-counter": {
+			// 1. Decrement counter.
+			wasm.engine.decrement_counter();
 			// 2. Get counter value.
 			const value = wasm.engine.get_counter_value();
 			// 3. Serialize counter state.

@@ -11,7 +11,12 @@
 	}
 	function incrementCounter() {
 		swRegistration?.active.postMessage({
-			msgCode: "increment-gcounter"
+			msgCode: "increment-counter"
+		});
+	}
+	function decrementCounter() {
+		swRegistration?.active.postMessage({
+			msgCode: "decrement-counter"
 		});
 	}
 
@@ -25,5 +30,6 @@
 {/if}
 <button on:click={printWasm}>Print WASM</button>
 <button on:click={incrementCounter}>Increment Counter</button>
+<button on:click={decrementCounter}>Decrement Counter</button>
 Node ID: {$nodeId}
 Counter: {$counterValue}

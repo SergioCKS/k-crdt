@@ -250,6 +250,14 @@ export class Engine {
         wasm.engine_increment_counter(this.ptr);
     }
     /**
+    * ### Decrement counter
+    *
+    * Decrements the counter by 1 as the node associated with the engine.
+    */
+    decrement_counter() {
+        wasm.engine_decrement_counter(this.ptr);
+    }
+    /**
     * ### Serialize counter
     *
     * Serialize the counter as JSON.

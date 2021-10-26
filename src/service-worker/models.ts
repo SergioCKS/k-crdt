@@ -8,7 +8,8 @@ export interface ClientMsgData extends MsgData {
 		| "create-gcounter"
 		| "get-gcounter-value"
 		| "get-node-id"
-		| "increment-gcounter"
+		| "increment-counter"
+		| "decrement-counter"
 		| "initialize"
 		| "incoming-update";
 }
