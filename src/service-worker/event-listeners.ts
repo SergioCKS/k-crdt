@@ -306,6 +306,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			wasm.engine.merge_register_from_message(state, nid);
 			// 2. Get register value.
 			const value = wasm.engine.get_register_value();
+			console.log(value);
 			// 3. Serialize register state.
 			let serializedRegister: string;
 			try {
