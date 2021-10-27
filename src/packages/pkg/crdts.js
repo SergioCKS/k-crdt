@@ -46,6 +46,34 @@ function takeObject(idx) {
     return ret;
 }
 
+let cachegetInt32Memory0 = null;
+function getInt32Memory0() {
+    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
+        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
+    }
+    return cachegetInt32Memory0;
+}
+/**
+* ## Generate ID
+* > Generates a universally unique ID.
+*
+* IDs consist of 21 uniformly random characters from the alphabet `A-Za-z0-9_-`.
+* To generate random data, a `ThreadRNG` is used.
+* @returns {string}
+*/
+export function generate_id() {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.generate_id(retptr);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        return getStringFromWasm0(r0, r1);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_free(r0, r1);
+    }
+}
+
 let WASM_VECTOR_LEN = 0;
 
 let cachedTextEncoder = new TextEncoder('utf-8');
@@ -105,34 +133,6 @@ function isLikeNone(x) {
     return x === undefined || x === null;
 }
 
-let cachegetInt32Memory0 = null;
-function getInt32Memory0() {
-    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
-        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
-    }
-    return cachegetInt32Memory0;
-}
-/**
-* ## Generate ID
-* > Generates a universally unique ID.
-*
-* IDs consist of 21 uniformly random characters from the alphabet `A-Za-z0-9_-`.
-* To generate random data, a `ThreadRNG` is used.
-* @returns {string}
-*/
-export function generate_id() {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.generate_id(retptr);
-        var r0 = getInt32Memory0()[retptr / 4 + 0];
-        var r1 = getInt32Memory0()[retptr / 4 + 1];
-        return getStringFromWasm0(r0, r1);
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_free(r0, r1);
-    }
-}
-
 function handleError(f, args) {
     try {
         return f.apply(this, args);
@@ -176,11 +176,11 @@ export class Engine {
     *
     * * `node_id` - The ID of the node in the system.
     *     Can be omitted and set after engine creation.
-    * @param {string | undefined} node_id
+    * @param {string} node_id
     * @returns {Engine}
     */
     static new(node_id) {
-        var ptr0 = isLikeNone(node_id) ? 0 : passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var ptr0 = passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         var ret = wasm.engine_new(ptr0, len0);
         return Engine.__wrap(ret);
@@ -199,13 +199,26 @@ export class Engine {
         wasm.engine_restore_state(this.ptr, ptr0, len0);
     }
     /**
+    * ### Restore register
+    *
+    * Restores the state of the register from a serialized string.
+    *
+    * * `serialized` - JSON-serialized counter state.
+    * @param {string | undefined} serialized
+    */
+    restore_register(serialized) {
+        var ptr0 = isLikeNone(serialized) ? 0 : passStringToWasm0(serialized, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.engine_restore_register(this.ptr, ptr0, len0);
+    }
+    /**
     * ### Set node ID
     *
     * Sets the ID of the node in the system.
-    * @param {string | undefined} node_id
+    * @param {string} node_id
     */
     set_node_id(node_id) {
-        var ptr0 = isLikeNone(node_id) ? 0 : passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var ptr0 = passStringToWasm0(node_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         wasm.engine_set_node_id(this.ptr, ptr0, len0);
     }
@@ -213,7 +226,7 @@ export class Engine {
     * ### Get node ID
     *
     * Returns the node ID associated with the engine.
-    * @returns {string | undefined}
+    * @returns {string}
     */
     get_node_id() {
         try {
@@ -221,14 +234,10 @@ export class Engine {
             wasm.engine_get_node_id(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
-            let v0;
-            if (r0 !== 0) {
-                v0 = getStringFromWasm0(r0, r1).slice();
-                wasm.__wbindgen_free(r0, r1 * 1);
-            }
-            return v0;
+            return getStringFromWasm0(r0, r1);
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
         }
     }
     /**
@@ -240,6 +249,16 @@ export class Engine {
     get_counter_value() {
         var ret = wasm.engine_get_counter_value(this.ptr);
         return ret >>> 0;
+    }
+    /**
+    * ### Get register value
+    *
+    * Returns the current value of the register.
+    * @returns {boolean}
+    */
+    get_register_value() {
+        var ret = wasm.engine_get_register_value(this.ptr);
+        return ret !== 0;
     }
     /**
     * ### Increment counter
@@ -256,6 +275,14 @@ export class Engine {
     */
     decrement_counter() {
         wasm.engine_decrement_counter(this.ptr);
+    }
+    /**
+    * ### Toggle register value
+    *
+    * Flips the value of the register.
+    */
+    toggle_register() {
+        wasm.engine_toggle_register(this.ptr);
     }
     /**
     * ### Serialize counter
@@ -276,17 +303,52 @@ export class Engine {
         }
     }
     /**
+    * Serialize register
+    *
+    * Serialize the register as JSON.
+    * @returns {string}
+    */
+    serialize_register() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.engine_serialize_register(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
+        }
+    }
+    /**
     * ### Merge from message
     *
     * Merge the state of the counter with the state of another
     *
-    * * `msg` - Serialized state of another coutner (update message from sync manage).
+    * * `msg` - Serialized state of another counter (update message from sync manage).
     * @param {string | undefined} msg
     */
     merge_from_message(msg) {
         var ptr0 = isLikeNone(msg) ? 0 : passStringToWasm0(msg, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         wasm.engine_merge_from_message(this.ptr, ptr0, len0);
+    }
+    /**
+    * ### Merge register from message
+    *
+    * Merge an incoming message with a serialized register.
+    *
+    * * `msg` - Serialized state of another register.
+    * * `other_id` - ID of the other node.
+    * @param {string | undefined} msg
+    * @param {string} other_nid
+    */
+    merge_register_from_message(msg, other_nid) {
+        var ptr0 = isLikeNone(msg) ? 0 : passStringToWasm0(msg, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ptr1 = passStringToWasm0(other_nid, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        wasm.engine_merge_register_from_message(this.ptr, ptr0, len0, ptr1, len1);
     }
 }
 

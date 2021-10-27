@@ -23,10 +23,10 @@ export class Engine {
 *
 * * `node_id` - The ID of the node in the system.
 *     Can be omitted and set after engine creation.
-* @param {string | undefined} node_id
+* @param {string} node_id
 * @returns {Engine}
 */
-  static new(node_id?: string): Engine;
+  static new(node_id: string): Engine;
 /**
 * ### Restore state
 *
@@ -37,19 +37,28 @@ export class Engine {
 */
   restore_state(serialized?: string): void;
 /**
+* ### Restore register
+*
+* Restores the state of the register from a serialized string.
+*
+* * `serialized` - JSON-serialized counter state.
+* @param {string | undefined} serialized
+*/
+  restore_register(serialized?: string): void;
+/**
 * ### Set node ID
 *
 * Sets the ID of the node in the system.
-* @param {string | undefined} node_id
+* @param {string} node_id
 */
-  set_node_id(node_id?: string): void;
+  set_node_id(node_id: string): void;
 /**
 * ### Get node ID
 *
 * Returns the node ID associated with the engine.
-* @returns {string | undefined}
+* @returns {string}
 */
-  get_node_id(): string | undefined;
+  get_node_id(): string;
 /**
 * ### Get counter value
 *
@@ -57,6 +66,13 @@ export class Engine {
 * @returns {number}
 */
   get_counter_value(): number;
+/**
+* ### Get register value
+*
+* Returns the current value of the register.
+* @returns {boolean}
+*/
+  get_register_value(): boolean;
 /**
 * ### Increment counter
 *
@@ -70,6 +86,12 @@ export class Engine {
 */
   decrement_counter(): void;
 /**
+* ### Toggle register value
+*
+* Flips the value of the register.
+*/
+  toggle_register(): void;
+/**
 * ### Serialize counter
 *
 * Serialize the counter as JSON.
@@ -77,35 +99,58 @@ export class Engine {
 */
   serialize_counter(): string;
 /**
+* Serialize register
+*
+* Serialize the register as JSON.
+* @returns {string}
+*/
+  serialize_register(): string;
+/**
 * ### Merge from message
 *
 * Merge the state of the counter with the state of another
 *
-* * `msg` - Serialized state of another coutner (update message from sync manage).
+* * `msg` - Serialized state of another counter (update message from sync manage).
 * @param {string | undefined} msg
 */
   merge_from_message(msg?: string): void;
+/**
+* ### Merge register from message
+*
+* Merge an incoming message with a serialized register.
+*
+* * `msg` - Serialized state of another register.
+* * `other_id` - ID of the other node.
+* @param {string | undefined} msg
+* @param {string} other_nid
+*/
+  merge_register_from_message(msg: string | undefined, other_nid: string): void;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly generate_id: (a: number) => void;
   readonly __wbg_engine_free: (a: number) => void;
   readonly engine_new: (a: number, b: number) => number;
   readonly engine_restore_state: (a: number, b: number, c: number) => void;
+  readonly engine_restore_register: (a: number, b: number, c: number) => void;
   readonly engine_set_node_id: (a: number, b: number, c: number) => void;
   readonly engine_get_node_id: (a: number, b: number) => void;
   readonly engine_get_counter_value: (a: number) => number;
+  readonly engine_get_register_value: (a: number) => number;
   readonly engine_increment_counter: (a: number) => void;
   readonly engine_decrement_counter: (a: number) => void;
+  readonly engine_toggle_register: (a: number) => void;
   readonly engine_serialize_counter: (a: number, b: number) => void;
+  readonly engine_serialize_register: (a: number, b: number) => void;
   readonly engine_merge_from_message: (a: number, b: number, c: number) => void;
-  readonly generate_id: (a: number) => void;
-  readonly __wbindgen_malloc: (a: number) => number;
-  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
+  readonly engine_merge_register_from_message: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly __wbindgen_malloc: (a: number) => number;
+  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;
 }
 
