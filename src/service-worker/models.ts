@@ -10,10 +10,12 @@ export interface ClientMsgData extends MsgData {
 		| "get-node-id"
 		| "increment-counter"
 		| "decrement-counter"
+		| "toggle-register"
 		| "initialize"
-		| "incoming-update";
+		| "incoming-update"
+		| "incoming-register-update";
 }
 
 export interface SwMsgData extends MsgData {
-	msgCode: "initialized" | "node-id" | "counter-value" | "error";
+	msgCode: "initialized" | "node-id" | "counter-value" | "register-value" | "error";
 }

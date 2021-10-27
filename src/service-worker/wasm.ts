@@ -37,7 +37,6 @@ export class Wasm {
 	public async initialize(): Promise<void> {
 		try {
 			await init();
-			this.engine = Engine.new();
 			this.generateId = generate_id;
 		} catch (exception) {
 			console.log(exception);
@@ -52,6 +51,7 @@ export class Wasm {
 	 * @param nodeId - ID of the node in the system.
 	 */
 	public async setNodeId(nodeId: string): Promise<void> {
+		this.engine = Engine.new(nodeId);
 		if (this.engine) {
 			this.engine.set_node_id(nodeId);
 		}

@@ -236,6 +236,45 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			syncConnection.sendMessage(serializedCounter);
 			break;
 		}
+		case "toggle-register": {
+			// 1. Toggle register.
+			wasm.engine.toggle_register();
+			// 2. Get register value.
+			const value = wasm.engine.get_register_value();
+			// 3. Serialize register state.
+			let serializedRegister: string;
+			try {
+				serializedRegister = wasm.engine.serialize_register();
+				console.log(serializedRegister);
+			} catch (e) {
+				console.error(e);
+				client.postMessage({
+					msgCode: "error",
+					payload: e
+				});
+			}
+			// 4. Broadcast value.
+			broadcast({
+				msgCode: "register-value",
+				payload: { value }
+			});
+			// 5. Persist register state.
+			const transaction = localDb.db.transaction(["crdts"], "readwrite");
+			const objectStore = transaction.objectStore("crdts");
+			objectStore.put({
+				id: "register",
+				state: serializedRegister
+			});
+			// 6. Send state message to sync manager.
+			syncConnection.sendMessage(
+				JSON.stringify({
+					msgCode: "register",
+					nid: wasm.engine.get_node_id(),
+					value: serializedRegister
+				})
+			);
+			break;
+		}
 		case "incoming-update": {
 			const state = data.payload.state as string;
 			// 1. Merge state update
@@ -264,6 +303,38 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			objectStore.put({
 				id: "counter",
 				state: serializedCounter
+			});
+			break;
+		}
+		case "incoming-register-update": {
+			const state = data.payload.state as string;
+			const otherNid = data.payload.otherNid as string;
+			// 1. Merge state update
+			wasm.engine.merge_register_from_message(state, otherNid);
+			// 2. Get register value.
+			const value = wasm.engine.get_register_value();
+			// 3. Serialize register state.
+			let serializedRegister: string;
+			try {
+				serializedRegister = wasm.engine.serialize_register();
+			} catch (e) {
+				console.error(e);
+				client.postMessage({
+					msgCode: "error",
+					payload: e
+				});
+			}
+			// 4. Broadcast value.
+			broadcast({
+				msgCode: "register-value",
+				payload: { value }
+			});
+			// 5. Persist counter state.
+			const transaction = localDb.db.transaction(["crdts"], "readwrite");
+			const objectStore = transaction.objectStore("crdts");
+			objectStore.put({
+				id: "register",
+				state: serializedRegister
 			});
 			break;
 		}

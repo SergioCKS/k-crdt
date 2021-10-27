@@ -7,7 +7,7 @@
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { nodeId, counterValue, initialized } from "../stores/engine";
+	import { nodeId, counterValue, registerValue, initialized } from "../stores/engine";
 	import type { SwMsgData } from "../service-worker/models";
 
 	let registration: ServiceWorkerRegistration;
@@ -30,6 +30,9 @@
 				case "counter-value": {
 					$counterValue = msgData.payload.value as number;
 					break;
+				}
+				case "register-value": {
+					$registerValue = msgData.payload.value as boolean;
 				}
 				case "error": {
 					console.error("Error received.", msgData.payload.value);
