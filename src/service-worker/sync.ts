@@ -67,21 +67,31 @@ export class SyncConnection {
 		});
 
 		ws.addEventListener("message", async ({ data }) => {
-			const msg = JSON.parse(data) as { msgCode?: string; state?: string; nid?: string };
-			if (msg.msgCode) {
+			const msg = JSON.parse(data);
+			console.log(msg);
+			if (msg.nid && msg.value) {
 				worker.registration.active.postMessage({
 					msgCode: "incoming-register-update",
 					payload: {
-						state: msg.state,
-						otherNid: msg.nid
+						nid: msg.nid,
+						state: JSON.stringify(msg.value)
 					}
 				});
-			} else {
-				worker.registration.active.postMessage({
-					msgCode: "incoming-update",
-					payload: { state: data }
-				});
 			}
+			// if (msg.msgCode) {
+			// 	worker.registration.active.postMessage({
+			// 		msgCode: "incoming-register-update",
+			// 		payload: {
+			// 			state: msg.state,
+			// 			otherNid: msg.nid
+			// 		}
+			// 	});
+			// } else {
+			// 	worker.registration.active.postMessage({
+			// 		msgCode: "incoming-update",
+			// 		payload: { state: data }
+			// 	});
+			// }
 		});
 
 		ws.addEventListener("close", () => {
@@ -121,7 +131,6 @@ export class SyncConnection {
 	 * @throws Error - If the WebSocket connection is not active.
 	 */
 	public sendMessage(msg: string | ArrayBufferLike | Blob): void {
-		console.log("Sendinge message through WebSocket.", msg);
 		if (this._ws && this._ws.readyState === 1) {
 			this._ws.send(msg);
 		} else {
