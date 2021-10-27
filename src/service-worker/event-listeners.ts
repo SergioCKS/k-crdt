@@ -171,6 +171,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			break;
 		}
 		case "increment-counter": {
+			console.log("increment-counter");
 			// 1. Increment counter.
 			wasm.engine.increment_counter();
 			// 2. Get counter value.
@@ -204,6 +205,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			break;
 		}
 		case "decrement-counter": {
+			console.log("decrement-counter");
 			// 1. Decrement counter.
 			wasm.engine.decrement_counter();
 			// 2. Get counter value.
@@ -237,6 +239,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			break;
 		}
 		case "toggle-register": {
+			console.log("toggle-register");
 			// 1. Toggle register.
 			wasm.engine.toggle_register();
 			// 2. Get register value.
@@ -276,6 +279,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			break;
 		}
 		case "incoming-update": {
+			console.log("incoming-update");
 			const state = data.payload.state as string;
 			// 1. Merge state update
 			wasm.engine.merge_from_message(state);
@@ -307,6 +311,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			break;
 		}
 		case "incoming-register-update": {
+			console.log("incoming-register-update");
 			const state = data.payload.state as string;
 			const otherNid = data.payload.otherNid as string;
 			// 1. Merge state update

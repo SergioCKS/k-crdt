@@ -33,6 +33,7 @@
 				}
 				case "register-value": {
 					$registerValue = msgData.payload.value as boolean;
+					break;
 				}
 				case "error": {
 					console.error("Error received.", msgData.payload.value);
