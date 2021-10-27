@@ -242,10 +242,9 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			// 2. Get register value.
 			const value = wasm.engine.get_register_value();
 			// 3. Serialize register state.
-			let serializedRegister: string;
+			let updateMessage: string;
 			try {
-				serializedRegister = wasm.engine.serialize_register();
-				console.log(serializedRegister);
+				updateMessage = wasm.engine.get_register_update_message();
 			} catch (e) {
 				console.error(e);
 				client.postMessage({
@@ -263,10 +262,10 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			const objectStore = transaction.objectStore("crdts");
 			objectStore.put({
 				id: "register",
-				state: serializedRegister
+				state: updateMessage
 			});
 			// 6. Send state message to sync manager.
-			syncConnection.sendMessage(serializedRegister);
+			syncConnection.sendMessage(updateMessage);
 			break;
 		}
 		case "incoming-update": {
