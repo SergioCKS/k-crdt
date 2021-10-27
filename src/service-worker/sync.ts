@@ -67,7 +67,6 @@ export class SyncConnection {
 		});
 
 		ws.addEventListener("message", async ({ data }) => {
-			console.log("Message received.", data);
 			const msg = JSON.parse(data) as { msgCode?: string; state?: string; nid?: string };
 			if (msg.msgCode) {
 				worker.registration.active.postMessage({
