@@ -104,6 +104,10 @@ export class Engine {
 * Serialize the register as JSON.
 * @returns {string}
 */
+  get_register_update_message(): string;
+/**
+* @returns {string}
+*/
   serialize_register(): string;
 /**
 * ### Merge from message
@@ -144,6 +148,7 @@ export interface InitOutput {
   readonly engine_decrement_counter: (a: number) => void;
   readonly engine_toggle_register: (a: number) => void;
   readonly engine_serialize_counter: (a: number, b: number) => void;
+  readonly engine_get_register_update_message: (a: number, b: number) => void;
   readonly engine_serialize_register: (a: number, b: number) => void;
   readonly engine_merge_from_message: (a: number, b: number, c: number) => void;
   readonly engine_merge_register_from_message: (a: number, b: number, c: number, d: number, e: number) => void;

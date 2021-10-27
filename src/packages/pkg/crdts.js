@@ -308,6 +308,21 @@ export class Engine {
     * Serialize the register as JSON.
     * @returns {string}
     */
+    get_register_update_message() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.engine_get_register_update_message(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            return getStringFromWasm0(r0, r1);
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
+        }
+    }
+    /**
+    * @returns {string}
+    */
     serialize_register() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);

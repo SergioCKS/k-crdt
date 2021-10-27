@@ -14,6 +14,7 @@ export function engine_increment_counter(a: number): void;
 export function engine_decrement_counter(a: number): void;
 export function engine_toggle_register(a: number): void;
 export function engine_serialize_counter(a: number, b: number): void;
+export function engine_get_register_update_message(a: number, b: number): void;
 export function engine_serialize_register(a: number, b: number): void;
 export function engine_merge_from_message(a: number, b: number, c: number): void;
 export function engine_merge_register_from_message(a: number, b: number, c: number, d: number, e: number): void;
