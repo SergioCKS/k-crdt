@@ -11,6 +11,7 @@ export interface ClientMsgData extends MsgData {
 		| "increment-counter"
 		| "decrement-counter"
 		| "toggle-register"
+		| "test-clock"
 		| "initialize"
 		| "incoming-update"
 		| "incoming-register-update";

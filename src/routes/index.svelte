@@ -24,6 +24,11 @@
 			msgCode: "toggle-register"
 		});
 	}
+	function testClock() {
+		swRegistration?.active.postMessage({
+			msgCode: "test-clock"
+		});
+	}
 
 	onMount(async () => {
 		swRegistration = await navigator.serviceWorker.ready;
@@ -37,6 +42,7 @@
 <button on:click={incrementCounter}>Increment Counter</button>
 <button on:click={decrementCounter}>Decrement Counter</button>
 <button on:click={toggleRegister}>Toggle Register</button>
+<button on:click={testClock}>Test clock</button>
 Node ID: {$nodeId}
 Counter: {$counterValue}
 Register: {$registerValue}

@@ -3,7 +3,7 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, { Engine, generate_id } from "../packages/pkg";
+import init, { Engine, generate_id, test_clock } from "../packages/pkg";
 
 /**
  * ## WASM
@@ -29,6 +29,8 @@ export class Wasm {
 	 */
 	public generateId: () => string = undefined;
 
+	public testClock: () => BigInt = undefined;
+
 	/**
 	 * ### Initialize WASM
 	 *
@@ -38,6 +40,7 @@ export class Wasm {
 		try {
 			await init();
 			this.generateId = generate_id;
+			this.testClock = test_clock;
 		} catch (exception) {
 			console.log(exception);
 		}

@@ -334,6 +334,15 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			});
 			break;
 		}
+		case "test-clock": {
+			try {
+				const ts = wasm.testClock();
+				console.log(ts);
+			} catch (e) {
+				console.log(e);
+			}
+			break;
+		}
 	}
 }
 

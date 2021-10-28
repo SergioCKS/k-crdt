@@ -1,10 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
-* @returns {string}
-*/
-export function test_clock(): string;
-/**
 * ## Generate ID
 * > Generates a universally unique ID.
 *
@@ -13,6 +9,10 @@ export function test_clock(): string;
 * @returns {string}
 */
 export function generate_id(): string;
+/**
+* @returns {BigInt}
+*/
+export function test_clock(): BigInt;
 /**
 * ## CRDT Engine
 *
@@ -139,7 +139,6 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly test_clock: (a: number) => void;
   readonly generate_id: (a: number) => void;
   readonly __wbg_engine_free: (a: number) => void;
   readonly engine_new: (a: number, b: number) => number;
@@ -157,6 +156,7 @@ export interface InitOutput {
   readonly engine_serialize_register: (a: number, b: number) => void;
   readonly engine_merge_from_message: (a: number, b: number, c: number) => void;
   readonly engine_merge_register_from_message: (a: number, b: number, c: number, d: number, e: number) => void;
+  readonly test_clock: (a: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
