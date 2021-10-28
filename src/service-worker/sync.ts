@@ -68,7 +68,6 @@ export class SyncConnection {
 
 		ws.addEventListener("message", async ({ data }) => {
 			const msg = JSON.parse(data);
-			console.log(msg);
 			if (msg.nid && msg.value) {
 				worker.registration.active.postMessage({
 					msgCode: "incoming-register-update",

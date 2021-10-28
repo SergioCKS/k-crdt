@@ -1,6 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
+export function test_clock(a: number): void;
 export function generate_id(a: number): void;
 export function __wbg_engine_free(a: number): void;
 export function engine_new(a: number, b: number): number;

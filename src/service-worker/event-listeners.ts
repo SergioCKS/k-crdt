@@ -302,6 +302,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 		case "incoming-register-update": {
 			const nid = data.payload.nid as string;
 			const state = data.payload.state as string;
+			console.log("before merge", state);
 			// 1. Merge state update
 			wasm.engine.merge_register_from_message(state, nid);
 			// 2. Get register value.
@@ -311,7 +312,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			let serializedRegister: string;
 			try {
 				serializedRegister = wasm.engine.serialize_register();
-				console.log(serializedRegister);
+				console.log("after merge", serializedRegister);
 			} catch (e) {
 				console.error(e);
 				client.postMessage({

@@ -1,6 +1,10 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* @returns {string}
+*/
+export function test_clock(): string;
+/**
 * ## Generate ID
 * > Generates a universally unique ID.
 *
@@ -135,6 +139,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly test_clock: (a: number) => void;
   readonly generate_id: (a: number) => void;
   readonly __wbg_engine_free: (a: number) => void;
   readonly engine_new: (a: number, b: number) => number;
