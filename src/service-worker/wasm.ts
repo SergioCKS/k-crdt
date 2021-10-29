@@ -29,7 +29,7 @@ export class Wasm {
 	 */
 	public generateId: () => string = undefined;
 
-	public testClock: () => BigInt = undefined;
+	public testClock: () => number = undefined;
 
 	/**
 	 * ### Initialize WASM
