@@ -1,9 +1,70 @@
 /**
- * ## Worker Scope
+ * # Sync Agent Interface
+ *
+ * Interface object for interacting with the synchronization agent (server).
+ *
+ * The synchronization agent is currently responsible for:
+ *
+ * * Time synchronization
+ * * Update broadcasting
+ * * State persistance
+ *
+ * @module
+ */
+
+/**
+ * ## Worker scope
  *
  * Typed `self` assuming the script is run on a service worker context.
  */
 const worker = self as unknown as ServiceWorkerGlobalScope;
+
+/**
+ * ## Time sync data
+ *
+ * Result from a time synchronization poll request.
+ *
+ * The time difference between the client and server is the total offset minus the total round-trip delay.
+ */
+interface TimeSyncData {
+	/**
+	 * ### Total Offset
+	 *
+	 * Difference in time from the client perspective including the round-trip delay.
+	 *
+	 * The total offset is the average of the offset observed from the poll request and the offset observed from the poll response.
+	 */
+	totalOffset: number;
+
+	/**
+	 * ### Round-trip delay
+	 *
+	 * Total time spent in message transmission during the poll request.
+	 *
+	 * The total round-trip delay is the sum of the request transmission delay and the response transmission delay.
+	 */
+	roundTripDelay: number;
+}
+
+/**
+ * ## Get time sync data
+ *
+ * Compute the time offset and round-trip delay from the timestamps of a poll.
+ *
+ * Reference: [NTP clock synchronization algorithm](https://en.wikipedia.org/wiki/Network_Time_Protocol#Clock_synchronization_algorithm)
+ *
+ * @param t0 Client-side timestamp that is as close as possible to packet transmission of the request message.
+ * @param t1 Server-side timestamp that is as close as possible to packet reception of the request message.
+ * @param t2 Server-side timestamp that is as close as possible to packet transmission of the response message.
+ * @param t3 Client-side timestamp that is as close as possible to packet reception of the response message.
+ * @returns Time offset and round-trip delay.
+ */
+function getTimeSyncData(t0: number, t1: number, t2: number, t3: number): TimeSyncData {
+	return {
+		totalOffset: (t1 - t0 + t2 - t3) / 2,
+		roundTripDelay: t3 - t0 - (t2 - t1)
+	};
+}
 
 /**
  * ## Sync Connection
@@ -63,8 +124,7 @@ export class SyncConnection {
 
 		//#region Setup event listeners
 		ws.addEventListener("open", () => {
-			console.log("Opened connection to the synchronization manager.");
-			// Poll time offset.
+			// Perform a time synchronization poll.
 			this.sendMessage(
 				JSON.stringify({
 					msgCode: "time-sync",
@@ -75,21 +135,22 @@ export class SyncConnection {
 			);
 		});
 
-		ws.addEventListener("message", async ({ data }) => {
+		ws.addEventListener("message", async ({ data: rawData }) => {
 			const receptionTime = new Date().valueOf();
-			const parsedData = JSON.parse(data);
+			const parsedData = JSON.parse(rawData);
 			if (
 				Object.prototype.hasOwnProperty.call(parsedData, "msgCode") &&
 				parsedData.msgCode === "time-sync" &&
 				Object.prototype.hasOwnProperty.call(parsedData, "payload")
 			) {
 				const timeSyncPayload = parsedData.payload as { t0: number; t1: number; t2: number };
-				const t0 = timeSyncPayload.t0;
-				const t1 = timeSyncPayload.t1;
-				const t2 = timeSyncPayload.t2;
-				const t3 = receptionTime;
-				const offset = Math.abs((t1 - t0 + (t2 - t3)) / 2);
-				console.log(offset);
+				const syncData = getTimeSyncData(
+					timeSyncPayload.t0,
+					timeSyncPayload.t1,
+					timeSyncPayload.t2,
+					receptionTime // t4
+				);
+				console.log(syncData.totalOffset - syncData.roundTripDelay);
 			}
 			if (parsedData.nid && parsedData.value) {
 				worker.registration.active.postMessage({
@@ -100,20 +161,6 @@ export class SyncConnection {
 					}
 				});
 			}
-			// if (msg.msgCode) {
-			// 	worker.registration.active.postMessage({
-			// 		msgCode: "incoming-register-update",
-			// 		payload: {
-			// 			state: msg.state,
-			// 			otherNid: msg.nid
-			// 		}
-			// 	});
-			// } else {
-			// 	worker.registration.active.postMessage({
-			// 		msgCode: "incoming-update",
-			// 		payload: { state: data }
-			// 	});
-			// }
 		});
 
 		ws.addEventListener("close", () => {
