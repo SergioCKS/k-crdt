@@ -64,16 +64,39 @@ export class SyncConnection {
 		//#region Setup event listeners
 		ws.addEventListener("open", () => {
 			console.log("Opened connection to the synchronization manager.");
+			// Poll time offset.
+			this.sendMessage(
+				JSON.stringify({
+					msgCode: "time-sync",
+					payload: {
+						t0: new Date().valueOf()
+					}
+				})
+			);
 		});
 
 		ws.addEventListener("message", async ({ data }) => {
-			const msg = JSON.parse(data);
-			if (msg.nid && msg.value) {
+			const receptionTime = new Date().valueOf();
+			const parsedData = JSON.parse(data);
+			if (
+				Object.prototype.hasOwnProperty.call(parsedData, "msgCode") &&
+				parsedData.msgCode === "time-sync" &&
+				Object.prototype.hasOwnProperty.call(parsedData, "payload")
+			) {
+				const timeSyncPayload = parsedData.payload as { t0: number; t1: number; t2: number };
+				const t0 = timeSyncPayload.t0;
+				const t1 = timeSyncPayload.t1;
+				const t2 = timeSyncPayload.t2;
+				const t3 = receptionTime;
+				const offset = Math.abs((t1 - t0 + (t2 - t3)) / 2);
+				console.log(offset);
+			}
+			if (parsedData.nid && parsedData.value) {
 				worker.registration.active.postMessage({
 					msgCode: "incoming-register-update",
 					payload: {
-						nid: msg.nid,
-						state: JSON.stringify(msg.value)
+						nid: parsedData.nid,
+						state: JSON.stringify(parsedData.value)
 					}
 				});
 			}
