@@ -35,6 +35,11 @@
 					$registerValue = msgData.payload.value as boolean;
 					break;
 				}
+				case "time-offset-value": {
+					const updatedOffset = msgData.payload.value as number;
+					localStorage.setItem("TIME_OFFSET", updatedOffset.toString());
+					break;
+				}
 				case "error": {
 					console.error("Error received.", msgData.payload.value);
 					break;

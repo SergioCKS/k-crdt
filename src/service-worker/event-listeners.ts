@@ -344,7 +344,12 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			break;
 		}
 		case "update-time-offset": {
-			wasm.engine.set_time_offset(data.payload.value as number);
+			const updatedOffset = data.payload.value as number;
+			wasm.engine.set_time_offset(updatedOffset);
+			clients[0].postMessage({
+				msgCode: "time-offset-value",
+				payload: { value: updatedOffset }
+			});
 			console.log(wasm.engine.get_time_offset());
 			break;
 		}
