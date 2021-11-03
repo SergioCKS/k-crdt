@@ -175,6 +175,7 @@ export class SyncConnection {
 			switch (parsedData.msgCode) {
 				case "time-sync": {
 					const timeSyncPayload = parsedData.payload as TimeSyncPollResponsePayload;
+					console.log(timeSyncPayload);
 					const syncData = getTimeSyncData(
 						timeSyncPayload.t0,
 						timeSyncPayload.t1,
