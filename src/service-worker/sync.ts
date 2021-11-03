@@ -143,13 +143,21 @@ export class SyncConnection {
 
 		const ws = new WebSocket(this._syncUrl);
 
-		if (!ws) {
-			throw new Error(
-				"Error while attempting to establish a connection with the synchronization manager."
-			);
-		}
+		// if (!ws) {
+		// 	throw new Error(
+		// 		"Error while attempting to establish a connection with the synchronization manager."
+		// 	);
+		// }
 
 		//#region Setup event listeners
+		ws.addEventListener("error", (event) => {
+			console.error(event);
+			// Error connecting to WebSocket (device could be offline).
+			worker.registration.active.postMessage({
+				msgCode: "no-sync-connection"
+			});
+		});
+
 		ws.addEventListener("open", async () => {
 			// Perform time synchronization poll on socket initialization.
 			this.sendMessage(

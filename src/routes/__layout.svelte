@@ -40,6 +40,16 @@
 					localStorage.setItem("TIME_OFFSET", updatedOffset.toString());
 					break;
 				}
+				case "retrieve-time-offset": {
+					const offset = localStorage.getItem("TIME_OFFSET");
+					if (offset) {
+						registration.active.postMessage({
+							msgCode: "update-time-offset",
+							payload: { value: Number.parseInt(offset) }
+						});
+					}
+					break;
+				}
 				case "error": {
 					console.error("Error received.", msgData.payload.value);
 					break;

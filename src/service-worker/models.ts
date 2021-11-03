@@ -15,7 +15,8 @@ export interface ClientMsgData extends MsgData {
 		| "initialize"
 		| "incoming-update"
 		| "incoming-register-update"
-		| "update-time-offset";
+		| "update-time-offset"
+		| "no-sync-connection";
 }
 
 export interface SwMsgData extends MsgData {
@@ -25,5 +26,6 @@ export interface SwMsgData extends MsgData {
 		| "counter-value"
 		| "register-value"
 		| "time-offset-value"
+		| "retrieve-time-offset"
 		| "error";
 }

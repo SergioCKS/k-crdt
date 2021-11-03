@@ -353,6 +353,12 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			console.log(wasm.engine.get_time_offset());
 			break;
 		}
+		case "no-sync-connection": {
+			clients[0].postMessage({
+				msgCode: "retrieve-time-offset"
+			});
+			break;
+		}
 	}
 }
 
