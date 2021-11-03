@@ -45,9 +45,31 @@ interface TimeSyncData {
 	roundTripDelay: number;
 }
 
+/**
+ * ## Time sync poll response payload
+ *
+ * Server response to a time synchronization poll request.
+ */
 interface TimeSyncPollResponsePayload {
+	/**
+	 * ### Request transmission timestamp
+	 *
+	 * Client-side timestamp that is as close as possible to packet transmission of the request message in milliseconds since UNIX epoch.
+	 */
 	t0: number;
+
+	/**
+	 * ### Request reception timestamp
+	 *
+	 * Server-side timestamp that is as close as possible to packet reception of the request message in milliseconds since UNIX epoch.
+	 */
 	t1: number;
+
+	/**
+	 * ### Response transmission timestamp
+	 *
+	 * Server-side timestamp that is as close as possible to packet transmission of the response message in milliseconds since UNIX epoch.
+	 */
 	t2?: number;
 }
 
@@ -175,15 +197,18 @@ export class SyncConnection {
 			switch (parsedData.msgCode) {
 				case "time-sync": {
 					const timeSyncPayload = parsedData.payload as TimeSyncPollResponsePayload;
-					console.log(timeSyncPayload);
 					const syncData = getTimeSyncData(
 						timeSyncPayload.t0,
 						timeSyncPayload.t1,
 						timeSyncPayload.t1, // t2 = t1
 						receptionTime // t3
 					);
-					console.log(syncData);
-					console.log(timeSyncPayload.t0, timeSyncPayload.t1, receptionTime);
+					worker.registration.active.postMessage({
+						msgCode: "update-time-offset",
+						payload: {
+							value: syncData.offset
+						}
+					});
 					break;
 				}
 			}

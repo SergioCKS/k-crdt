@@ -343,6 +343,11 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			}
 			break;
 		}
+		case "update-time-offset": {
+			wasm.engine.set_time_offset(data.payload.value as number);
+			console.log(wasm.engine.get_time_offset());
+			break;
+		}
 	}
 }
 

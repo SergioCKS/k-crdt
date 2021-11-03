@@ -1,15 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
-* ## Generate ID
-* > Generates a universally unique ID.
-*
-* IDs consist of 21 uniformly random characters from the alphabet `A-Za-z0-9_-`.
-* To generate random data, a `ThreadRNG` is used.
-* @returns {string}
-*/
-export function generate_id(): string;
-/**
 * @returns {number}
 */
 export function test_clock(): number;
@@ -57,12 +48,26 @@ export class Engine {
 */
   set_node_id(node_id: string): void;
 /**
+* ### Set time offset
+*
+* Sets the time offset of the node.
+* @param {number} time_offset
+*/
+  set_time_offset(time_offset: number): void;
+/**
 * ### Get node ID
 *
 * Returns the node ID associated with the engine.
 * @returns {string}
 */
   get_node_id(): string;
+/**
+* ### Get time offset
+*
+* Returns the time offset of the node.
+* @returns {number}
+*/
+  get_time_offset(): number;
 /**
 * ### Get counter value
 *
@@ -134,19 +139,24 @@ export class Engine {
 */
   merge_register_from_message(msg: string | undefined, other_nid: string): void;
 }
+/**
+*/
+export class UID {
+  free(): void;
+}
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly generate_id: (a: number) => void;
-  readonly test_clock: () => number;
   readonly __wbg_engine_free: (a: number) => void;
   readonly engine_new: (a: number, b: number) => number;
   readonly engine_restore_state: (a: number, b: number, c: number) => void;
   readonly engine_restore_register: (a: number, b: number, c: number) => void;
   readonly engine_set_node_id: (a: number, b: number, c: number) => void;
+  readonly engine_set_time_offset: (a: number, b: number) => void;
   readonly engine_get_node_id: (a: number, b: number) => void;
+  readonly engine_get_time_offset: (a: number) => number;
   readonly engine_get_counter_value: (a: number) => number;
   readonly engine_get_register_value: (a: number) => number;
   readonly engine_increment_counter: (a: number) => void;
@@ -157,11 +167,12 @@ export interface InitOutput {
   readonly engine_serialize_register: (a: number, b: number) => void;
   readonly engine_merge_from_message: (a: number, b: number, c: number) => void;
   readonly engine_merge_register_from_message: (a: number, b: number, c: number, d: number, e: number) => void;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
-  readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly test_clock: () => number;
+  readonly __wbg_uid_free: (a: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
-  readonly __wbindgen_exn_store: (a: number) => void;
+  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly __wbindgen_free: (a: number, b: number) => void;
 }
 
 /**

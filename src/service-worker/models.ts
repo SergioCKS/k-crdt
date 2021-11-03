@@ -14,7 +14,8 @@ export interface ClientMsgData extends MsgData {
 		| "test-clock"
 		| "initialize"
 		| "incoming-update"
-		| "incoming-register-update";
+		| "incoming-register-update"
+		| "update-time-offset";
 }
 
 export interface SwMsgData extends MsgData {
