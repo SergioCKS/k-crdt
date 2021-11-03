@@ -45,6 +45,12 @@ interface TimeSyncData {
 	roundTripDelay: number;
 }
 
+interface TimeSyncPollResponsePayload {
+	t0: number;
+	t1: number;
+	t2?: number;
+}
+
 /**
  * ## Get time sync data
  *
@@ -123,7 +129,7 @@ export class SyncConnection {
 
 		//#region Setup event listeners
 		ws.addEventListener("open", async () => {
-			// Perform time synchronization poll.
+			// Perform time synchronization poll on socket initialization.
 			this.sendMessage(
 				JSON.stringify({
 					msgCode: "time-sync",
@@ -135,31 +141,50 @@ export class SyncConnection {
 		});
 
 		ws.addEventListener("message", async ({ data: rawData }) => {
+			// Client-side response reception time (t4 in time-sync poll).
 			const receptionTime = new Date().valueOf();
-			const parsedData = JSON.parse(rawData);
-			if (
-				Object.prototype.hasOwnProperty.call(parsedData, "msgCode") &&
-				parsedData.msgCode === "time-sync" &&
-				Object.prototype.hasOwnProperty.call(parsedData, "payload")
-			) {
-				const timeSyncPayload = parsedData.payload as { t0: number; t2: number };
-				const syncData = getTimeSyncData(
-					timeSyncPayload.t0,
-					timeSyncPayload.t2,
-					timeSyncPayload.t2,
-					receptionTime // t3
-				);
-				console.log(syncData);
-				console.log(timeSyncPayload.t0, timeSyncPayload.t2, receptionTime);
+
+			// Parse message data.
+			let parsedData: Record<string, unknown>;
+			try {
+				parsedData = JSON.parse(rawData);
+			} catch (e) {
+				if (e instanceof SyntaxError) {
+					console.error("JSON couldn't be parsed");
+				} else {
+					console.error(e);
+				}
+				return;
 			}
-			if (parsedData.nid && parsedData.value) {
-				worker.registration.active.postMessage({
-					msgCode: "incoming-register-update",
-					payload: {
-						nid: parsedData.nid,
-						state: JSON.stringify(parsedData.value)
-					}
-				});
+
+			// Unspecified message code case.
+			if (!Object.prototype.hasOwnProperty.call(parsedData, "msgCode")) {
+				if (parsedData.nid && parsedData.value) {
+					worker.registration.active.postMessage({
+						msgCode: "incoming-register-update",
+						payload: {
+							nid: parsedData.nid,
+							state: JSON.stringify(parsedData.value)
+						}
+					});
+				}
+				return;
+			}
+
+			// Handler based on message code.
+			switch (parsedData.msgCode) {
+				case "time-sync": {
+					const timeSyncPayload = parsedData.payload as TimeSyncPollResponsePayload;
+					const syncData = getTimeSyncData(
+						timeSyncPayload.t0,
+						timeSyncPayload.t1,
+						timeSyncPayload.t1, // t2 = t1
+						receptionTime // t3
+					);
+					console.log(syncData);
+					console.log(timeSyncPayload.t0, timeSyncPayload.t1, receptionTime);
+					break;
+				}
 			}
 		});
 
