@@ -32,9 +32,8 @@ interface TimeSyncData {
 	 *
 	 * Difference in time from the client perspective including the round-trip delay.
 	 *
-	 * The total offset is the average of the offset observed from the poll request and the offset observed from the poll response.
 	 */
-	totalOffset: number;
+	offset: number;
 
 	/**
 	 * ### Round-trip delay
@@ -61,7 +60,7 @@ interface TimeSyncData {
  */
 function getTimeSyncData(t0: number, t1: number, t2: number, t3: number): TimeSyncData {
 	return {
-		totalOffset: (t1 - t0 + t2 - t3) / 2,
+		offset: (t1 - t0 + t2 - t3) / 2,
 		roundTripDelay: t3 - t0 - (t2 - t1)
 	};
 }
@@ -123,8 +122,8 @@ export class SyncConnection {
 		}
 
 		//#region Setup event listeners
-		ws.addEventListener("open", () => {
-			// Perform a time synchronization poll.
+		ws.addEventListener("open", async () => {
+			// Perform time synchronization poll.
 			this.sendMessage(
 				JSON.stringify({
 					msgCode: "time-sync",
@@ -143,14 +142,15 @@ export class SyncConnection {
 				parsedData.msgCode === "time-sync" &&
 				Object.prototype.hasOwnProperty.call(parsedData, "payload")
 			) {
-				const timeSyncPayload = parsedData.payload as { t0: number; t1: number; t2: number };
+				const timeSyncPayload = parsedData.payload as { t0: number; t2: number };
 				const syncData = getTimeSyncData(
 					timeSyncPayload.t0,
-					timeSyncPayload.t1,
 					timeSyncPayload.t2,
-					receptionTime // t4
+					timeSyncPayload.t2,
+					receptionTime // t3
 				);
-				console.log(syncData.totalOffset - syncData.roundTripDelay);
+				console.log(syncData);
+				console.log(timeSyncPayload.t0, timeSyncPayload.t2, receptionTime);
 			}
 			if (parsedData.nid && parsedData.value) {
 				worker.registration.active.postMessage({
