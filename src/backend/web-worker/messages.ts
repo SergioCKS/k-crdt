@@ -1,20 +1,14 @@
 /**
- * # Service Worker - Event Listeners
+ * # Web Worker - Messages
  *
- * Callback functions for handling the events throughout the service worker's lifecycle.
+ * Handlers for incoming messages.
  *
- * Events:
- *
- * * `install`: Called on worker registration.
- * * `activate`: Called once the worker is active.
- * * `message`: Called on incoming messages from clients.
- * * `fetch`: Intercepts outgoing HTTP requests.
+ * * Handlers make use of other component interfaces: WASM, LocalDB, SyncConnection.
+ * @module
  */
-import { build, files, timestamp } from "$service-worker";
-import { Wasm } from "./wasm";
-import { LocalDb } from "./db";
-import { SyncConnection } from "./sync";
-import type { ClientMsgData, SwMsgData } from "./models";
+import { Wasm } from "../wasm";
+import { LocalDb } from "../db";
+import { SyncConnection } from "../sync";
 
 /**
  * ## Worker Scope
@@ -29,34 +23,40 @@ let localDb: LocalDb;
 let syncConnection: SyncConnection;
 //#endregion
 
-//#region Cache keys
-const CACHE_KEY = `cache${timestamp}`;
-const OFFLINE_KEY = `offline${timestamp}`;
-//#endregion
-
-//#region Helper functions
-/**
- * ## Fetch and cache
- *
- * Attempts to fetch a request and places it on cache. If the request fails (client is offline), attempt to get response from cache.
- *
- * @param request - HTTP request
- * @returns HTTP Response
- */
-async function fetchAndCache(request: Request): Promise<Response> {
-	const cache = await caches.open(OFFLINE_KEY);
-
-	try {
-		const response = await fetch(request);
-		cache.put(request, response.clone());
-		return response;
-	} catch (err) {
-		const response = await cache.match(request);
-		if (response) return response;
-
-		throw err;
-	}
+//#region Types
+export interface MsgData {
+	msgCode: string;
+	payload?: Record<string, unknown>;
 }
+
+export interface ClientMsgData extends MsgData {
+	msgCode:
+		| "create-gcounter"
+		| "get-gcounter-value"
+		| "get-node-id"
+		| "increment-counter"
+		| "decrement-counter"
+		| "toggle-register"
+		| "test-clock"
+		| "initialize"
+		| "incoming-update"
+		| "incoming-register-update"
+		| "update-time-offset"
+		| "no-sync-connection";
+}
+
+export interface SwMsgData extends MsgData {
+	msgCode:
+		| "initialized"
+		| "node-id"
+		| "counter-value"
+		| "register-value"
+		| "time-offset-value"
+		| "offline-value"
+		| "retrieve-time-offset"
+		| "error";
+}
+//#endregion
 
 /**
  * ## Initialize interfaces
@@ -96,37 +96,6 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	// 7. Initialize connection to sync manager.
 	syncConnection.initialize(forceRestart);
 }
-//#endregion
-
-//#region Event listeners
-/**
- * ## Service worker `install` event handler
- *
- * Service worker installation process that runs on service worker registration.
- *
- * * Caches static assets for offline support.
- */
-export async function onInstall(): Promise<void> {
-	//#region Cache static assets
-	const cache = await caches.open(CACHE_KEY);
-	await cache.addAll(build.concat(files));
-	//#endregion
-}
-
-/**
- * ## Service worker `activate` event handler
- *
- * Service worker process that runs once the worker is active.
- *
- * * Clears old caches.
- */
-export async function onActivate(): Promise<void> {
-	//#region Clear old caches
-	for (const key in await caches.keys()) {
-		if (key !== CACHE_KEY) await caches.delete(key);
-	}
-	//#endregion
-}
 
 /**
  * ## Service worker `message` event handler
@@ -138,7 +107,7 @@ export async function onActivate(): Promise<void> {
  */
 export async function onMessage(client: Client, data: ClientMsgData): Promise<void> {
 	// 1. Get currently connected clients.
-	const clients = await worker.clients.matchAll();
+	let clients = await worker.clients.matchAll();
 	function broadcast(msgData: SwMsgData) {
 		clients.forEach((client) => client.postMessage(msgData));
 	}
@@ -346,6 +315,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 		case "update-time-offset": {
 			const updatedOffset = data.payload.value as number;
 			wasm.engine.set_time_offset(updatedOffset);
+			clients = await worker.clients.matchAll();
 			clients[0].postMessage({
 				msgCode: "time-offset-value",
 				payload: { value: updatedOffset }
@@ -354,6 +324,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			break;
 		}
 		case "no-sync-connection": {
+			clients = await worker.clients.matchAll();
 			// 1. Retrieve last calculated time offset from local storage if available.
 			clients[0].postMessage({
 				msgCode: "retrieve-time-offset"
@@ -367,32 +338,3 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 		}
 	}
 }
-
-/**
- * ## Service worker `fetch` event handler
- *
- * Intercepts outgoing `fetch` requests and fetches from cache if suitable.
- *
- * @param event - `fetch` event.
- */
-export async function onFetch(event: FetchEvent): Promise<void> {
-	if (event.request.method !== "GET" || event.request.headers.has("range")) return;
-	const url = new URL(event.request.url);
-
-	const isHttp = url.protocol.startsWith("http");
-	const isDevServerRequest =
-		url.hostname === self.location.hostname && url.port !== self.location.port;
-	const staticAssets = new Set(build.concat(files));
-	const isStaticAsset = url.host === self.location.host && staticAssets.has(url.pathname);
-	const skipBecauseUncached = event.request.cache === "only-if-cached" && !isStaticAsset;
-
-	if (isHttp && !isDevServerRequest && !skipBecauseUncached) {
-		event.respondWith(
-			(async () => {
-				const cachedAsset = isStaticAsset && (await caches.match(event.request));
-				return cachedAsset || fetchAndCache(event.request);
-			})()
-		);
-	}
-}
-//#endregion

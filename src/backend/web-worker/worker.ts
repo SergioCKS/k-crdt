@@ -1,49 +1,57 @@
 /**
- * # Service Worker Script
+ * # Web worker entrypoint
  *
- * Service worker registration script.
+ * Web worker registration script.
  *
- * * Adds event listeners (`install`, `activate`, `message`)
+ * * Registers event listeners: `install`, `activate`, `message`, `fetch`.
+ * * Must be referenced in the Svelte config file. Svelte is responsible for registration.
+ *
+ * @module
  */
-import { onInstall, onActivate, onMessage, onFetch } from "./event-listeners";
-import type { ClientMsgData } from "./models";
+import { cacheBaseFiles, clearOldFiles, onFetch } from "./cache";
+import { onMessage } from "./messages";
+import type { ClientMsgData } from "./messages";
 
 /**
- * ## Worker Scope
+ * ## Worker scope
  *
  * Typed `self` assuming the script is run on a service worker context.
  */
 const worker = self as unknown as ServiceWorkerGlobalScope;
 
-//#region Setup SW event listeners
+//#region Setup worker event listeners
 /**
- * ## Add `install` event listener
+ * ## Register `install` event listener
  *
- * Adds the `install` event handler and indicates when the process is running/finished.
+ * Adds the `install` event handler indicating when the installation process is running/finished.
+ *
+ * * Caches the necessary files to run the application.
  */
 worker.addEventListener("install", (event) => {
 	event.waitUntil(
-		onInstall().then(() => {
+		cacheBaseFiles().then(() => {
 			worker.skipWaiting();
 		})
 	);
 });
 
 /**
- * ## Add `activate` event listener
+ * ## Register `activate` event listener
  *
- * Adds the `activate` event handler and indicates when the process is running. Once the process is finished, the new worker overrides the previous one.
+ * Adds the `activate` event handler indicating when the activation process is running. Once the process is finished, the new worker overrides the previous one.
+ *
+ * * Clears old cache files.
  */
 worker.addEventListener("activate", (event) => {
 	event.waitUntil(
-		onActivate().then(() => {
+		clearOldFiles().then(() => {
 			worker.clients.claim();
 		})
 	);
 });
 
 /**
- * ## Add `message` event listener
+ * ## Register `message` event listener
  *
  * Adds te `message` event listener and handles exceptions.
  */
@@ -58,7 +66,7 @@ worker.addEventListener("message", async (event) => {
 });
 
 /**
- * ## Add `fetch` event listener
+ * ## Register `fetch` event listener
  *
  * Adds the `fetch` event listener and handles exceptions.
  */

@@ -9,7 +9,7 @@
 	import { onMount } from "svelte";
 	import { nodeId, counterValue, registerValue, initialized } from "../stores/engine";
 	import { offline } from "../stores/general";
-	import type { SwMsgData } from "../service-worker/models";
+	import type { SwMsgData } from "../backend/web-worker/messages";
 
 	let registration: ServiceWorkerRegistration;
 
