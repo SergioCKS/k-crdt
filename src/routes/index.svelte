@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { nodeId, counterValue, registerValue, initialized } from "../stores/engine";
+	import { offline } from "../stores/general";
 
 	let swRegistration: ServiceWorkerRegistration;
 
@@ -46,3 +47,4 @@
 Node ID: {$nodeId}
 Counter: {$counterValue}
 Register: {$registerValue}
+Offline: {$offline}

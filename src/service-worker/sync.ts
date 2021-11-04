@@ -1,13 +1,13 @@
 /**
- * # Sync Agent Interface
+ * # Synchronization Agent Interface
  *
- * Interface object for interacting with the synchronization agent (server).
+ * Interface object for interacting with a synchronization agent (server).
  *
  * The synchronization agent is currently responsible for:
  *
  * * Time synchronization
  * * Update broadcasting
- * * State persistance
+ * * Global storage
  *
  * @module
  */

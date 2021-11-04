@@ -354,8 +354,14 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			break;
 		}
 		case "no-sync-connection": {
+			// 1. Retrieve last calculated time offset from local storage if available.
 			clients[0].postMessage({
 				msgCode: "retrieve-time-offset"
+			});
+			// 2. Update offline values in client stores.
+			broadcast({
+				msgCode: "offline-value",
+				payload: { value: true }
 			});
 			break;
 		}

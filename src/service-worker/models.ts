@@ -26,6 +26,7 @@ export interface SwMsgData extends MsgData {
 		| "counter-value"
 		| "register-value"
 		| "time-offset-value"
+		| "offline-value"
 		| "retrieve-time-offset"
 		| "error";
 }

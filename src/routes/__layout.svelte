@@ -8,6 +8,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { nodeId, counterValue, registerValue, initialized } from "../stores/engine";
+	import { offline } from "../stores/general";
 	import type { SwMsgData } from "../service-worker/models";
 
 	let registration: ServiceWorkerRegistration;
@@ -38,6 +39,10 @@
 				case "time-offset-value": {
 					const updatedOffset = msgData.payload.value as number;
 					localStorage.setItem("TIME_OFFSET", updatedOffset.toString());
+					break;
+				}
+				case "offline-value": {
+					$offline = msgData.payload.value as boolean;
 					break;
 				}
 				case "retrieve-time-offset": {
