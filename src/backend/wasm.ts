@@ -3,7 +3,7 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, { Engine, UID, test_clock } from "../packages/pkg/crdts";
+import init, { Engine, UID, test_clock } from "../backend/wasm/crdts";
 
 /**
  * ## WASM
@@ -29,7 +29,7 @@ export class Wasm {
 	 */
 	public generateId: () => string = undefined;
 
-	public testClock: () => number = undefined;
+	public testClock: () => BigInt = undefined;
 
 	/**
 	 * ### Initialize WASM
@@ -55,10 +55,34 @@ export class Wasm {
 	 *
 	 * @param nodeId - ID of the node in the system.
 	 */
-	public async setNodeId(nodeId: string): Promise<void> {
+	public setNodeId(nodeId: string): void {
 		this.engine = Engine.new(nodeId);
 		if (this.engine) {
 			this.engine.set_node_id(nodeId);
+		}
+	}
+
+	/**
+	 * ### Set time offset
+	 *
+	 * Set the time offset for the WASM engine.
+	 *
+	 * @param offset - Offset in milliseconds.
+	 */
+	public setOffset(offset: number): void {
+		if (this.engine) {
+			this.engine.set_time_offset(offset);
+		}
+	}
+
+	/**
+	 * ### Generate timestamp
+	 *
+	 * Generates an (offsetted) HLC timestamp.
+	 */
+	public generateTimestamp(): string | void {
+		if (this.engine) {
+			return this.engine.generate_timestamp();
 		}
 	}
 }

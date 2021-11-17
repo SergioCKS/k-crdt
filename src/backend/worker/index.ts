@@ -4,13 +4,13 @@
  * Web worker registration script.
  *
  * * Registers event listeners: `install`, `activate`, `message`, `fetch`.
- * * Must be referenced in the Svelte config file. Svelte is responsible for registration.
+ * * Must be referenced in the Svelte config file. Sveltekit is responsible for registration.
  *
  * @module
  */
 import { cacheBaseFiles, clearOldFiles, onFetch } from "./cache";
-import { onMessage } from "./messages";
-import type { ClientMsgData } from "./messages";
+import { onMessage } from "./messaging";
+import type { ClientMsgData } from "./messaging";
 
 /**
  * ## Worker scope
@@ -19,7 +19,6 @@ import type { ClientMsgData } from "./messages";
  */
 const worker = self as unknown as ServiceWorkerGlobalScope;
 
-//#region Setup worker event listeners
 /**
  * ## Register `install` event listener
  *
@@ -78,4 +77,3 @@ worker.addEventListener("fetch", async (event) => {
 		console.log(`Error while trying to fetch '${request.url}'.`);
 	}
 });
-//#endregion

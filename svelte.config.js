@@ -12,7 +12,7 @@ const config = {
 		// hydrate the <div id="svelte"> element in src/app.html
 		target: '#svelte',
 		files: {
-			serviceWorker: "src/backend/web-worker/worker.ts"
+			serviceWorker: "src/backend/worker/index.ts"
 		}
 	}
 };

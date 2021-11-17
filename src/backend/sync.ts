@@ -143,13 +143,6 @@ export class SyncConnection {
 
 		const ws = new WebSocket(this._syncUrl);
 
-		// if (!ws) {
-		// 	throw new Error(
-		// 		"Error while attempting to establish a connection with the synchronization manager."
-		// 	);
-		// }
-
-		//#region Setup event listeners
 		ws.addEventListener("error", (event) => {
 			console.error(event);
 			// Error connecting to WebSocket (device could be offline).
@@ -188,18 +181,7 @@ export class SyncConnection {
 			}
 
 			// Unspecified message code case.
-			if (!Object.prototype.hasOwnProperty.call(parsedData, "msgCode")) {
-				if (parsedData.nid && parsedData.value) {
-					worker.registration.active.postMessage({
-						msgCode: "incoming-register-update",
-						payload: {
-							nid: parsedData.nid,
-							state: JSON.stringify(parsedData.value)
-						}
-					});
-				}
-				return;
-			}
+			if (!Object.prototype.hasOwnProperty.call(parsedData, "msgCode")) return;
 
 			// Handler based on message code.
 			switch (parsedData.msgCode) {
@@ -219,13 +201,16 @@ export class SyncConnection {
 					});
 					break;
 				}
+				case "ts-test": {
+					const tsTestPayload = parsedData.payload as { value: string };
+					console.log("ts-test:", tsTestPayload.value);
+				}
 			}
 		});
 
 		ws.addEventListener("close", () => {
 			console.log("Closed connection to the synchronization manager.");
 		});
-		//#endregion
 
 		this._ws = ws;
 	}

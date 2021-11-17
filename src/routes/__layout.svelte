@@ -1,15 +1,17 @@
-<!-- @module
+<!--
 	# Main Layout
 
 	Layout wrapping all components in the application.
 
 	* As the `onMount` callback of the main layout is run regardless of the page visited, it is used to setup the callbacks for messages from the service worker.
+
+	@module
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { nodeId, counterValue, registerValue, initialized } from "../stores/engine";
+	import { nodeId, initialized } from "../stores/engine";
 	import { offline } from "../stores/general";
-	import type { SwMsgData } from "../backend/web-worker/messages";
+	import type { SwMsgData } from "../backend/worker/messaging";
 
 	let registration: ServiceWorkerRegistration;
 
@@ -19,21 +21,10 @@
 			switch (msgData.msgCode) {
 				case "initialized": {
 					$initialized = true;
-					registration.active.postMessage({
-						msgCode: "get-gcounter-value"
-					});
 					break;
 				}
 				case "node-id": {
 					$nodeId = msgData.payload.nodeId as string;
-					break;
-				}
-				case "counter-value": {
-					$counterValue = msgData.payload.value as number;
-					break;
-				}
-				case "register-value": {
-					$registerValue = msgData.payload.value as boolean;
 					break;
 				}
 				case "time-offset-value": {
