@@ -3,7 +3,7 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, { Engine, UID, test_clock } from "./wasm/crdts";
+import init, { Engine, UID, test_clock } from "./wasm/crdts.js";
 
 /**
  * ## WASM
