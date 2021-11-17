@@ -1,0 +1,12 @@
+{
+  "name": "crdts",
+  "version": "0.1.0",
+  "files": [
+    "crdts_bg.wasm",
+    "crdts.js",
+    "crdts.d.ts"
+  ],
+  "module": "crdts.js",
+  "types": "crdts.d.ts",
+  "sideEffects": false
+}
