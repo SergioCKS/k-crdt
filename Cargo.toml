@@ -4,12 +4,7 @@ version = "0.1.0"
 edition = "2018"
 
 [lib]
-path = "rust_src/lib.rs"
 crate-type = ["cdylib", "rlib"]
-
-[[bin]]
-name = "build-wasm"
-path = "rust_src/build.rs"
 
 [dependencies]
 wasm-bindgen = "0.2.78"

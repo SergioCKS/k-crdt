@@ -4,17 +4,11 @@
 //! WASM module to be accessible inside the client node code.
 //!
 //! Based on [worker-build](https://github.com/cloudflare/workers-rs/tree/main/worker-build).
-//!
-//! ### Usage
-//!
-//! ```shell
-//! cargo run build-wasm
-//! ```
 use std::{
    process::Command,
    // io::{Read, Write},
-   // path::{Path, PathBuf},
-   // fs::{self, File},
+   path::PathBuf,
+   fs,
    // convert::TryInto
 };
 use anyhow::{anyhow, Result};
@@ -27,6 +21,7 @@ const OUT_DIR: &str = "client/src/backend/wasm";
 
 fn main() -> Result<()> {
    wasm_pack_build()?;
+   delete_gitignore()?;
    // copy_generated_code_to_worker_dir()?;
    // write_worker_shim_to_worker_dir()?;
    // replace_generated_import_with_custom_impl()?;
@@ -46,6 +41,11 @@ fn wasm_pack_build() -> Result<()> {
       true => Ok(()),
       false => Err(anyhow!("wasm-pack exited with status {}", exit_status)),
    }
+}
+
+fn delete_gitignore() -> Result<()> {
+   fs::remove_file(PathBuf::from(OUT_DIR).join(".gitignore"))?;
+   Ok(())
 }
 
 // fn copy_generated_code_to_worker_dir() -> Result<()> {
