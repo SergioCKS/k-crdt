@@ -1,0 +1,87 @@
+<!--
+	# Main Layout
+
+	Layout wrapping all components in the application.
+
+	* As the `onMount` callback of the main layout is run regardless of the page visited, it is used to setup the callbacks for messages from the service worker.
+
+	@module
+-->
+<script lang="ts">
+	import { onMount } from "svelte";
+	import { nodeId, initialized, registers } from "../stores/engine";
+	import { offline } from "../stores/general";
+	import type { SwMsgData } from "../backend/worker/messaging";
+
+	let registration: ServiceWorkerRegistration;
+
+	onMount(async () => {
+		navigator.serviceWorker.addEventListener("message", (event) => {
+			const msgData = event.data as SwMsgData;
+			switch (msgData.msgCode) {
+				case "initialized": {
+					if (!$initialized) {
+						registration.active.postMessage({
+							msgCode: "restore-registers"
+						});
+						$initialized = true;
+					}
+					break;
+				}
+				case "node-id": {
+					$nodeId = msgData.payload.nodeId as string;
+					break;
+				}
+				case "time-offset-value": {
+					const updatedOffset = msgData.payload.value as number;
+					localStorage.setItem("TIME_OFFSET", updatedOffset.toString());
+					break;
+				}
+				case "offline-value": {
+					$offline = msgData.payload.value as boolean;
+					break;
+				}
+				case "retrieve-time-offset": {
+					const offset = localStorage.getItem("TIME_OFFSET");
+					if (offset) {
+						registration.active.postMessage({
+							msgCode: "update-time-offset",
+							payload: { value: Number.parseInt(offset) }
+						});
+					}
+					break;
+				}
+				case "new-register": {
+					let { id, value, type } = msgData.payload as { id: string; value: boolean; type: string };
+					$registers[id] = { value, type };
+					break;
+				}
+				case "restored-registers": {
+					$registers = msgData.payload.value;
+					break;
+				}
+				case "error": {
+					console.error("Error received.", msgData.payload.value);
+					break;
+				}
+			}
+		});
+
+		registration = await navigator.serviceWorker.ready;
+
+		//#region Send initialization message when the worker is `active`
+		const worker = registration.active;
+		if (worker.state === "activated") {
+			worker.postMessage({ msgCode: "initialize" });
+		} else {
+			worker.addEventListener("statechange", () => {
+				if (worker.state === "activated") {
+					worker.postMessage({ msgCode: "initialize" });
+				}
+			});
+		}
+		//#endregion
+	});
+</script>
+
+<slot />
