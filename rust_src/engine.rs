@@ -1,33 +1,42 @@
 //! # CRDT Engine
 //!
 //! An interface designed to manage a collection of CRDTs in a WASM context.
-use crate::lwwregister::LWWRegister;
+use crate::lwwregister::{LWWRegister, PackedBoolRegister};
 // use crate::pncounter::PNCounter;
 use crate::time::clock::Offset;
 use crate::time::hlc::{BrowserHLC, HybridLogicalClock};
-// use crate::time::timestamp::Timestamp;
+use crate::time::timestamp::Timestamp;
 // use crate::uid::UID;
 use wasm_bindgen::prelude::*;
+use crate::uid::UID;
+use serde::{Serialize, Deserialize};
 
 //#region UpdateMessage
-// #[derive(Serialize, Deserialize)]
-// struct UpdateMessage<T: Clone> {
-//     nid: UID,
-//     mid: UID,
-//     ts: Timestamp,
-//     payload: LWWRegister<T>,
-// }
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub enum MessageCode {
+    NewBoolRegister
+}
 
-// impl<T: Clone> UpdateMessage<T> {
-//     pub fn new(nid: UID, mid: UID, ts: Timestamp, payload: LWWRegister<T>) -> Self {
-//         Self {
-//             nid,
-//             mid,
-//             ts,
-//             payload,
-//         }
-//     }
-// }
+#[derive(Serialize, Deserialize)]
+pub struct UpdateMessage {
+    nid: UID,
+    mid: UID,
+    ts: Timestamp,
+    msg_code: MessageCode,
+    payload: Vec<u8>,
+}
+
+impl UpdateMessage {
+    pub fn new(nid: UID, mid: UID, ts: Timestamp, msg_code: MessageCode, payload: Vec<u8>) -> Self {
+        Self {
+            nid,
+            mid,
+            ts,
+            msg_code,
+            payload,
+        }
+    }
+}
 //#endregion
 
 /// ## CRDT Engine
@@ -38,7 +47,7 @@ pub struct Engine {
     /// ### Node ID
     ///
     /// ID of the node in the system.
-    node_id: String,
+    node_id: UID,
 
     /// ### Clock
     ///
@@ -55,26 +64,16 @@ impl Engine {
     ///
     /// * `node_id` - The ID of the node in the system.
     ///     Can be omitted and set after engine creation.
-    pub fn new(node_id: String) -> Self {
+    #[wasm_bindgen(constructor)]
+    pub fn new(node_id: Option<UID>) -> Self {
         let mut clock = BrowserHLC::default();
         let ts = clock.generate_timestamp().unwrap();
         Self {
-            node_id: node_id.clone(),
+            node_id: node_id.unwrap_or(UID::new()),
             clock,
             register: LWWRegister::new(ts, false),
         }
     }
-
-    /// ### Restore state
-    ///
-    /// Restores the state of the counter from a serialized string.
-    ///
-    /// * `serialized` - JSON-serialized counter state.
-    // pub fn restore_state(&mut self, serialized: Option<String>) {
-    //     if serialized.is_some() {
-    //         self.counter = serde_json::from_str(&serialized.unwrap()).unwrap();
-    //     }
-    // }
 
     /// ### Restore register
     ///
@@ -91,7 +90,7 @@ impl Engine {
     /// ### Set node ID
     ///
     /// Sets the ID of the node in the system.
-    pub fn set_node_id(&mut self, node_id: String) {
+    pub fn set_node_id(&mut self, node_id: UID) {
         self.node_id = node_id;
     }
 
@@ -106,8 +105,8 @@ impl Engine {
     /// ### Get node ID
     ///
     /// Returns the node ID associated with the engine.
-    pub fn get_node_id(&self) -> String {
-        self.node_id.clone()
+    pub fn get_node_id(&self) -> UID {
+        self.node_id
     }
 
     /// ### Get time offset
@@ -117,12 +116,6 @@ impl Engine {
         self.clock.get_offset().to_millis()
     }
 
-    /// ### Get counter value
-    ///
-    /// Returns the current value of the counter.
-    // pub fn get_counter_value(&self) -> u32 {
-    //     self.counter.get_value()
-    // }
 
     /// ### Get register value
     ///
@@ -131,19 +124,6 @@ impl Engine {
         self.register.get_value()
     }
 
-    /// ### Increment counter
-    ///
-    /// Increments the counter by 1 as the node associated with the engine.
-    // pub fn increment_counter(&mut self) {
-    //     self.counter.increment(&self.node_id);
-    // }
-
-    /// ### Decrement counter
-    ///
-    /// Decrements the counter by 1 as the node associated with the engine.
-    // pub fn decrement_counter(&mut self) {
-    //     self.counter.decrement(&self.node_id);
-    // }
 
     /// ### Toggle register value
     ///
@@ -221,8 +201,18 @@ impl Engine {
     /// ### Generate timestamp
     ///
     /// Generates an HLC timestamp.
-    pub fn generate_timestamp(&mut self) -> Result<String, JsValue> {
-        let ts = self.clock.generate_timestamp()?;
-        Ok(ts.to_string())
+    pub fn generate_timestamp(&mut self) -> Result<Timestamp, JsValue> {
+        Ok(self.clock.generate_timestamp()?)
+    }
+
+    /// ### Create bool register
+    ///
+    /// Creates a new last-write-wins register wrapping a boolean value, serializes it and passes
+    /// the result to the client.
+    pub fn create_bool_register(&mut self, initial: bool) -> PackedBoolRegister {
+        let ts = self.clock.generate_timestamp().unwrap();
+        let register = LWWRegister::new(ts, initial);
+        let encoded: Vec<u8> = bincode::serialize(&register).unwrap();
+        PackedBoolRegister::new(UID::new(), initial, encoded)
     }
 }

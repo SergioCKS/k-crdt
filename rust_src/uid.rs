@@ -49,7 +49,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
-//region Constants
+
 /// ## Alphabet
 ///
 /// Ordered mapping of the allowed characters used in UIDs.
@@ -59,7 +59,6 @@ pub const ALPHABET: [char; 64] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
     't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
-//endregion
 
 /// ## Number to alphabet char
 ///
@@ -103,6 +102,7 @@ fn alphabet_char_to_num(c: char) -> Result<u8, UIDParseError> {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Debug)]
 pub struct UID(u128);
 
+#[wasm_bindgen]
 impl UID {
     /// ### Generate new ID
     ///
@@ -113,8 +113,38 @@ impl UID {
     /// (22 characters total).
     ///
     /// To generate random data, a `ThreadRNG` is used.
+    #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self(random::<u128>())
+    }
+
+    pub fn from_string(nid_str: String) -> Result<UID, JsValue> {
+        Ok(nid_str.parse::<Self>()?)
+    }
+
+    pub fn as_string(&self) -> String {
+        self.to_string()
+    }
+
+    pub fn as_byte_string(&self) -> Vec<u8> {
+        vec![
+            (self.0 >> 120) as u8,
+            (self.0 >> 112) as u8,
+            (self.0 >> 104) as u8,
+            (self.0 >> 96) as u8,
+            (self.0 >> 88) as u8,
+            (self.0 >> 80) as u8,
+            (self.0 >> 72) as u8,
+            (self.0 >> 64) as u8,
+            (self.0 >> 56) as u8,
+            (self.0 >> 48) as u8,
+            (self.0 >> 40) as u8,
+            (self.0 >> 32) as u8,
+            (self.0 >> 24) as u8,
+            (self.0 >> 16) as u8,
+            (self.0 >> 8) as u8,
+            self.0 as u8
+        ]
     }
 }
 
@@ -243,7 +273,18 @@ impl Display for UIDParseError {
         }
     }
 }
+
+impl From<UIDParseError> for JsValue {
+    fn from(err: UIDParseError) -> Self {
+        JsValue::from(err.to_string())
+    }
+}
 //#endregion
+
+#[wasm_bindgen]
+pub fn generate_id() -> String {
+    UID::new().to_string()
+}
 
 #[cfg(test)]
 mod uid_tests {

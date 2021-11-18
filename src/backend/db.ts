@@ -4,7 +4,7 @@
  * Interface to IndexedDB.
  * @module
  */
-import type { Wasm } from "./wasm";
+import { UID } from "./wasm/crdts";
 
 /**
  * ## Worker Scope
@@ -35,7 +35,7 @@ export class LocalDb {
 	 *
 	 * @returns ID of the Node in the system.
 	 */
-	public async initialize(wasm: Wasm): Promise<string> {
+	public async initialize(nid: string): Promise<string> {
 		// Check browser support.
 		if (!worker.indexedDB) {
 			console.error("Your browser doesn't support a stable version of IndexedDB.");
@@ -48,17 +48,11 @@ export class LocalDb {
 		const dbNames = dbs.map((dbInfo) => dbInfo.name || "");
 		const crdtDbNames = dbNames.filter((dbName) => dbName.split(":")[0] === "KCRDT");
 
-		let nodeId: string;
-		switch (crdtDbNames.length) {
-			case 0:
-				nodeId = wasm.generateId();
-				break;
-			case 1:
-				nodeId = dbNames[0].substring(6);
-				break;
-			default:
-				Promise.all(crdtDbNames.map((dbName) => LocalDb.deleteDb(dbName)));
-				nodeId = wasm.generateId();
+		let nodeId = nid;
+		if (crdtDbNames.length == 1) {
+			nodeId = dbNames[0].substring(6);
+		} else if (crdtDbNames.length > 1) {
+			await Promise.all(crdtDbNames.map((dbName) => LocalDb.deleteDb(dbName)));
 		}
 		//#endregion
 
@@ -66,7 +60,7 @@ export class LocalDb {
 		try {
 			await this.openDb(`KCRDT:${nodeId}`);
 		} catch (exception) {
-			console.log(exception);
+			console.error(exception);
 			return;
 		}
 		//#endregion
@@ -75,30 +69,44 @@ export class LocalDb {
 		this.db.onerror = (event) => {
 			console.error("Database error:", event);
 		};
-
 		return nodeId;
 	}
 
-	/**
-	 * ### Retrieve counter state
-	 *
-	 * Retrieves the serialized state of the counter from the database.
-	 *
-	 * @returns State of the counter if found.
-	 */
-	public async retrieveState(): Promise<string | null> {
+	public async put_crdt(crdt: {
+		id: string;
+		value: any;
+		encoded: Uint8Array;
+		type: string;
+	}): Promise<IDBValidKey> {
+		return new Promise((resolve, reject) => {
+			const transaction = this.db.transaction(["crdts"], "readwrite");
+			const objectStore = transaction.objectStore("crdts");
+			const request = objectStore.put(crdt);
+			const errorMsg = "Error wile attempting to write CRDT to local database.";
+			request.onerror = () => reject(errorMsg);
+			request.onsuccess = () => {
+				if (request.result) {
+					resolve(request.result);
+				} else {
+					reject(errorMsg);
+				}
+			};
+		});
+	}
+
+	public async retrieveCrdts(): Promise<any[]> {
 		return new Promise((resolve, reject) => {
 			const transaction = this.db.transaction(["crdts"], "readonly");
 			const objectStore = transaction.objectStore("crdts");
-			const request = objectStore.get("counter");
+			const request = objectStore.getAll();
 			request.onerror = () => {
-				reject("Error while attempting to retrieve the state of the counter.");
+				reject("Error while trying to retrieve CRDTs from local database.");
 			};
 			request.onsuccess = () => {
 				if (request.result) {
-					resolve(request.result.state);
+					resolve(request.result);
 				} else {
-					resolve(null);
+					resolve([]);
 				}
 			};
 		});
@@ -126,6 +134,7 @@ export class LocalDb {
 				const db = request.result;
 
 				if (db.version === 1) {
+					// Uses "in-line" keys, i.e. keys are contained in values.
 					db.createObjectStore("crdts", { keyPath: "id" });
 				}
 			};

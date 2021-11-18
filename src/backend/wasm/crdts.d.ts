@@ -1,6 +1,10 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* @returns {string}
+*/
+export function generate_id(): string;
+/**
 * @returns {BigInt}
 */
 export function test_clock(): BigInt;
@@ -18,16 +22,10 @@ export class Engine {
 *
 * * `node_id` - The ID of the node in the system.
 *     Can be omitted and set after engine creation.
-* @param {string} node_id
-* @returns {Engine}
+* @param {UID | undefined} node_id
 */
-  static new(node_id: string): Engine;
+  constructor(node_id?: UID);
 /**
-* ### Restore state
-*
-* Restores the state of the counter from a serialized string.
-*
-* * `serialized` - JSON-serialized counter state.
 * ### Restore register
 *
 * Restores the state of the register from a serialized string.
@@ -40,9 +38,9 @@ export class Engine {
 * ### Set node ID
 *
 * Sets the ID of the node in the system.
-* @param {string} node_id
+* @param {UID} node_id
 */
-  set_node_id(node_id: string): void;
+  set_node_id(node_id: UID): void;
 /**
 * ### Set time offset
 *
@@ -54,9 +52,9 @@ export class Engine {
 * ### Get node ID
 *
 * Returns the node ID associated with the engine.
-* @returns {string}
+* @returns {UID}
 */
-  get_node_id(): string;
+  get_node_id(): UID;
 /**
 * ### Get time offset
 *
@@ -65,9 +63,6 @@ export class Engine {
 */
   get_time_offset(): number;
 /**
-* ### Get counter value
-*
-* Returns the current value of the counter.
 * ### Get register value
 *
 * Returns the current value of the register.
@@ -75,12 +70,6 @@ export class Engine {
 */
   get_register_value(): boolean;
 /**
-* ### Increment counter
-*
-* Increments the counter by 1 as the node associated with the engine.
-* ### Decrement counter
-*
-* Decrements the counter by 1 as the node associated with the engine.
 * ### Toggle register value
 *
 * Flips the value of the register.
@@ -107,9 +96,104 @@ export class Engine {
 * ### Generate timestamp
 *
 * Generates an HLC timestamp.
+* @returns {Timestamp}
+*/
+  generate_timestamp(): Timestamp;
+/**
+* ### Create bool register
+*
+* Creates a new last-write-wins register wrapping a boolean value, serializes it and passes
+* the result to the client.
+* @param {boolean} initial
+* @returns {PackedBoolRegister}
+*/
+  create_bool_register(initial: boolean): PackedBoolRegister;
+}
+/**
+*/
+export class PackedBoolRegister {
+  free(): void;
+/**
+* @param {UID} id
+* @param {boolean} value
+* @param {Uint8Array} encoded
+* @returns {PackedBoolRegister}
+*/
+  static new(id: UID, value: boolean, encoded: Uint8Array): PackedBoolRegister;
+/**
 * @returns {string}
 */
-  generate_timestamp(): string;
+  get_id(): string;
+/**
+* @returns {boolean}
+*/
+  get_value(): boolean;
+/**
+* @returns {Uint8Array}
+*/
+  get_encoded(): Uint8Array;
+/**
+* @param {UID} nid
+* @param {Timestamp} ts
+* @returns {Uint8Array}
+*/
+  get_update_message(nid: UID, ts: Timestamp): Uint8Array;
+}
+/**
+* ## HLC Timestamp
+*
+* 64-bit HLC timestamp implemented as a tuple struct over [`u64`].
+*/
+export class Timestamp {
+  free(): void;
+/**
+* ### As `u64`
+*
+* Returns the timestamp as a 64-bit unsigned integer.
+* @returns {BigInt}
+*/
+  as_u64(): BigInt;
+/**
+* ### Get time part
+*
+* Returns the counter part of the timestamp.
+* @returns {BigInt}
+*/
+  get_time(): BigInt;
+/**
+* ### Get seconds
+*
+* Returns the seconds part of the timestamp (leading 32 bits).
+* @returns {number}
+*/
+  get_seconds(): number;
+/**
+* ### Get second fractions
+*
+* Returns the second fractions part of the timestamp.
+* @returns {number}
+*/
+  get_fractions(): number;
+/**
+* ### Get counter part
+*
+* Returns the counter part of the timestamp.
+* @returns {number}
+*/
+  get_count(): number;
+/**
+* ### Get nanoseconds
+*
+* Returns the second fractions part as nanoseconds.
+* @returns {number}
+*/
+  get_nanoseconds(): number;
+/**
+* ### Increase counter
+*
+* Increases the counter part of the timestamp by 1.
+*/
+  increase_counter(): void;
 }
 /**
 * ## UID
@@ -118,6 +202,31 @@ export class Engine {
 */
 export class UID {
   free(): void;
+/**
+* ### Generate new ID
+*
+* Generates a new random unique ID.
+*
+* An ID can be represented as a string consisting of 21 random characters over the
+* alphabet `A-Za-z0-9_-` followed by a random character over the alphabet `ABCD`
+* (22 characters total).
+*
+* To generate random data, a `ThreadRNG` is used.
+*/
+  constructor();
+/**
+* @param {string} nid_str
+* @returns {UID}
+*/
+  static from_string(nid_str: string): UID;
+/**
+* @returns {string}
+*/
+  as_string(): string;
+/**
+* @returns {Uint8Array}
+*/
+  as_byte_string(): Uint8Array;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -125,20 +234,40 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_uid_free: (a: number) => void;
-  readonly test_clock: (a: number) => void;
+  readonly uid_new: () => number;
+  readonly uid_from_string: (a: number, b: number) => number;
+  readonly uid_as_string: (a: number, b: number) => void;
+  readonly uid_as_byte_string: (a: number, b: number) => void;
+  readonly generate_id: (a: number) => void;
   readonly __wbg_engine_free: (a: number) => void;
-  readonly engine_new: (a: number, b: number) => number;
+  readonly engine_new: (a: number) => number;
   readonly engine_restore_register: (a: number, b: number, c: number) => void;
-  readonly engine_set_node_id: (a: number, b: number, c: number) => void;
+  readonly engine_set_node_id: (a: number, b: number) => void;
   readonly engine_set_time_offset: (a: number, b: number) => void;
-  readonly engine_get_node_id: (a: number, b: number) => void;
+  readonly engine_get_node_id: (a: number) => number;
   readonly engine_get_time_offset: (a: number) => number;
   readonly engine_get_register_value: (a: number) => number;
   readonly engine_toggle_register: (a: number) => void;
-  readonly engine_generate_timestamp: (a: number, b: number) => void;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly engine_generate_timestamp: (a: number) => number;
+  readonly engine_create_bool_register: (a: number, b: number) => number;
+  readonly __wbg_timestamp_free: (a: number) => void;
+  readonly timestamp_as_u64: (a: number, b: number) => void;
+  readonly timestamp_get_time: (a: number, b: number) => void;
+  readonly timestamp_get_seconds: (a: number) => number;
+  readonly timestamp_get_fractions: (a: number) => number;
+  readonly timestamp_get_count: (a: number) => number;
+  readonly timestamp_get_nanoseconds: (a: number) => number;
+  readonly timestamp_increase_counter: (a: number) => void;
+  readonly test_clock: (a: number) => void;
+  readonly __wbg_packedboolregister_free: (a: number) => void;
+  readonly packedboolregister_new: (a: number, b: number, c: number, d: number) => number;
+  readonly packedboolregister_get_id: (a: number, b: number) => void;
+  readonly packedboolregister_get_value: (a: number) => number;
+  readonly packedboolregister_get_encoded: (a: number, b: number) => void;
+  readonly packedboolregister_get_update_message: (a: number, b: number, c: number, d: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
+  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
 }

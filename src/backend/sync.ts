@@ -204,6 +204,11 @@ export class SyncConnection {
 				case "ts-test": {
 					const tsTestPayload = parsedData.payload as { value: string };
 					console.log("ts-test:", tsTestPayload.value);
+					break;
+				}
+				case "test": {
+					const testPayload = parsedData.payload;
+					console.log(testPayload);
 				}
 			}
 		});

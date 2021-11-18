@@ -48,6 +48,7 @@ use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, AddAssign, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
+use wasm_bindgen::prelude::*;
 
 //#region Constants
 /// ## Maximum number of seconds for duration
@@ -123,9 +124,11 @@ pub const COUNTER_MASK: u64 =
 /// ## HLC Timestamp
 ///
 /// 64-bit HLC timestamp implemented as a tuple struct over [`u64`].
+#[wasm_bindgen]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Serialize, Deserialize)]
 pub struct Timestamp(u64);
 
+#[wasm_bindgen]
 impl Timestamp {
     /// ### As `u64`
     ///
@@ -175,14 +178,6 @@ impl Timestamp {
         (self.get_fractions() as f64 * FRACTIONS_TO_NS) as u32
     }
 
-    /// ### To duration
-    ///
-    /// Converts the timestamp to a [`Duration`].
-    #[inline]
-    pub fn get_duration(&self) -> Duration {
-        Duration::new(self.get_seconds().into(), self.get_nanoseconds())
-    }
-
     /// ### Increase counter
     ///
     /// Increases the counter part of the timestamp by 1.
@@ -191,6 +186,17 @@ impl Timestamp {
         self.0 += 1;
     }
 }
+
+impl Timestamp {
+    /// ### To duration
+    ///
+    /// Converts the timestamp to a [`Duration`].
+    #[inline]
+    pub fn get_duration(&self) -> Duration {
+        Duration::new(self.get_seconds().into(), self.get_nanoseconds())
+    }
+}
+
 
 //#region Construction from other types
 impl TryFrom<Duration> for Timestamp {

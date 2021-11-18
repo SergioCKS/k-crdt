@@ -9,7 +9,7 @@
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { nodeId, initialized } from "../stores/engine";
+	import { nodeId, initialized, registers } from "../stores/engine";
 	import { offline } from "../stores/general";
 	import type { SwMsgData } from "../backend/worker/messaging";
 
@@ -20,7 +20,12 @@
 			const msgData = event.data as SwMsgData;
 			switch (msgData.msgCode) {
 				case "initialized": {
-					$initialized = true;
+					if (!$initialized) {
+						registration.active.postMessage({
+							msgCode: "restore-registers"
+						});
+						$initialized = true;
+					}
 					break;
 				}
 				case "node-id": {
@@ -44,6 +49,15 @@
 							payload: { value: Number.parseInt(offset) }
 						});
 					}
+					break;
+				}
+				case "new-register": {
+					let { id, value, type } = msgData.payload as { id: string; value: boolean; type: string };
+					$registers[id] = { value, type };
+					break;
+				}
+				case "restored-registers": {
+					$registers = msgData.payload.value;
 					break;
 				}
 				case "error": {

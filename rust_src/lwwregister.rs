@@ -5,7 +5,48 @@
 //! last-write-wins strategy.
 use crate::time::timestamp::Timestamp;
 use crate::uid::UID;
+use crate::engine::{UpdateMessage, MessageCode};
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::*;
+
+
+#[wasm_bindgen]
+pub struct PackedBoolRegister {
+    id: UID,
+    value: bool,
+    encoded: Vec<u8>
+}
+
+#[wasm_bindgen]
+impl PackedBoolRegister {
+    pub fn new(id: UID, value: bool, encoded: Vec<u8>) -> Self {
+        Self { id, value, encoded }
+    }
+
+    pub fn get_id(&self) -> String {
+        self.id.to_string()
+    }
+
+    pub fn get_value(&self) -> bool {
+        self.value
+    }
+
+    pub fn get_encoded(&self) -> Vec<u8> {
+        self.encoded.clone()
+    }
+
+    pub fn get_update_message(&self, nid: UID, ts: Timestamp) -> Vec<u8> {
+        let update_msg = UpdateMessage::new(
+            nid,
+            UID::new(),
+            ts,
+            MessageCode::NewBoolRegister,
+            self.encoded.clone()
+        );
+        bincode::serialize(&update_msg).unwrap()
+    }
+}
+
 
 /// ## LWWRegister
 ///

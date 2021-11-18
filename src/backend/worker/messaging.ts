@@ -41,7 +41,9 @@ export interface ClientMsgData extends MsgData {
 		| "incoming-update"
 		| "incoming-register-update"
 		| "update-time-offset"
-		| "no-sync-connection";
+		| "no-sync-connection"
+		| "create-bool-register"
+		| "restore-registers";
 }
 
 export interface SwMsgData extends MsgData {
@@ -53,6 +55,8 @@ export interface SwMsgData extends MsgData {
 		| "time-offset-value"
 		| "offline-value"
 		| "retrieve-time-offset"
+		| "new-register"
+		| "restored-registers"
 		| "error";
 }
 //#endregion
@@ -72,26 +76,13 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	}
 
 	// 2. Initialize WASM
-	await wasm.initialize();
+	let nodeId = await wasm.initialize();
 
 	// 3. Open DB
-	const nodeId = await localDb.initialize(wasm);
+	nodeId = await localDb.initialize(nodeId);
 
 	// 4. Set node ID in WASM engine.
 	wasm.setNodeId(nodeId);
-
-	//#region 5. Recover state from local storage.
-	let counterState: string | null;
-	try {
-		counterState = await localDb.retrieveState();
-	} catch (exception) {
-		console.error(exception);
-		return;
-	}
-	//#endregion
-
-	// 6. Restore counter from serialized state.
-	// wasm.engine.restore_state(counterState);
 
 	// 7. Initialize connection to sync manager.
 	syncConnection.initialize(forceRestart);
@@ -153,6 +144,65 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 				msgCode: "offline-value",
 				payload: { value: true }
 			});
+			break;
+		}
+		case "create-bool-register": {
+			// 1. Get register initial value from message.
+			const initialValue = data.payload.value as boolean;
+
+			// 2. Create register and retrieve values.
+			const register = wasm.engine.create_bool_register(initialValue);
+			const id = register.get_id();
+			const value = register.get_value();
+			const encoded = register.get_encoded();
+
+			// 3. Broadcast the newly created register to the front-end clients.
+			broadcast({
+				msgCode: "new-register",
+				payload: { id, value, type: "bool" }
+			});
+
+			// 4. Persist encoded version in local database.
+			try {
+				await localDb.put_crdt({ id, value, encoded, type: "bool" });
+			} catch (e) {
+				console.error(e);
+				return;
+			}
+
+			// 5. Broadcast the event to other nodes.
+			const updateMessage = register.get_update_message(
+				wasm.engine.get_node_id(),
+				wasm.engine.generate_timestamp()
+			);
+			syncConnection.sendMessage(updateMessage);
+
+			// syncConnection.sendMessage();
+
+			register.free();
+			break;
+		}
+		case "restore-registers": {
+			try {
+				const crdts = (await localDb.retrieveCrdts()) as {
+					id: string;
+					value: boolean;
+					encoded: Uint8Array;
+					type: string;
+				}[];
+
+				const crdts_obj = {};
+				for (const crdt of crdts) {
+					crdts_obj[crdt.id] = { value: crdt.value, type: crdt.type };
+				}
+
+				client.postMessage({
+					msgCode: "restored-registers",
+					payload: { value: crdts_obj }
+				});
+			} catch (e) {
+				console.error(e);
+			}
 			break;
 		}
 	}
