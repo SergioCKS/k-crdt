@@ -1,0 +1,32 @@
+name = "rust-wasm"
+type = "javascript"
+workers_dev = true
+compatibility_date = "2021-11-13"
+account_id = "1bdec0bdd535f0182f72a7a96681a9af"
+zone_id = "04801c4ee4a1ea9340974e6081eb6a4b"
+usage_model = "bundled"
+
+[vars]
+WORKERS_RS_VERSION = "0.0.7"
+
+[build]
+command = "pnpm run build"
+
+[build.upload]
+dir = "worker"
+format = "modules"
+main   = "./index.mjs"
+
+[[build.upload.rules]]
+globs = ["**/*.wasm"]
+type  = "CompiledWasm"
+
+[durable_objects]
+bindings = [{name = "SYNC_AGENT", class_name = "SyncAgent"}]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SyncAgent"]
+
+# read more about configuring your Worker via wrangler.toml at:
+# https://developers.cloudflare.com/workers/cli-wrangler/configuration
