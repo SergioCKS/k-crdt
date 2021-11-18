@@ -20,7 +20,7 @@ use std::{
 use anyhow::{anyhow, Result};
 
 //#region Constants
-const OUT_DIR: &str = "src/backend/wasm";
+const OUT_DIR: &str = "client/src/backend/wasm";
 // const OUT_NAME: &str = "index";
 // const MOD_DIR: &str = "wasm";
 //#endregion
