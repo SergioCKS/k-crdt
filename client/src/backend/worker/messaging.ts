@@ -9,6 +9,7 @@
 import { Wasm } from "../wasm";
 import { LocalDb } from "../db";
 import { SyncConnection } from "../sync";
+import { WorkerMessage, ClientMessageCode, WorkerMessageCode, requireWasm } from "$types/messages";
 
 /**
  * ## Worker Scope
@@ -22,42 +23,41 @@ let wasm: Wasm;
 let localDb: LocalDb;
 let syncConnection: SyncConnection;
 
-//#region Types
-export interface MsgData {
-	msgCode: string;
-	payload?: Record<string, unknown>;
+//#region Messaging helper functions
+/**
+ * ## Broadcast message
+ *
+ * Broadcast a message to all connected clients.
+ *
+ * @param message - Message to broadcast to clients
+ */
+async function broadcastMessage(message: WorkerMessage) {
+	const clients = await worker.clients.matchAll();
+	clients.forEach((client) => client.postMessage(message));
 }
 
-export interface ClientMsgData extends MsgData {
-	msgCode:
-		| "create-gcounter"
-		| "get-gcounter-value"
-		| "get-node-id"
-		| "increment-counter"
-		| "decrement-counter"
-		| "toggle-register"
-		| "test-clock"
-		| "initialize"
-		| "incoming-update"
-		| "incoming-register-update"
-		| "update-time-offset"
-		| "no-sync-connection"
-		| "create-bool-register"
-		| "restore-registers";
+/**
+ * ## Message any client
+ *
+ * Send a message to any connected client.
+ *
+ * @param message Message to send
+ */
+async function messageAnyClient(message: WorkerMessage) {
+	const anyClient = (await worker.clients.matchAll())[0];
+	anyClient.postMessage(message);
 }
 
-export interface SwMsgData extends MsgData {
-	msgCode:
-		| "initialized"
-		| "node-id"
-		| "counter-value"
-		| "register-value"
-		| "time-offset-value"
-		| "offline-value"
-		| "retrieve-time-offset"
-		| "new-register"
-		| "restored-registers"
-		| "error";
+/**
+ * ## Message client
+ *
+ * Send a message to a specific connected client.
+ *
+ * @param client - Connected client
+ * @param message - Message to send
+ */
+function messageClient(client: Client | MessagePort | ServiceWorker, message: WorkerMessage) {
+	client.postMessage(message);
 }
 //#endregion
 
@@ -89,66 +89,55 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 }
 
 /**
- * ## Service worker `message` event handler
+ * ## Handle client message
  *
- * Service worker process to handle incoming messages.
+ * Handles an incoming message from a connected client or from the worker itself.
  *
- * @param client - The client sending the message.
- * @param data - The data attached to the message.
+ * @param client - The client (or worker) sending the message.
+ * @param msgCode - Code of the message.
+ * @param payload - Payload of the message.
  */
-export async function onMessage(client: Client, data: ClientMsgData): Promise<void> {
-	// 1. Get currently connected clients.
-	let clients = await worker.clients.matchAll();
-	function broadcast(msgData: SwMsgData) {
-		clients.forEach((client) => client.postMessage(msgData));
-	}
-	// 2. Ensure WASM is initialized.
-	if (!wasm) await initializeInterfaces();
+export async function handleClientMessage(
+	client: Client | MessagePort | ServiceWorker,
+	msgCode: ClientMessageCode,
+	payload: Record<string, unknown>
+): Promise<boolean> {
+	// 1. Ensure WASM is initialized if the message requires it.
+	if (msgCode in requireWasm && !wasm) await initializeInterfaces();
 
-	// 3. Handle incoming message.
-	switch (data.msgCode) {
-		case "initialize": {
+	// 2. Handle incoming message.
+	switch (msgCode) {
+		case ClientMessageCode.Initialize: {
 			await initializeInterfaces();
-			broadcast({ msgCode: "initialized" });
-			break;
+			broadcastMessage({ msgCode: WorkerMessageCode.Initialized });
+			return true;
 		}
-		case "get-node-id": {
-			const nodeId = wasm.engine.get_node_id();
-			broadcast({
-				msgCode: "node-id",
-				payload: { nodeId }
-			});
-			break;
+		case ClientMessageCode.Test: {
+			return true;
 		}
-		case "test-clock": {
-			break;
-		}
-		case "update-time-offset": {
-			const updatedOffset = data.payload.value as number;
+		case ClientMessageCode.UpdateTimeOffset: {
+			const updatedOffset = payload.value as number;
 			wasm.setOffset(updatedOffset);
-			clients = await worker.clients.matchAll();
-			clients[0].postMessage({
-				msgCode: "time-offset-value",
+			messageClient(client, {
+				msgCode: WorkerMessageCode.TimeOffsetValue,
 				payload: { value: updatedOffset }
 			});
-			break;
+			return true;
 		}
-		case "no-sync-connection": {
-			clients = await worker.clients.matchAll();
+		case ClientMessageCode.NoSyncConnection: {
 			// 1. Retrieve last calculated time offset from local storage if available.
-			clients[0].postMessage({
-				msgCode: "retrieve-time-offset"
-			});
+			await messageAnyClient({ msgCode: WorkerMessageCode.RetrieveTimeOffset });
+
 			// 2. Update offline values in client stores.
-			broadcast({
-				msgCode: "offline-value",
+			broadcastMessage({
+				msgCode: WorkerMessageCode.OfflineValue,
 				payload: { value: true }
 			});
-			break;
+			return true;
 		}
-		case "create-bool-register": {
+		case ClientMessageCode.CreateBoolRegister: {
 			// 1. Get register initial value from message.
-			const initialValue = data.payload.value as boolean;
+			const initialValue = payload.value as boolean;
 
 			// 2. Create register and retrieve values.
 			const register = wasm.engine.create_bool_register(initialValue);
@@ -157,8 +146,8 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			const encoded = register.get_encoded();
 
 			// 3. Broadcast the newly created register to the front-end clients.
-			broadcast({
-				msgCode: "new-register",
+			broadcastMessage({
+				msgCode: WorkerMessageCode.NewRegister,
 				payload: { id, value, type: "bool" }
 			});
 
@@ -167,7 +156,7 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 				await localDb.put_crdt({ id, value, encoded, type: "bool" });
 			} catch (e) {
 				console.error(e);
-				return;
+				return true;
 			}
 
 			// 5. Broadcast the event to other nodes.
@@ -180,9 +169,9 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 			// syncConnection.sendMessage();
 
 			register.free();
-			break;
+			return true;
 		}
-		case "restore-registers": {
+		case ClientMessageCode.RestoreRegisters: {
 			try {
 				const crdts = (await localDb.retrieveCrdts()) as {
 					id: string;
@@ -196,14 +185,14 @@ export async function onMessage(client: Client, data: ClientMsgData): Promise<vo
 					crdts_obj[crdt.id] = { value: crdt.value, type: crdt.type };
 				}
 
-				client.postMessage({
-					msgCode: "restored-registers",
+				messageClient(client, {
+					msgCode: WorkerMessageCode.RestoredRegisters,
 					payload: { value: crdts_obj }
 				});
 			} catch (e) {
 				console.error(e);
 			}
-			break;
+			return true;
 		}
 	}
 }

@@ -1,19 +1,32 @@
 <script lang="ts">
+	import { ClientMessage, ClientMessageCode } from "$types/messages";
+
 	import { onMount } from "svelte";
-	import { nodeId, initialized, registers } from "../stores/engine";
+	import { initialized, registers } from "../stores/engine";
 	import { offline } from "../stores/general";
 
 	let swRegistration: ServiceWorkerRegistration;
 
-	function testClock() {
-		swRegistration?.active.postMessage({
-			msgCode: "test-clock",
+	/**
+	 * ## Message worker
+	 *
+	 * Send a message to the web worker.
+	 *
+	 * @param message - Message to send.
+	 */
+	function messageWorker(message: ClientMessage) {
+		swRegistration?.active.postMessage(message);
+	}
+
+	function test() {
+		messageWorker({
+			msgCode: ClientMessageCode.Test,
 			payload: { value: "test" }
 		});
 	}
 	function createBoolRegister() {
-		swRegistration?.active.postMessage({
-			msgCode: "create-bool-register",
+		messageWorker({
+			msgCode: ClientMessageCode.CreateBoolRegister,
 			payload: { value: false }
 		});
 	}
@@ -25,8 +38,7 @@
 {#if !$initialized}
 	Initializing ...
 {/if}
-<button on:click={testClock}>Test clock</button>
+<button on:click={test}>Test</button>
 <button on:click={createBoolRegister}>Create boolean register</button>
-Node ID: {$nodeId}
 Offline: {$offline}
 {JSON.stringify($registers)}

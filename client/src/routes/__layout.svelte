@@ -3,68 +3,93 @@
 
 	Layout wrapping all components in the application.
 
-	* As the `onMount` callback of the main layout is run regardless of the page visited, it is used to setup the callbacks for messages from the service worker.
+	* As the `onMount` callback of the main layout is run regardless of the page visited, it is used to setup the callbacks for messages from the web worker.
 
 	@module
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { nodeId, initialized, registers } from "../stores/engine";
+	import { initialized, registers } from "../stores/engine";
 	import { offline } from "../stores/general";
-	import type { SwMsgData } from "../backend/worker/messaging";
+	import {
+		WorkerMessage,
+		ClientMessageCode,
+		WorkerMessageCode,
+		ClientMessage
+	} from "$types/messages";
 
-	let registration: ServiceWorkerRegistration;
+	/**
+	 * ## Service worker registration
+	 *
+	 * * Set on app mount.
+	 */
+	let registration: ServiceWorkerRegistration = undefined;
+
+	/**
+	 * ## Message worker
+	 *
+	 * Send a message to the web worker.
+	 *
+	 * @param message - Message to send.
+	 */
+	function messageWorker(message: ClientMessage) {
+		registration?.active.postMessage(message);
+	}
+
+	/**
+	 * ## Handle worker message
+	 *
+	 * Handles an incoming message from the web worker.
+	 *
+	 * @param msgCode - Code of the message.
+	 * @param payload - Payload of the message.
+	 */
+	function handleWorkerMessage(
+		msgCode: WorkerMessageCode,
+		payload: Record<string, unknown>
+	): boolean {
+		switch (msgCode) {
+			case WorkerMessageCode.Initialized: {
+				if (!$initialized) messageWorker({ msgCode: ClientMessageCode.RestoreRegisters });
+				$initialized = true;
+				return true;
+			}
+			case WorkerMessageCode.TimeOffsetValue: {
+				const updatedOffset = payload.value as number;
+				localStorage.setItem("TIME_OFFSET", updatedOffset.toString());
+				return true;
+			}
+			case WorkerMessageCode.OfflineValue: {
+				$offline = payload.value as boolean;
+				return true;
+			}
+			case WorkerMessageCode.RetrieveTimeOffset: {
+				const offset = localStorage.getItem("TIME_OFFSET");
+				if (offset) {
+					messageWorker({
+						msgCode: ClientMessageCode.UpdateTimeOffset,
+						payload: { value: Number.parseInt(offset) }
+					});
+				}
+				return true;
+			}
+			case WorkerMessageCode.NewRegister: {
+				let { id, value, type } = payload as { id: string; value: boolean; type: string };
+				$registers[id] = { value, type };
+				return true;
+			}
+			case WorkerMessageCode.RestoredRegisters: {
+				$registers = payload.value;
+				return true;
+			}
+		}
+	}
 
 	onMount(async () => {
+		// Attach message handler.
 		navigator.serviceWorker.addEventListener("message", (event) => {
-			const msgData = event.data as SwMsgData;
-			switch (msgData.msgCode) {
-				case "initialized": {
-					if (!$initialized) {
-						registration.active.postMessage({
-							msgCode: "restore-registers"
-						});
-						$initialized = true;
-					}
-					break;
-				}
-				case "node-id": {
-					$nodeId = msgData.payload.nodeId as string;
-					break;
-				}
-				case "time-offset-value": {
-					const updatedOffset = msgData.payload.value as number;
-					localStorage.setItem("TIME_OFFSET", updatedOffset.toString());
-					break;
-				}
-				case "offline-value": {
-					$offline = msgData.payload.value as boolean;
-					break;
-				}
-				case "retrieve-time-offset": {
-					const offset = localStorage.getItem("TIME_OFFSET");
-					if (offset) {
-						registration.active.postMessage({
-							msgCode: "update-time-offset",
-							payload: { value: Number.parseInt(offset) }
-						});
-					}
-					break;
-				}
-				case "new-register": {
-					let { id, value, type } = msgData.payload as { id: string; value: boolean; type: string };
-					$registers[id] = { value, type };
-					break;
-				}
-				case "restored-registers": {
-					$registers = msgData.payload.value;
-					break;
-				}
-				case "error": {
-					console.error("Error received.", msgData.payload.value);
-					break;
-				}
-			}
+			const msgData = event.data as WorkerMessage;
+			handleWorkerMessage(msgData.msgCode, msgData.payload);
 		});
 
 		registration = await navigator.serviceWorker.ready;
@@ -72,11 +97,11 @@
 		//#region Send initialization message when the worker is `active`
 		const worker = registration.active;
 		if (worker.state === "activated") {
-			worker.postMessage({ msgCode: "initialize" });
+			messageWorker({ msgCode: ClientMessageCode.Initialize });
 		} else {
 			worker.addEventListener("statechange", () => {
 				if (worker.state === "activated") {
-					worker.postMessage({ msgCode: "initialize" });
+					messageWorker({ msgCode: ClientMessageCode.Initialize });
 				}
 			});
 		}

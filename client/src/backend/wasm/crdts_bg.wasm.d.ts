@@ -18,6 +18,8 @@ export function engine_get_register_value(a: number): number;
 export function engine_toggle_register(a: number): void;
 export function engine_generate_timestamp(a: number): number;
 export function engine_create_bool_register(a: number, b: number): number;
+export function get_message(a: number): void;
+export function parse_update_message(a: number, b: number, c: number): void;
 export function __wbg_timestamp_free(a: number): void;
 export function timestamp_as_u64(a: number, b: number): void;
 export function timestamp_get_time(a: number, b: number): void;

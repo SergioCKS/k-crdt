@@ -5,6 +5,15 @@
 */
 export function generate_id(): string;
 /**
+* @returns {string}
+*/
+export function get_message(): string;
+/**
+* @param {Uint8Array} update_msg
+* @returns {string}
+*/
+export function parse_update_message(update_msg: Uint8Array): string;
+/**
 * @returns {BigInt}
 */
 export function test_clock(): BigInt;
@@ -250,6 +259,8 @@ export interface InitOutput {
   readonly engine_toggle_register: (a: number) => void;
   readonly engine_generate_timestamp: (a: number) => number;
   readonly engine_create_bool_register: (a: number, b: number) => number;
+  readonly get_message: (a: number) => void;
+  readonly parse_update_message: (a: number, b: number, c: number) => void;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;
   readonly timestamp_get_time: (a: number, b: number) => void;

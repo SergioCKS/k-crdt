@@ -12,12 +12,18 @@
  * @module
  */
 
+import { ClientMessage, ClientMessageCode } from "$types/messages";
+
 /**
  * ## Worker scope
  *
  * Typed `self` assuming the script is run on a service worker context.
  */
 const worker = self as unknown as ServiceWorkerGlobalScope;
+
+function messageWorker(message: ClientMessage) {
+	worker.registration.active.postMessage(message);
+}
 
 /**
  * ## Time sync data
@@ -146,8 +152,8 @@ export class SyncConnection {
 		ws.addEventListener("error", (event) => {
 			console.error(event);
 			// Error connecting to WebSocket (device could be offline).
-			worker.registration.active.postMessage({
-				msgCode: "no-sync-connection"
+			messageWorker({
+				msgCode: ClientMessageCode.NoSyncConnection
 			});
 		});
 
@@ -193,8 +199,8 @@ export class SyncConnection {
 						timeSyncPayload.t1, // t2 = t1
 						receptionTime // t3
 					);
-					worker.registration.active.postMessage({
-						msgCode: "update-time-offset",
+					messageWorker({
+						msgCode: ClientMessageCode.UpdateTimeOffset,
 						payload: {
 							value: syncData.offset
 						}

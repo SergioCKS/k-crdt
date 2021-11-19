@@ -9,8 +9,8 @@
  * @module
  */
 import { cacheBaseFiles, clearOldFiles, onFetch } from "./cache";
-import { onMessage } from "./messaging";
-import type { ClientMsgData } from "./messaging";
+import type { ClientMessage } from "$types/messages";
+import { handleClientMessage } from "./messaging";
 
 /**
  * ## Worker scope
@@ -52,15 +52,17 @@ worker.addEventListener("activate", (event) => {
 /**
  * ## Register `message` event listener
  *
- * Adds te `message` event listener and handles exceptions.
+ * Adds te `message` event handler.
+ *
+ * * Parses the incoming event and relays the resulting objects to the event handler.
+ * * Assumes the caller uses the correct data format as opposed to perform runtime checks.
  */
 worker.addEventListener("message", async (event) => {
-	const client = event.source as Client;
-	const msgData = event.data as ClientMsgData;
+	const msgData = event.data as ClientMessage;
 	try {
-		await onMessage(client, msgData);
+		await handleClientMessage(event.source, msgData.msgCode, msgData.payload);
 	} catch (error) {
-		console.error(`Error while handling '${msgData.msgCode}'' message! Error:`, error);
+		console.error(`Error while handling client event!`, error);
 	}
 });
 
