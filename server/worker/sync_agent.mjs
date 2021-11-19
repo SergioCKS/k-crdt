@@ -1,3 +1,4 @@
+import { ClientMessageCode, ServerMessageCode, } from "./messages.mjs";
 import { get_message, parse_update_message } from "./engine_bg.mjs";
 export class SyncAgent {
     state;
@@ -7,6 +8,17 @@ export class SyncAgent {
         this.state = state;
         this.sessions = [];
     }
+    broadcastMessage(message) {
+        this.sessions = this.sessions.filter(session => {
+            try {
+                session.send(message);
+                return true;
+            }
+            catch {
+                return false;
+            }
+        });
+    }
     async fetch(request) {
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
@@ -14,64 +26,54 @@ export class SyncAgent {
         }
         const webSocketPair = new WebSocketPair();
         const [client, server] = Object.values(webSocketPair);
+        function messageClient(message) {
+            server.send(JSON.stringify(message));
+        }
+        function handleClientMessage(msgCode, payload) {
+            switch (msgCode) {
+                case ClientMessageCode.TimeSync: {
+                    const timeSyncPayload = payload;
+                    messageClient({
+                        msgCode: ServerMessageCode.TimeSync,
+                        payload: {
+                            t0: timeSyncPayload.t0,
+                            t1: new Date().valueOf(),
+                        },
+                    });
+                    return true;
+                }
+                case ClientMessageCode.Test: {
+                    messageClient({
+                        msgCode: ServerMessageCode.Test,
+                        payload: { value: get_message() },
+                    });
+                    return true;
+                }
+            }
+        }
         server.accept();
         server.addEventListener("message", async ({ data: rawData }) => {
-            const isBinary = rawData instanceof ArrayBuffer;
-            if (isBinary) {
+            if (rawData instanceof ArrayBuffer) {
                 let binData = rawData;
                 const nodeId = parse_update_message(new Uint8Array(binData));
                 server.send(JSON.stringify({
                     msgCode: "test",
                     payload: `Received binary data consisting of ${binData.byteLength} bytes. Parsed node ID: ${nodeId}`,
                 }));
-                return;
             }
-            let parsedData;
-            try {
-                parsedData = JSON.parse(rawData);
-            }
-            catch (e) {
-                if (e instanceof SyntaxError) {
-                    console.error("JSON couldn't be parsed");
+            else {
+                try {
+                    const msg = JSON.parse(rawData);
+                    handleClientMessage(msg.msgCode, msg.payload);
                 }
-                else {
-                    console.error(e);
-                }
-                return;
-            }
-            if (!Object.prototype.hasOwnProperty.call(parsedData, "msgCode")) {
-                // Broadcast message and purge inactive sessions.
-                this.sessions = this.sessions.filter(session => {
-                    try {
-                        session.send(rawData);
-                        return true;
+                catch (e) {
+                    if (e instanceof SyntaxError) {
+                        console.error("JSON couldn't be parsed");
                     }
-                    catch {
-                        return false;
+                    else {
+                        console.error(e);
                     }
-                });
-                return;
-            }
-            switch (parsedData.msgCode) {
-                case "time-sync": {
-                    const timeSyncPayload = parsedData.payload;
-                    server.send(JSON.stringify({
-                        msgCode: "time-sync",
-                        payload: {
-                            t0: timeSyncPayload.t0,
-                            t1: new Date().valueOf(),
-                        },
-                    }));
-                    break;
-                }
-                case "ts-test": {
-                    // const ts = this.engine?.generate_timestamp();
-                    server.send(JSON.stringify({
-                        msgCode: "ts-test",
-                        payload: {
-                            value: get_message(),
-                        },
-                    }));
+                    return;
                 }
             }
         });

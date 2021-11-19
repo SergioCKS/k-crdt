@@ -9,7 +9,6 @@
  * @module
  */
 import { cacheBaseFiles, clearOldFiles, onFetch } from "./cache";
-import type { ClientMessage } from "$types/messages";
 import { handleClientMessage } from "./messaging";
 
 /**
@@ -57,12 +56,11 @@ worker.addEventListener("activate", (event) => {
  * * Parses the incoming event and relays the resulting objects to the event handler.
  * * Assumes the caller uses the correct data format as opposed to perform runtime checks.
  */
-worker.addEventListener("message", async (event) => {
-	const msgData = event.data as ClientMessage;
+worker.addEventListener("message", async ({ source, data: { msgCode, payload } }) => {
 	try {
-		await handleClientMessage(event.source, msgData.msgCode, msgData.payload);
+		await handleClientMessage(source, msgCode, payload);
 	} catch (error) {
-		console.error(`Error while handling client event!`, error);
+		console.error("Error while handling client event.", error);
 	}
 });
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ClientMessage, ClientMessageCode } from "$types/messages";
+	import { AppMessage, AppMessageCode } from "$types/messages";
 
 	import { onMount } from "svelte";
 	import { initialized, registers } from "../stores/engine";
@@ -14,19 +14,19 @@
 	 *
 	 * @param message - Message to send.
 	 */
-	function messageWorker(message: ClientMessage) {
+	function messageWorker(message: AppMessage) {
 		swRegistration?.active.postMessage(message);
 	}
 
 	function test() {
 		messageWorker({
-			msgCode: ClientMessageCode.Test,
+			msgCode: AppMessageCode.Test,
 			payload: { value: "test" }
 		});
 	}
 	function createBoolRegister() {
 		messageWorker({
-			msgCode: ClientMessageCode.CreateBoolRegister,
+			msgCode: AppMessageCode.CreateBoolRegister,
 			payload: { value: false }
 		});
 	}

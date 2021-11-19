@@ -216,3 +216,17 @@ impl Engine {
         PackedBoolRegister::new(UID::new(), initial, encoded)
     }
 }
+
+#[wasm_bindgen]
+pub fn get_message() -> String {
+    String::from("Hello, hello-wasm! V3")
+}
+
+#[wasm_bindgen]
+pub fn parse_update_message(update_msg: Vec<u8>) -> String {
+    let decoded: UpdateMessage = match bincode::deserialize(&update_msg[..]) {
+        Ok(val) => val,
+        Err(err) => return err.to_string()
+    };
+    decoded.nid.to_string()
+}

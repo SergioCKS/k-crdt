@@ -9,7 +9,7 @@
 import { Wasm } from "../wasm";
 import { LocalDb } from "../db";
 import { SyncConnection } from "../sync";
-import { WorkerMessage, ClientMessageCode, WorkerMessageCode, requireWasm } from "$types/messages";
+import { WorkerMessage, AppMessageCode, WorkerMessageCode, requireWasm } from "$types/messages";
 
 /**
  * ## Worker Scope
@@ -99,7 +99,7 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
  */
 export async function handleClientMessage(
 	client: Client | MessagePort | ServiceWorker,
-	msgCode: ClientMessageCode,
+	msgCode: AppMessageCode,
 	payload: Record<string, unknown>
 ): Promise<boolean> {
 	// 1. Ensure WASM is initialized if the message requires it.
@@ -107,15 +107,15 @@ export async function handleClientMessage(
 
 	// 2. Handle incoming message.
 	switch (msgCode) {
-		case ClientMessageCode.Initialize: {
+		case AppMessageCode.Initialize: {
 			await initializeInterfaces();
 			broadcastMessage({ msgCode: WorkerMessageCode.Initialized });
 			return true;
 		}
-		case ClientMessageCode.Test: {
+		case AppMessageCode.Test: {
 			return true;
 		}
-		case ClientMessageCode.UpdateTimeOffset: {
+		case AppMessageCode.UpdateTimeOffset: {
 			const updatedOffset = payload.value as number;
 			wasm.setOffset(updatedOffset);
 			messageClient(client, {
@@ -124,7 +124,7 @@ export async function handleClientMessage(
 			});
 			return true;
 		}
-		case ClientMessageCode.NoSyncConnection: {
+		case AppMessageCode.NoSyncConnection: {
 			// 1. Retrieve last calculated time offset from local storage if available.
 			await messageAnyClient({ msgCode: WorkerMessageCode.RetrieveTimeOffset });
 
@@ -135,7 +135,7 @@ export async function handleClientMessage(
 			});
 			return true;
 		}
-		case ClientMessageCode.CreateBoolRegister: {
+		case AppMessageCode.CreateBoolRegister: {
 			// 1. Get register initial value from message.
 			const initialValue = payload.value as boolean;
 
@@ -171,7 +171,7 @@ export async function handleClientMessage(
 			register.free();
 			return true;
 		}
-		case ClientMessageCode.RestoreRegisters: {
+		case AppMessageCode.RestoreRegisters: {
 			try {
 				const crdts = (await localDb.retrieveCrdts()) as {
 					id: string;

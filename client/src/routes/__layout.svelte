@@ -11,12 +11,7 @@
 	import { onMount } from "svelte";
 	import { initialized, registers } from "../stores/engine";
 	import { offline } from "../stores/general";
-	import {
-		WorkerMessage,
-		ClientMessageCode,
-		WorkerMessageCode,
-		ClientMessage
-	} from "$types/messages";
+	import { AppMessageCode, WorkerMessageCode, AppMessage } from "$types/messages";
 
 	/**
 	 * ## Service worker registration
@@ -32,7 +27,7 @@
 	 *
 	 * @param message - Message to send.
 	 */
-	function messageWorker(message: ClientMessage) {
+	function messageWorker(message: AppMessage) {
 		registration?.active.postMessage(message);
 	}
 
@@ -50,7 +45,7 @@
 	): boolean {
 		switch (msgCode) {
 			case WorkerMessageCode.Initialized: {
-				if (!$initialized) messageWorker({ msgCode: ClientMessageCode.RestoreRegisters });
+				if (!$initialized) messageWorker({ msgCode: AppMessageCode.RestoreRegisters });
 				$initialized = true;
 				return true;
 			}
@@ -67,7 +62,7 @@
 				const offset = localStorage.getItem("TIME_OFFSET");
 				if (offset) {
 					messageWorker({
-						msgCode: ClientMessageCode.UpdateTimeOffset,
+						msgCode: AppMessageCode.UpdateTimeOffset,
 						payload: { value: Number.parseInt(offset) }
 					});
 				}
@@ -87,9 +82,12 @@
 
 	onMount(async () => {
 		// Attach message handler.
-		navigator.serviceWorker.addEventListener("message", (event) => {
-			const msgData = event.data as WorkerMessage;
-			handleWorkerMessage(msgData.msgCode, msgData.payload);
+		navigator.serviceWorker.addEventListener("message", ({ data: { msgCode, payload } }) => {
+			try {
+				handleWorkerMessage(msgCode, payload);
+			} catch (error) {
+				console.error("Error while handling worker event.", error);
+			}
 		});
 
 		registration = await navigator.serviceWorker.ready;
@@ -97,11 +95,11 @@
 		//#region Send initialization message when the worker is `active`
 		const worker = registration.active;
 		if (worker.state === "activated") {
-			messageWorker({ msgCode: ClientMessageCode.Initialize });
+			messageWorker({ msgCode: AppMessageCode.Initialize });
 		} else {
 			worker.addEventListener("statechange", () => {
 				if (worker.state === "activated") {
-					messageWorker({ msgCode: ClientMessageCode.Initialize });
+					messageWorker({ msgCode: AppMessageCode.Initialize });
 				}
 			});
 		}

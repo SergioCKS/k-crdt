@@ -10,7 +10,7 @@
 
 const fs = require("fs");
 
-const names = ["index", "sync_agent"];
+const names = ["index", "sync_agent", "messages"];
 
 for (const name of names) {
   const file_path = `./worker/${name}.mjs.js`;

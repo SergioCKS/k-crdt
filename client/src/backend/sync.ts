@@ -12,7 +12,14 @@
  * @module
  */
 
-import { ClientMessage, ClientMessageCode } from "$types/messages";
+import {
+	AppMessage,
+	AppMessageCode,
+	ClientMessage,
+	ClientMessageCode,
+	ServerMessage,
+	ServerMessageCode
+} from "$types/messages";
 
 /**
  * ## Worker scope
@@ -21,7 +28,14 @@ import { ClientMessage, ClientMessageCode } from "$types/messages";
  */
 const worker = self as unknown as ServiceWorkerGlobalScope;
 
-function messageWorker(message: ClientMessage) {
+/**
+ * ## Message worker
+ *
+ * Send a message to the worker (as the worker).
+ *
+ * @param message - Message to send
+ */
+function messageWorker(message: AppMessage) {
 	worker.registration.active.postMessage(message);
 }
 
@@ -56,7 +70,7 @@ interface TimeSyncData {
  *
  * Server response to a time synchronization poll request.
  */
-interface TimeSyncPollResponsePayload {
+type TimeSyncPollResponsePayload = {
 	/**
 	 * ### Request transmission timestamp
 	 *
@@ -77,7 +91,7 @@ interface TimeSyncPollResponsePayload {
 	 * Server-side timestamp that is as close as possible to packet transmission of the response message in milliseconds since UNIX epoch.
 	 */
 	t2?: number;
-}
+};
 
 /**
  * ## Get time sync data
@@ -97,6 +111,54 @@ function getTimeSyncData(t0: number, t1: number, t2: number, t3: number): TimeSy
 		offset: (t1 - t0 + t2 - t3) / 2,
 		roundTripDelay: t3 - t0 - (t2 - t1)
 	};
+}
+
+/**
+ * ## Handle server message
+ *
+ * Handles an incoming server-originated message.
+ *
+ * @param msgCode - Message code
+ * @param payload - Message payload
+ */
+function handleServerMessage(
+	msgCode: ServerMessageCode,
+	payload: Record<string, unknown>
+): boolean {
+	switch (msgCode) {
+		case ServerMessageCode.TimeSync: {
+			// Client-side response reception time (t4 in time-sync poll).
+			const receptionTime = new Date().valueOf();
+			const timeSyncPayload = payload as TimeSyncPollResponsePayload;
+			const syncData = getTimeSyncData(
+				timeSyncPayload.t0,
+				timeSyncPayload.t1,
+				timeSyncPayload.t1, // t2 = t1
+				receptionTime // t3
+			);
+			messageWorker({
+				msgCode: AppMessageCode.UpdateTimeOffset,
+				payload: { value: syncData.offset }
+			});
+			return true;
+		}
+		case ServerMessageCode.Test: {
+			console.log(payload);
+			return true;
+		}
+	}
+}
+
+/**
+ * ## Handle server binary message
+ *
+ * Handles an incoming server-originated message in binary format.
+ *
+ * @param data - Message data as byte array
+ */
+async function handleServerBinaryMessage(data: Uint8Array): Promise<boolean> {
+	console.log("Binary data received from server.", data);
+	return true;
 }
 
 /**
@@ -133,6 +195,17 @@ export class SyncConnection {
 	}
 
 	/**
+	 * ### Message server
+	 *
+	 * Sends a string-based message to the server.
+	 *
+	 * @param message Message to send
+	 */
+	public messageServer(message: ClientMessage): void {
+		this.sendMessage(JSON.stringify(message));
+	}
+
+	/**
 	 * ### Initialize connection
 	 *
 	 * Initializes the connection to the sync manager.
@@ -153,68 +226,31 @@ export class SyncConnection {
 			console.error(event);
 			// Error connecting to WebSocket (device could be offline).
 			messageWorker({
-				msgCode: ClientMessageCode.NoSyncConnection
+				msgCode: AppMessageCode.NoSyncConnection
 			});
 		});
 
 		ws.addEventListener("open", async () => {
 			// Perform time synchronization poll on socket initialization.
-			this.sendMessage(
-				JSON.stringify({
-					msgCode: "time-sync",
-					payload: {
-						t0: new Date().valueOf()
-					}
-				})
-			);
+			this.messageServer({
+				msgCode: ClientMessageCode.TimeSync,
+				payload: { t0: new Date().valueOf() }
+			});
 		});
 
 		ws.addEventListener("message", async ({ data: rawData }) => {
-			// Client-side response reception time (t4 in time-sync poll).
-			const receptionTime = new Date().valueOf();
-
-			// Parse message data.
-			let parsedData: Record<string, unknown>;
 			try {
-				parsedData = JSON.parse(rawData);
-			} catch (e) {
-				if (e instanceof SyntaxError) {
-					console.error("JSON couldn't be parsed");
+				if (rawData instanceof ArrayBuffer) {
+					await handleServerBinaryMessage(new Uint8Array(rawData));
 				} else {
-					console.error(e);
+					const msg = JSON.parse(rawData) as ServerMessage;
+					handleServerMessage(msg.msgCode, msg.payload);
 				}
-				return;
-			}
-
-			// Unspecified message code case.
-			if (!Object.prototype.hasOwnProperty.call(parsedData, "msgCode")) return;
-
-			// Handler based on message code.
-			switch (parsedData.msgCode) {
-				case "time-sync": {
-					const timeSyncPayload = parsedData.payload as TimeSyncPollResponsePayload;
-					const syncData = getTimeSyncData(
-						timeSyncPayload.t0,
-						timeSyncPayload.t1,
-						timeSyncPayload.t1, // t2 = t1
-						receptionTime // t3
-					);
-					messageWorker({
-						msgCode: ClientMessageCode.UpdateTimeOffset,
-						payload: {
-							value: syncData.offset
-						}
-					});
-					break;
-				}
-				case "ts-test": {
-					const tsTestPayload = parsedData.payload as { value: string };
-					console.log("ts-test:", tsTestPayload.value);
-					break;
-				}
-				case "test": {
-					const testPayload = parsedData.payload;
-					console.log(testPayload);
+			} catch (error) {
+				if (error instanceof SyntaxError) {
+					console.error("Error while handling server event. JSON couldn't be parsed");
+				} else {
+					console.error("Error while handling server event.", error);
 				}
 			}
 		});
