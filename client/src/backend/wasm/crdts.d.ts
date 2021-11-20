@@ -149,6 +149,32 @@ export class PackedBoolRegister {
   get_update_message(nid: UID, ts: Timestamp): Uint8Array;
 }
 /**
+*/
+export class ServerHLC {
+  free(): void;
+/**
+*/
+  constructor();
+/**
+* @returns {Timestamp}
+*/
+  get_timestamp(): Timestamp;
+/**
+* @param {Timestamp} ts
+* @returns {Timestamp}
+*/
+  update(ts: Timestamp): Timestamp;
+/**
+* @returns {Uint8Array}
+*/
+  serialize(): Uint8Array;
+/**
+* @param {Uint8Array} encoded
+* @returns {ServerHLC}
+*/
+  static deserialize(encoded: Uint8Array): ServerHLC;
+}
+/**
 * ## HLC Timestamp
 *
 * 64-bit HLC timestamp implemented as a tuple struct over [`u64`].
@@ -261,6 +287,13 @@ export interface InitOutput {
   readonly engine_create_bool_register: (a: number, b: number) => number;
   readonly get_message: (a: number) => void;
   readonly parse_update_message: (a: number, b: number, c: number) => void;
+  readonly __wbg_serverhlc_free: (a: number) => void;
+  readonly serverhlc_new: () => number;
+  readonly serverhlc_get_timestamp: (a: number) => number;
+  readonly serverhlc_update: (a: number, b: number) => number;
+  readonly serverhlc_serialize: (a: number, b: number) => void;
+  readonly serverhlc_deserialize: (a: number, b: number) => number;
+  readonly test_clock: (a: number) => void;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;
   readonly timestamp_get_time: (a: number, b: number) => void;
@@ -269,7 +302,6 @@ export interface InitOutput {
   readonly timestamp_get_count: (a: number) => number;
   readonly timestamp_get_nanoseconds: (a: number) => number;
   readonly timestamp_increase_counter: (a: number) => void;
-  readonly test_clock: (a: number) => void;
   readonly __wbg_packedboolregister_free: (a: number) => void;
   readonly packedboolregister_new: (a: number, b: number, c: number, d: number) => number;
   readonly packedboolregister_get_id: (a: number, b: number) => void;

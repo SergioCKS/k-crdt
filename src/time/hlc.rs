@@ -67,11 +67,13 @@
 //! **Handling update rejections.** When a message timestamp drifts too far ahead into the future,
 //! the message is rejected. The emitting node should be notified of rejections, so that it adjusts
 //! it's clock/offset, and retries the rejected updates.
-use crate::time::clock::{BrowserClock, Clock, Offset, SysTimeClock, TimePollError};
+use crate::time::clock::{BrowserClock, Clock, Offset, SysTimeClock, TimePollError, ServerClock};
 use crate::time::timestamp::Timestamp;
 use std::cmp;
 use std::fmt::{Debug, Display, Formatter};
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
+use wasm_bindgen::prelude::*;
 
 /// ## Maximum drift
 ///
@@ -223,6 +225,12 @@ impl From<TimePollError> for UpdateWithTimestampError {
         Self::TimePollError(err.to_string())
     }
 }
+
+impl From<UpdateWithTimestampError> for JsValue {
+    fn from(error: UpdateWithTimestampError) -> Self {
+        JsValue::from(error.to_string())
+    }
+}
 //#endregion
 
 //#region SysTimeHLC
@@ -305,6 +313,54 @@ impl HybridLogicalClock<BrowserClock> for BrowserHLC {
 
     fn get_internal_clock(&self) -> BrowserClock {
         self.clock
+    }
+}
+//#endregion
+
+//#region ServerHLC
+#[wasm_bindgen]
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+pub struct ServerHLC {
+    last_time: Timestamp
+}
+
+#[wasm_bindgen]
+impl ServerHLC {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> ServerHLC {
+        ServerHLC::default()
+    }
+
+    pub fn get_timestamp(&mut self) -> Timestamp {
+        self.generate_timestamp().expect_throw("Failed to generate timestamp.")
+    }
+
+    pub fn update(&mut self, ts: Timestamp) -> Result<Timestamp, JsValue> {
+        Ok(self.update_with_timestamp(ts)?)
+    }
+
+    pub fn serialize(&self) -> Vec<u8> {
+        let some = self.clone();
+        bincode::serialize(&some).expect_throw("Failed to serialize HLC.")
+    }
+
+    pub fn deserialize(encoded: Vec<u8>) -> ServerHLC {
+        let decoded: ServerHLC = bincode::deserialize(&encoded[..]).unwrap_throw();
+        decoded
+    }
+}
+
+impl HybridLogicalClock<ServerClock> for ServerHLC {
+    fn get_last_time(&self) -> Timestamp {
+        self.last_time
+    }
+
+    fn set_last_time(&mut self, new_time: Timestamp) {
+        self.last_time = new_time;
+    }
+
+    fn get_internal_clock(&self) -> ServerClock {
+        ServerClock::default()
     }
 }
 //#endregion

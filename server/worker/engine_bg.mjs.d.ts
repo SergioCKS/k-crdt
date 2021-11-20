@@ -149,6 +149,32 @@ export class PackedBoolRegister {
   get_update_message(nid: UID, ts: Timestamp): Uint8Array;
 }
 /**
+*/
+export class ServerHLC {
+  free(): void;
+/**
+*/
+  constructor();
+/**
+* @returns {Timestamp}
+*/
+  get_timestamp(): Timestamp;
+/**
+* @param {Timestamp} ts
+* @returns {Timestamp}
+*/
+  update(ts: Timestamp): Timestamp;
+/**
+* @returns {Uint8Array}
+*/
+  serialize(): Uint8Array;
+/**
+* @param {Uint8Array} encoded
+* @returns {ServerHLC}
+*/
+  static deserialize(encoded: Uint8Array): ServerHLC;
+}
+/**
 * ## HLC Timestamp
 *
 * 64-bit HLC timestamp implemented as a tuple struct over [`u64`].

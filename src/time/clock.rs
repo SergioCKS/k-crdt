@@ -9,6 +9,7 @@ use std::ops::Add;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use serde::{Serialize, Deserialize};
 
 /// ## Maximum time offset
 ///
@@ -273,6 +274,25 @@ pub fn test_clock() -> Result<u64, JsValue> {
             "Error while trying to poll time. {}",
             error
         ))),
+    }
+}
+//#endregion
+
+//#region Server clock
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+pub struct ServerClock;
+
+impl Clock for ServerClock {
+    fn get_offset(&self) -> Offset {
+        Offset::default()
+    }
+
+    fn set_offset_unchecked(&mut self, _: Offset) -> () {
+        ()
+    }
+
+    fn poll_duration() -> Result<Duration, TimePollError> {
+        Ok(Duration::from_millis(js_sys::Date::now() as u64))
     }
 }
 //#endregion

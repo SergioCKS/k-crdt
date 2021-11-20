@@ -4,7 +4,7 @@ import {
   ServerMessage,
   ServerMessageCode,
 } from "./messages.mjs";
-import { get_message, parse_update_message } from "./engine_bg.mjs";
+import { parse_update_message, ServerHLC } from "./engine_bg.mjs";
 
 interface Env {
   COUNTER: any;
@@ -17,11 +17,22 @@ type TimeSyncPollRequestPayload = {
 export class SyncAgent {
   state: DurableObjectState;
   sessions: WebSocket[];
+  hlc: ServerHLC | null;
 
   constructor(state: DurableObjectState, env: Env) {
     env;
     this.state = state;
     this.sessions = [];
+    this.hlc = null;
+
+    this.state.blockConcurrencyWhile(async () => {
+      let hlcBuffer = (await this.state.storage.get(
+        "hlc"
+      )) as ArrayBuffer | null;
+      this.hlc = hlcBuffer
+        ? ServerHLC.deserialize(new Uint8Array(hlcBuffer))
+        : new ServerHLC();
+    });
   }
 
   broadcastMessage(message: string | ArrayBuffer) {
@@ -36,6 +47,9 @@ export class SyncAgent {
   }
 
   async fetch(request: Request): Promise<Response> {
+    let currentHLC = this.hlc;
+    let currState = this.state;
+
     const upgradeHeader = request.headers.get("Upgrade");
     if (!upgradeHeader || upgradeHeader !== "websocket") {
       return new Response("Expected Upgrade: websocket", { status: 426 });
@@ -48,10 +62,10 @@ export class SyncAgent {
       server.send(JSON.stringify(message));
     }
 
-    function handleClientMessage(
+    async function handleClientMessage(
       msgCode: ClientMessageCode,
       payload: Record<string, unknown> | unknown
-    ): boolean {
+    ): Promise<boolean> {
       switch (msgCode) {
         case ClientMessageCode.TimeSync: {
           const timeSyncPayload = payload as TimeSyncPollRequestPayload;
@@ -66,9 +80,12 @@ export class SyncAgent {
           return true;
         }
         case ClientMessageCode.Test: {
+          currentHLC?.get_timestamp();
+          const encoded = currentHLC?.serialize();
+          currState.storage.put("hlc", encoded?.buffer);
           messageClient({
             msgCode: ServerMessageCode.Test,
-            payload: { value: get_message() },
+            payload: { value: encoded },
           });
           return true;
         }
@@ -97,7 +114,6 @@ export class SyncAgent {
           } else {
             console.error(e);
           }
-          return;
         }
       }
     });

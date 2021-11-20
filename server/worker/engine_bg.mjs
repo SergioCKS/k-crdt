@@ -467,6 +467,79 @@ export class PackedBoolRegister {
     }
 }
 /**
+*/
+export class ServerHLC {
+
+    static __wrap(ptr) {
+        const obj = Object.create(ServerHLC.prototype);
+        obj.ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_serverhlc_free(ptr);
+    }
+    /**
+    */
+    constructor() {
+        var ret = wasm.serverhlc_new();
+        return ServerHLC.__wrap(ret);
+    }
+    /**
+    * @returns {Timestamp}
+    */
+    get_timestamp() {
+        var ret = wasm.serverhlc_get_timestamp(this.ptr);
+        return Timestamp.__wrap(ret);
+    }
+    /**
+    * @param {Timestamp} ts
+    * @returns {Timestamp}
+    */
+    update(ts) {
+        _assertClass(ts, Timestamp);
+        var ptr0 = ts.ptr;
+        ts.ptr = 0;
+        var ret = wasm.serverhlc_update(this.ptr, ptr0);
+        return Timestamp.__wrap(ret);
+    }
+    /**
+    * @returns {Uint8Array}
+    */
+    serialize() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.serverhlc_serialize(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            var v0 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_free(r0, r1 * 1);
+            return v0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * @param {Uint8Array} encoded
+    * @returns {ServerHLC}
+    */
+    static deserialize(encoded) {
+        var ptr0 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.serverhlc_deserialize(ptr0, len0);
+        return ServerHLC.__wrap(ret);
+    }
+}
+/**
 * ## HLC Timestamp
 *
 * 64-bit HLC timestamp implemented as a tuple struct over [`u64`].
@@ -745,6 +818,11 @@ export function __wbg_call_888d259a5fefc347() { return handleError(function (arg
     var ret = getObject(arg0).call(getObject(arg1));
     return addHeapObject(ret);
 }, arguments) };
+
+export function __wbg_now_af172eabe2e041ad() {
+    var ret = Date.now();
+    return ret;
+};
 
 export function __wbg_self_c6fbdfc2918d5e58() { return handleError(function () {
     var ret = self.self;

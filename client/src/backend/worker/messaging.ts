@@ -9,7 +9,13 @@
 import { Wasm } from "../wasm";
 import { LocalDb } from "../db";
 import { SyncConnection } from "../sync";
-import { WorkerMessage, AppMessageCode, WorkerMessageCode, requireWasm } from "$types/messages";
+import {
+	WorkerMessage,
+	AppMessageCode,
+	WorkerMessageCode,
+	requireWasm,
+	ClientMessageCode
+} from "$types/messages";
 
 /**
  * ## Worker Scope
@@ -113,6 +119,9 @@ export async function handleClientMessage(
 			return true;
 		}
 		case AppMessageCode.Test: {
+			syncConnection.messageServer({
+				msgCode: ClientMessageCode.Test
+			});
 			return true;
 		}
 		case AppMessageCode.UpdateTimeOffset: {
