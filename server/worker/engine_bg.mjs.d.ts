@@ -14,9 +14,46 @@ export function get_message(): string;
 */
 export function parse_update_message(update_msg: Uint8Array): string;
 /**
+* ## Browser HLC
+*
+* Hybrid logical clock based on browser time.
+*/
+export class BrowserHLC {
+  free(): void;
+/**
+* ### New browser HLC
+*
+* Creates a new HLC based on browser time.
+*
+* * Returns default HLC
+*/
+  constructor();
+/**
+* ### Get clock offset
+*
+* Returns the offset of the internal clock.
+*
+* * Returns offset in milliseconds
 * @returns {BigInt}
 */
-export function test_clock(): BigInt;
+  getOffset(): BigInt;
+/**
+* ### Set clock offset
+*
+* Updates the offset of the internal clock.
+*
+* * `offset` - Offset in milliseconds
+* @param {BigInt} offset
+*/
+  setOffset(offset: BigInt): void;
+/**
+* ### Serialize HLC
+*
+* Returns an updated encoded version of the HLC.
+* @returns {Uint8Array}
+*/
+  serialize(): Uint8Array;
+}
 /**
 * ## CRDT Engine
 *
@@ -54,9 +91,9 @@ export class Engine {
 * ### Set time offset
 *
 * Sets the time offset of the node.
-* @param {number} offset_millis
+* @param {BigInt} offset_millis
 */
-  set_time_offset(offset_millis: number): void;
+  set_time_offset(offset_millis: BigInt): void;
 /**
 * ### Get node ID
 *
@@ -68,9 +105,9 @@ export class Engine {
 * ### Get time offset
 *
 * Returns the time offset of the node.
-* @returns {number}
+* @returns {BigInt}
 */
-  get_time_offset(): number;
+  get_time_offset(): BigInt;
 /**
 * ### Get register value
 *

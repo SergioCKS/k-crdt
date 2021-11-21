@@ -3,7 +3,8 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, { Engine, UID } from "./wasm/crdts";
+import init, { Engine, UID, BrowserHLC } from "./wasm/crdts";
+import type { LocalDb } from "./db";
 
 /**
  * ## WASM
@@ -19,6 +20,13 @@ export class Wasm {
 	public engine: Engine = undefined;
 
 	/**
+	 * ### Hybrid logical clock
+	 *
+	 * HLC based on browser time. It is persisted in the local database when updated and restored from it on initialization.
+	 */
+	public hlc: BrowserHLC = undefined;
+
+	/**
 	 * ### Initialize WASM
 	 *
 	 * Initialize WASM. Once initialized, WASM objects become interactive.
@@ -27,6 +35,10 @@ export class Wasm {
 		await init();
 		// Starts with a random node ID, which is replaced by a stored one later if found.
 		this.engine = new Engine();
+
+		// Starts with a default state, which is replaced by a stored one later if found.
+		this.hlc = new BrowserHLC();
+
 		return this.engine.get_node_id().as_string();
 	}
 
@@ -43,16 +55,39 @@ export class Wasm {
 		}
 	}
 
+	//#region Time offset
 	/**
-	 * ### Set time offset
+	 * ### Get clock offset
 	 *
-	 * Set the time offset for the WASM engine.
+	 * Returns the time offset of the local HLC.
 	 *
-	 * @param offset - Offset in milliseconds.
+	 * @returns Offset in milliseconds
 	 */
-	public setOffset(offset: number): void {
-		if (this.engine) {
-			this.engine.set_time_offset(offset);
-		}
+	public getOffset(): BigInt {
+		return this.hlc ? this.hlc.getOffset() : BigInt(0);
+	}
+
+	/**
+	 * ### Set clock offset
+	 *
+	 * Updates the time offset of the local HLC.
+	 *
+	 * @param offset - Offset in milliseconds
+	 */
+	public setOffset(offset: BigInt, db?: LocalDb): void {
+		if (this.hlc) this.hlc.setOffset(offset);
+	}
+	//#endregion
+
+	/**
+	 * ### Serialize clock
+	 *
+	 * Returns the serialized current state of the HLC.
+	 *
+	 * @returns Encoded HLC
+	 * @throws Error if the serialization fails, or if the clock wasn't serialized properly.
+	 */
+	public serializeClock(): ArrayBuffer {
+		return this.hlc.serialize().buffer;
 	}
 }

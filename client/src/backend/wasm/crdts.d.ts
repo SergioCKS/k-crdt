@@ -14,9 +14,46 @@ export function get_message(): string;
 */
 export function parse_update_message(update_msg: Uint8Array): string;
 /**
+* ## Browser HLC
+*
+* Hybrid logical clock based on browser time.
+*/
+export class BrowserHLC {
+  free(): void;
+/**
+* ### New browser HLC
+*
+* Creates a new HLC based on browser time.
+*
+* * Returns default HLC
+*/
+  constructor();
+/**
+* ### Get clock offset
+*
+* Returns the offset of the internal clock.
+*
+* * Returns offset in milliseconds
 * @returns {BigInt}
 */
-export function test_clock(): BigInt;
+  getOffset(): BigInt;
+/**
+* ### Set clock offset
+*
+* Updates the offset of the internal clock.
+*
+* * `offset` - Offset in milliseconds
+* @param {BigInt} offset
+*/
+  setOffset(offset: BigInt): void;
+/**
+* ### Serialize HLC
+*
+* Returns an updated encoded version of the HLC.
+* @returns {Uint8Array}
+*/
+  serialize(): Uint8Array;
+}
 /**
 * ## CRDT Engine
 *
@@ -54,9 +91,9 @@ export class Engine {
 * ### Set time offset
 *
 * Sets the time offset of the node.
-* @param {number} offset_millis
+* @param {BigInt} offset_millis
 */
-  set_time_offset(offset_millis: number): void;
+  set_time_offset(offset_millis: BigInt): void;
 /**
 * ### Get node ID
 *
@@ -68,9 +105,9 @@ export class Engine {
 * ### Get time offset
 *
 * Returns the time offset of the node.
-* @returns {number}
+* @returns {BigInt}
 */
-  get_time_offset(): number;
+  get_time_offset(): BigInt;
 /**
 * ### Get register value
 *
@@ -268,6 +305,23 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
+  readonly __wbg_packedboolregister_free: (a: number) => void;
+  readonly packedboolregister_new: (a: number, b: number, c: number, d: number) => number;
+  readonly packedboolregister_get_id: (a: number, b: number) => void;
+  readonly packedboolregister_get_value: (a: number) => number;
+  readonly packedboolregister_get_encoded: (a: number, b: number) => void;
+  readonly packedboolregister_get_update_message: (a: number, b: number, c: number, d: number) => void;
+  readonly __wbg_browserhlc_free: (a: number) => void;
+  readonly browserhlc_new: () => number;
+  readonly browserhlc_getOffset: (a: number, b: number) => void;
+  readonly browserhlc_setOffset: (a: number, b: number, c: number) => void;
+  readonly browserhlc_serialize: (a: number, b: number) => void;
+  readonly __wbg_serverhlc_free: (a: number) => void;
+  readonly serverhlc_new: () => number;
+  readonly serverhlc_get_timestamp: (a: number) => number;
+  readonly serverhlc_update: (a: number, b: number) => number;
+  readonly serverhlc_serialize: (a: number, b: number) => void;
+  readonly serverhlc_deserialize: (a: number, b: number) => number;
   readonly __wbg_uid_free: (a: number) => void;
   readonly uid_new: () => number;
   readonly uid_from_string: (a: number, b: number) => number;
@@ -278,22 +332,15 @@ export interface InitOutput {
   readonly engine_new: (a: number) => number;
   readonly engine_restore_register: (a: number, b: number, c: number) => void;
   readonly engine_set_node_id: (a: number, b: number) => void;
-  readonly engine_set_time_offset: (a: number, b: number) => void;
+  readonly engine_set_time_offset: (a: number, b: number, c: number) => void;
   readonly engine_get_node_id: (a: number) => number;
-  readonly engine_get_time_offset: (a: number) => number;
+  readonly engine_get_time_offset: (a: number, b: number) => void;
   readonly engine_get_register_value: (a: number) => number;
   readonly engine_toggle_register: (a: number) => void;
   readonly engine_generate_timestamp: (a: number) => number;
   readonly engine_create_bool_register: (a: number, b: number) => number;
   readonly get_message: (a: number) => void;
   readonly parse_update_message: (a: number, b: number, c: number) => void;
-  readonly __wbg_serverhlc_free: (a: number) => void;
-  readonly serverhlc_new: () => number;
-  readonly serverhlc_get_timestamp: (a: number) => number;
-  readonly serverhlc_update: (a: number, b: number) => number;
-  readonly serverhlc_serialize: (a: number, b: number) => void;
-  readonly serverhlc_deserialize: (a: number, b: number) => number;
-  readonly test_clock: (a: number) => void;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;
   readonly timestamp_get_time: (a: number, b: number) => void;
@@ -302,16 +349,10 @@ export interface InitOutput {
   readonly timestamp_get_count: (a: number) => number;
   readonly timestamp_get_nanoseconds: (a: number) => number;
   readonly timestamp_increase_counter: (a: number) => void;
-  readonly __wbg_packedboolregister_free: (a: number) => void;
-  readonly packedboolregister_new: (a: number, b: number, c: number, d: number) => number;
-  readonly packedboolregister_get_id: (a: number, b: number) => void;
-  readonly packedboolregister_get_value: (a: number) => number;
-  readonly packedboolregister_get_encoded: (a: number, b: number) => void;
-  readonly packedboolregister_get_update_message: (a: number, b: number, c: number, d: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
-  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;
 }
 

@@ -44,7 +44,7 @@ export interface WorkerMessage extends Message {
 /**
  * ## Client message
  *
- * Message data froma client-originated event.
+ * Message data from a client-originated event.
  */
 export interface ClientMessage extends Message {
   msgCode: ClientMessageCode;
@@ -80,8 +80,6 @@ export enum AppMessageCode {
  */
 export enum WorkerMessageCode {
   Initialized = "initialized",
-  TimeOffsetValue = "time-offset-value",
-  RetrieveTimeOffset = "retrieve-time-offset",
   OfflineValue = "offline-value",
   NewRegister = "new-register",
   RestoredRegisters = "restored-registers",

@@ -7,7 +7,7 @@
  * @module
  */
 import { Wasm } from "../wasm";
-import { LocalDb } from "../db";
+import { LocalDb, RecordType } from "../db";
 import { SyncConnection } from "../sync";
 import {
 	WorkerMessage,
@@ -49,10 +49,10 @@ async function broadcastMessage(message: WorkerMessage) {
  *
  * @param message Message to send
  */
-async function messageAnyClient(message: WorkerMessage) {
-	const anyClient = (await worker.clients.matchAll())[0];
-	anyClient.postMessage(message);
-}
+// async function messageAnyClient(message: WorkerMessage) {
+// 	const anyClient = (await worker.clients.matchAll())[0];
+// 	anyClient.postMessage(message);
+// }
 
 /**
  * ## Message client
@@ -125,18 +125,21 @@ export async function handleClientMessage(
 			return true;
 		}
 		case AppMessageCode.UpdateTimeOffset: {
-			const updatedOffset = payload.value as number;
-			wasm.setOffset(updatedOffset);
-			messageClient(client, {
-				msgCode: WorkerMessageCode.TimeOffsetValue,
-				payload: { value: updatedOffset }
-			});
+			const newOffset = payload.value as number;
+			wasm.setOffset(BigInt(newOffset));
+			try {
+				const encodedClock = wasm.serializeClock();
+				localDb.putRecord({
+					id: "HLC",
+					type: RecordType.HLC,
+					value: encodedClock
+				});
+			} catch (error) {
+				console.error(error);
+			}
 			return true;
 		}
 		case AppMessageCode.NoSyncConnection: {
-			// 1. Retrieve last calculated time offset from local storage if available.
-			await messageAnyClient({ msgCode: WorkerMessageCode.RetrieveTimeOffset });
-
 			// 2. Update offline values in client stores.
 			broadcastMessage({
 				msgCode: WorkerMessageCode.OfflineValue,

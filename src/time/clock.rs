@@ -2,11 +2,10 @@
 //!
 //! An interface for clocks that poll time and output HLC/NTP timestamps.
 use crate::time::timestamp::Timestamp;
-use std::cmp::Ordering;
 use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use serde::{Serialize, Deserialize};
@@ -14,109 +13,68 @@ use serde::{Serialize, Deserialize};
 /// ## Maximum time offset
 ///
 /// Maximum time offset (in seconds) for shifting time measurements.
-pub const MAX_OFFSET: u64 = 31_556_952;
+pub const MAX_OFFSET: i64 = 31_556_952;
 
-//#region Offset (enum)
+//#region Offset
 /// ## Offset
 ///
-/// Signed duration to model time offsets.
-#[derive(Clone, Copy)]
-pub enum Offset {
-    Negative(Duration),
-    Positive(Duration),
-}
+/// Time offset in milliseconds.
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+pub struct Offset(i64); // bincode: 8 bytes
 
 impl Offset {
     /// ### Zero offset
     ///
-    /// Constructs a positive [`Offset`] with no duration.
-    pub fn zero() -> Self {
-        Self::Positive(Duration::new(0, 0))
-    }
+    /// Constructs an [`Offset`] with no duration.
+    pub fn zero() -> Self { Self(0) }
 
     /// ### Create offset from milliseconds
     ///
     /// Constructs an [`Offset`] given the number of milliseconds (positive or negative).
-    pub fn from_millis(offset_millis: i32) -> Self {
-        let duration = Duration::from_millis(offset_millis.abs() as u64);
-        if offset_millis < 0 {
-            Self::Negative(duration)
-        } else {
-            Self::Positive(duration)
-        }
-    }
+    pub fn from_millis(offset_millis: i64) -> Self { Self(offset_millis) }
 
-    /// ### Offset to milliseconds
+    /// ### As milliseconds
     ///
-    /// Returns the signed number of milliseconds represented by the offset.
-    pub fn to_millis(&self) -> i32 {
-        match *self {
-            Self::Positive(duration) => duration.as_millis() as i32,
-            Self::Negative(duration) => -(duration.as_millis() as i32),
-        }
-    }
-
-    pub fn get_duration(&self) -> Duration {
-        match *self {
-            Self::Negative(d) | Self::Positive(d) => d,
-        }
-    }
-}
-
-impl Default for Offset {
-    /// ### Default offset
-    ///
-    /// Constructs a default offset with zero value.
-    fn default() -> Self {
-        Self::zero()
-    }
+    /// Returns the offset as number of milliseconds (positive or negative).
+    pub fn as_millis(&self) -> i64 { self.0 }
 }
 
 impl From<Offset> for Duration {
-    /// ### Duration from offset
+    /// ### Create duration from offset
     ///
-    /// Returns the offset duration ignoring its sign.
+    /// Returns the absolute value of the [`Offset`] as a [`Duration`].
     fn from(offset: Offset) -> Self {
-        match offset {
-            Offset::Negative(duration) | Offset::Positive(duration) => duration,
-        }
+        Duration::from_millis(offset.0.abs() as u64)
     }
 }
 
 impl From<Duration> for Offset {
     /// ### Offset from duration
     ///
-    /// Returns a positive offset with the given duration as value.
+    /// Converts a duration to an offset.
+    ///
+    /// * Durations are always non-negative.
+    /// * If the duration is larger than the representation limit, the limit is used.
     fn from(duration: Duration) -> Self {
-        Self::Positive(duration)
+        let duration_millis = duration.as_millis();
+        if duration_millis > i64::MAX as u128 {
+            Self(i64::MAX)
+        } else {
+            Self(duration_millis as i64)
+        }
     }
 }
 
 impl Add<Offset> for Offset {
     type Output = Self;
 
-    /// ### Add offsets
+    /// ## Add offsets
     ///
-    /// Handles addition of offsets taking their signs into consideration.
+    /// Addition of offsets.
+    ///
+    /// * Overflows are saturating (both for positive and negative offsets).
     fn add(self, rhs: Offset) -> Self::Output {
-        match (self, rhs) {
-            (Self::Negative(d1), Self::Negative(d2)) => Self::Negative(d1 + d2),
-            (Self::Positive(d1), Self::Positive(d2)) => Self::Positive(d1 + d2),
-            (Self::Negative(d1), Self::Positive(d2)) => {
-                if let Ordering::Greater = d1.cmp(&d2) {
-                    Self::Negative(d1 - d2)
-                } else {
-                    Self::Positive(d2 - d1)
-                }
-            }
-            (Self::Positive(d1), Self::Negative(d2)) => {
-                if let Ordering::Less = d1.cmp(&d2) {
-                    Self::Negative(d2 - d1)
-                } else {
-                    Self::Positive(d1 - d2)
-                }
-            }
-        }
+        Self(self.0.saturating_add(rhs.0))
     }
 }
 //#endregion
@@ -132,14 +90,12 @@ pub trait Clock {
     /// Retrieve the offset of the clock.
     fn get_offset(&self) -> Offset;
 
-
     /// ### Set offset (unchecked)
     ///
     /// Sets the offset of the clock directly, without verifying if it is within the allowed limits.
     ///
     /// * `offset` - New offset
     fn set_offset_unchecked(&mut self, offset: Offset) -> ();
-
 
     /// ### Poll duration
     ///
@@ -153,19 +109,16 @@ pub trait Clock {
     /// * `offset` - New offset.
     fn set_offset(&mut self, offset: Offset) -> Result<(), TimePollError> {
         //Check offset is within limits.
-        match offset {
-            Offset::Negative(d) | Offset::Positive(d) => {
-                if d > Duration::new(MAX_OFFSET, 0) {
-                    return Err(TimePollError::OffsetTooLarge(format!(
-                        "The offset provided exceeds the permitted limit. Maximum allowed offset (in seconds): {}.",
-                        MAX_OFFSET
-                    )));
-                }
-            }
-        };
-        // Update the clock offset
-        self.set_offset_unchecked(offset);
-        Ok(())
+        if offset.as_millis().abs() > MAX_OFFSET {
+            Err(TimePollError::OffsetTooLarge(format!(
+                "The offset provided exceeds the permitted limit. Maximum allowed offset (in seconds): {}.",
+                MAX_OFFSET
+            )))
+        } else {
+            // Update the clock offset
+            self.set_offset_unchecked(offset);
+            Ok(())
+        }
     }
 
 
@@ -177,22 +130,15 @@ pub trait Clock {
         let offset = self.get_offset();
 
         // Poll time from system.
-        let now_duration = match Self::poll_duration() {
-            Ok(value) => value,
-            Err(error) => return Err(TimePollError::SystemTimeError(error.to_string())),
-        };
+        let now_duration = Self::poll_duration()?;
 
-        // Apply offset
-        let shifted_duration = (Offset::Positive(now_duration) + offset).get_duration();
+        // Apply offset.
+        // println!("now_millis: {}, offset_millis: {}", now_millis, offset_millis);
+        let millis = ((now_duration.as_millis() as i64) + offset.as_millis()) as u64;
+        let shifted_duration = Duration::from_millis(millis);
 
         // Generate timestamp
-        match Timestamp::try_from(shifted_duration) {
-            Ok(timestamp) => Ok(timestamp),
-            Err(error) => Err(TimePollError::TimestampParseError(format!(
-                "A timestamp could not be parsed from the given duration. {}",
-                error
-            ))),
-        }
+        Ok(Timestamp::try_from(shifted_duration)?)
     }
 }
 
@@ -202,7 +148,7 @@ pub trait Clock {
 /// A clock relying on [`SysTime`] as time source.
 #[derive(Clone, Copy, Default)]
 pub struct SysTimeClock {
-    offset: Offset
+    offset: Offset // bincode: 8 bytes
 }
 
 impl Clock for SysTimeClock {
@@ -218,13 +164,7 @@ impl Clock for SysTimeClock {
     ///
     /// Polls the timesource using [`SysTime::now`].
     fn poll_duration() -> Result<Duration, TimePollError> {
-        match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(value) => Ok(value),
-            Err(error) => Err(TimePollError::SystemTimeError(format!(
-                "A duration could not be derived from the system time. {}",
-                error
-            ))),
-        }
+        Ok(SystemTime::now().duration_since(UNIX_EPOCH)?)
     }
 }
 //#endregion
@@ -235,10 +175,10 @@ impl Clock for SysTimeClock {
 /// A clock relying on browser APIs to poll time.
 ///
 /// * The [`Performance` interface](https://developer.mozilla.org/en-US/docs/Web/API/Performance)
-///   is used to poll time. The time resolution is vendor-dependent, but is at-lest mil
-#[derive(Clone, Copy, Default)]
+///   is used to poll time. The time resolution is vendor-dependent, but is at least in the millisecond range.
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct BrowserClock {
-    offset: Offset
+    offset: Offset // bincode: 8 bytes
 }
 
 impl Clock for BrowserClock {
@@ -262,18 +202,6 @@ impl Clock for BrowserClock {
                 "The performance object is not accessible. {}",
             )))
         }
-    }
-}
-
-#[wasm_bindgen]
-pub fn test_clock() -> Result<u64, JsValue> {
-    let clock = BrowserClock::default();
-    match clock.poll_time() {
-        Ok(timestamp) => Ok(timestamp.as_u64()),
-        Err(error) => Err(JsValue::from(format!(
-            "Error while trying to poll time. {}",
-            error
-        ))),
     }
 }
 //#endregion
@@ -324,6 +252,12 @@ impl From<TimePollError> for JsValue {
         JsValue::from(err.to_string())
     }
 }
+
+impl From<SystemTimeError> for TimePollError {
+    fn from(sys_time_error: SystemTimeError) -> Self {
+        Self::SystemTimeError(format!("Could not poll time from system. {}", sys_time_error.to_string()))
+    }
+}
 //#endregion
 
 #[cfg(test)]
@@ -335,11 +269,10 @@ mod tests {
         let mut clock = SysTimeClock::default();
         clock.poll_time().expect("System time polling without offset should work.");
 
-        let neg_offset = Offset::Negative(Duration::new(1, 400));
-        let pos_offset = Offset::Positive(Duration::new(1, 500));
-        let too_large_duration = Duration::new(MAX_OFFSET + 1, 0);
-        let neg_too_large = Offset::Negative(too_large_duration);
-        let pos_too_large = Offset::Positive(too_large_duration);
+        let neg_offset = Offset::from_millis(-400_000);
+        let pos_offset = Offset::from_millis(400_000);
+        let neg_too_large = Offset::from_millis(-(MAX_OFFSET + 1));
+        let pos_too_large = Offset::from_millis(MAX_OFFSET + 1);
 
         clock.set_offset(neg_offset).unwrap();
         clock.poll_time().expect("System time polling with negative offset should work.");

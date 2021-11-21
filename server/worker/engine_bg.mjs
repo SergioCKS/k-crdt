@@ -47,7 +47,37 @@ function takeObject(idx) {
     return ret;
 }
 
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
+}
+
 let WASM_VECTOR_LEN = 0;
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1);
+    getUint8Memory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
+let cachegetInt32Memory0 = null;
+function getInt32Memory0() {
+    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
+        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
+    }
+    return cachegetInt32Memory0;
+}
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+const u32CvtShim = new Uint32Array(2);
+
+const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
 
 const lTextEncoder = typeof TextEncoder === 'undefined' ? (0, module.require)('util').TextEncoder : TextEncoder;
 
@@ -103,18 +133,6 @@ function passStringToWasm0(arg, malloc, realloc) {
     WASM_VECTOR_LEN = offset;
     return ptr;
 }
-
-let cachegetInt32Memory0 = null;
-function getInt32Memory0() {
-    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
-        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
-    }
-    return cachegetInt32Memory0;
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
-}
 /**
 * @returns {string}
 */
@@ -134,13 +152,6 @@ export function generate_id() {
 function isLikeNone(x) {
     return x === undefined || x === null;
 }
-
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-    return instance.ptr;
-}
 /**
 * @returns {string}
 */
@@ -157,12 +168,6 @@ export function get_message() {
     }
 }
 
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1);
-    getUint8Memory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 /**
 * @param {Uint8Array} update_msg
 * @returns {string}
@@ -182,32 +187,105 @@ export function parse_update_message(update_msg) {
     }
 }
 
-const u32CvtShim = new Uint32Array(2);
-
 const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
-/**
-* @returns {BigInt}
-*/
-export function test_clock() {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.test_clock(retptr);
-        var r0 = getInt32Memory0()[retptr / 4 + 0];
-        var r1 = getInt32Memory0()[retptr / 4 + 1];
-        u32CvtShim[0] = r0;
-        u32CvtShim[1] = r1;
-        const n0 = uint64CvtShim[0];
-        return n0;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-}
 
 function handleError(f, args) {
     try {
         return f.apply(this, args);
     } catch (e) {
         wasm.__wbindgen_exn_store(addHeapObject(e));
+    }
+}
+/**
+* ## Browser HLC
+*
+* Hybrid logical clock based on browser time.
+*/
+export class BrowserHLC {
+
+    static __wrap(ptr) {
+        const obj = Object.create(BrowserHLC.prototype);
+        obj.ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.ptr;
+        this.ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_browserhlc_free(ptr);
+    }
+    /**
+    * ### New browser HLC
+    *
+    * Creates a new HLC based on browser time.
+    *
+    * * Returns default HLC
+    */
+    constructor() {
+        var ret = wasm.browserhlc_new();
+        return BrowserHLC.__wrap(ret);
+    }
+    /**
+    * ### Get clock offset
+    *
+    * Returns the offset of the internal clock.
+    *
+    * * Returns offset in milliseconds
+    * @returns {BigInt}
+    */
+    getOffset() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.browserhlc_getOffset(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            u32CvtShim[0] = r0;
+            u32CvtShim[1] = r1;
+            const n0 = int64CvtShim[0];
+            return n0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * ### Set clock offset
+    *
+    * Updates the offset of the internal clock.
+    *
+    * * `offset` - Offset in milliseconds
+    * @param {BigInt} offset
+    */
+    setOffset(offset) {
+        int64CvtShim[0] = offset;
+        const low0 = u32CvtShim[0];
+        const high0 = u32CvtShim[1];
+        wasm.browserhlc_setOffset(this.ptr, low0, high0);
+    }
+    /**
+    * ### Serialize HLC
+    *
+    * Returns an updated encoded version of the HLC.
+    * @returns {Uint8Array}
+    */
+    serialize() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.browserhlc_serialize(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            var v0 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_free(r0, r1 * 1);
+            return v0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
     }
 }
 /**
@@ -283,10 +361,13 @@ export class Engine {
     * ### Set time offset
     *
     * Sets the time offset of the node.
-    * @param {number} offset_millis
+    * @param {BigInt} offset_millis
     */
     set_time_offset(offset_millis) {
-        wasm.engine_set_time_offset(this.ptr, offset_millis);
+        int64CvtShim[0] = offset_millis;
+        const low0 = u32CvtShim[0];
+        const high0 = u32CvtShim[1];
+        wasm.engine_set_time_offset(this.ptr, low0, high0);
     }
     /**
     * ### Get node ID
@@ -302,11 +383,21 @@ export class Engine {
     * ### Get time offset
     *
     * Returns the time offset of the node.
-    * @returns {number}
+    * @returns {BigInt}
     */
     get_time_offset() {
-        var ret = wasm.engine_get_time_offset(this.ptr);
-        return ret;
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.engine_get_time_offset(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            u32CvtShim[0] = r0;
+            u32CvtShim[1] = r1;
+            const n0 = int64CvtShim[0];
+            return n0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
     }
     /**
     * ### Get register value

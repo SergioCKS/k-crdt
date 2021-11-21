@@ -49,6 +49,7 @@ use std::ops::{Add, AddAssign, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
 use wasm_bindgen::prelude::*;
+use crate::time::clock::TimePollError;
 
 //#region Constants
 /// ## Maximum number of seconds for duration
@@ -391,6 +392,12 @@ impl From<SystemTimeError> for TimestampError {
             "A duration since UNIX epoch could not be derived from the given system time. {}",
             error
         ))
+    }
+}
+
+impl From<TimestampError> for TimePollError {
+    fn from(ts_error: TimestampError) -> Self {
+        TimePollError::TimestampParseError(ts_error.to_string())
     }
 }
 //#endregion

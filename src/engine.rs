@@ -97,7 +97,7 @@ impl Engine {
     /// ### Set time offset
     ///
     /// Sets the time offset of the node.
-    pub fn set_time_offset(&mut self, offset_millis: i32) -> Result<(), JsValue> {
+    pub fn set_time_offset(&mut self, offset_millis: i64) -> Result<(), JsValue> {
         Ok(self.clock.set_offset(Offset::from_millis(offset_millis))?)
     }
     //#endregion
@@ -112,8 +112,8 @@ impl Engine {
     /// ### Get time offset
     ///
     /// Returns the time offset of the node.
-    pub fn get_time_offset(&self) -> i32 {
-        self.clock.get_offset().to_millis()
+    pub fn get_time_offset(&self) -> i64 {
+        self.clock.get_offset().as_millis()
     }
 
 

@@ -4,7 +4,59 @@
  * Interface to IndexedDB.
  * @module
  */
-import { UID } from "./wasm/crdts";
+
+/**
+ * ## Type of the record
+ *
+ * Known record types. Each type corresponds to a specific
+ */
+export enum RecordType {
+	HLC = "hlc",
+	BoolRegister = "bool-register"
+}
+
+/**
+ * ## DB Record
+ *
+ * Record stored in IndexedDB.
+ */
+export interface DbRecord {
+	/**
+	 * ### ID
+	 *
+	 * Unique identifier of the record.
+	 *
+	 * * Used as primary key in IndexedDB.
+	 */
+	id: string;
+
+	/**
+	 * ### Type
+	 *
+	 * Type of the record.
+	 *
+	 * * Used for deserializing the record into a specific type.
+	 */
+	type: RecordType;
+
+	/**
+	 * ### Value
+	 *
+	 * Binary encoding of the record.
+	 *
+	 * * The ArrayBuffer is supposed to be interpreted as a byte array (UInt8Array view).
+	 */
+	value: ArrayBuffer;
+
+	/**
+	 * ### Indices
+	 *
+	 * Object storing values used to index records.
+	 *
+	 * * A subset of the record values are placed here and referenced by IDB indices.
+	 */
+	indices?: Record<string, unknown>;
+}
 
 /**
  * ## Worker Scope
@@ -37,10 +89,7 @@ export class LocalDb {
 	 */
 	public async initialize(nid: string): Promise<string> {
 		// Check browser support.
-		if (!worker.indexedDB) {
-			console.error("Your browser doesn't support a stable version of IndexedDB.");
-			return;
-		}
+		if (!worker.indexedDB) throw "Your browser doesn't support a stable version of IndexedDB.";
 
 		//#region 1. Get DB name or generate a new one.
 		// The name of the database has the format `KCRDT:{nodeID}`.
@@ -72,6 +121,31 @@ export class LocalDb {
 		return nodeId;
 	}
 
+	/**
+	 * ### Put DB record
+	 *
+	 * Adds or updates a database record in the `crdt` store.
+	 *
+	 * @param record Database record
+	 * @returns DB key of the item
+	 * @throws Errors encountered while trying to write to local database
+	 */
+	public putRecord(record: DbRecord): Promise<IDBValidKey> {
+		return new Promise((resolve, reject) => {
+			const request = this.db.transaction(["crdts"], "readwrite").objectStore("crdts").put(record);
+			request.onerror = () => reject(request.error);
+			request.onsuccess = () => resolve(request.result);
+		});
+	}
+
+	/**
+	 * ### Put CRDT
+	 *
+	 * Adds or updates a record in the `crdt` store.
+	 *
+	 * @param crdt Item to store
+	 * @returns DB key of the stored item
+	 */
 	public async put_crdt(crdt: {
 		id: string;
 		value: any;

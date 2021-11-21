@@ -49,23 +49,8 @@
 				$initialized = true;
 				return true;
 			}
-			case WorkerMessageCode.TimeOffsetValue: {
-				const updatedOffset = payload.value as number;
-				localStorage.setItem("TIME_OFFSET", updatedOffset.toString());
-				return true;
-			}
 			case WorkerMessageCode.OfflineValue: {
 				$offline = payload.value as boolean;
-				return true;
-			}
-			case WorkerMessageCode.RetrieveTimeOffset: {
-				const offset = localStorage.getItem("TIME_OFFSET");
-				if (offset) {
-					messageWorker({
-						msgCode: AppMessageCode.UpdateTimeOffset,
-						payload: { value: Number.parseInt(offset) }
-					});
-				}
 				return true;
 			}
 			case WorkerMessageCode.NewRegister: {

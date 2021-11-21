@@ -107,7 +107,7 @@ export class SyncAgent {
       } else {
         try {
           const msg = JSON.parse(rawData) as ClientMessage;
-          handleClientMessage(msg.msgCode, msg.payload);
+          await handleClientMessage(msg.msgCode, msg.payload);
         } catch (e) {
           if (e instanceof SyntaxError) {
             console.error("JSON couldn't be parsed");
