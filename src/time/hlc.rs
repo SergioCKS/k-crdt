@@ -331,6 +331,14 @@ impl BrowserHLC {
     pub fn serialize(&self) -> Vec<u8> {
         bincode::serialize(&self).expect_throw("Failed to serialize HLC.")
     }
+
+    /// ### Deserialize HLC
+    ///
+    /// Constructs an HLC from an encoded version.
+    pub fn deserialize(encoded: Vec<u8>) -> BrowserHLC {
+        let decoded: BrowserHLC = bincode::deserialize(&encoded[..]).expect_throw("Failed to deserialize HLC.");
+        decoded
+    }
 }
 
 impl BrowserHLC {

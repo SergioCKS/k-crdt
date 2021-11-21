@@ -210,56 +210,68 @@ export class SyncConnection {
 	 *
 	 * Initializes the connection to the sync manager.
 	 */
-	public initialize(forceRestart = false): void {
-		// Restart if web socket is active.
-		if (this._ws && [0, 1].includes(this._ws.readyState)) {
-			if (forceRestart) {
-				this._ws.close(1012, "Restarting connection.");
-			} else {
-				return;
-			}
-		}
-
-		const ws = new WebSocket(this._syncUrl);
-
-		ws.addEventListener("error", (event) => {
-			console.error(event);
-			// Error connecting to WebSocket (device could be offline).
-			messageWorker({
-				msgCode: AppMessageCode.NoSyncConnection
-			});
-		});
-
-		ws.addEventListener("open", async () => {
-			// Perform time synchronization poll on socket initialization.
-			this.messageServer({
-				msgCode: ClientMessageCode.TimeSync,
-				payload: { t0: new Date().valueOf() }
-			});
-		});
-
-		ws.addEventListener("message", async ({ data: rawData }) => {
-			try {
-				if (rawData instanceof ArrayBuffer) {
-					await handleServerBinaryMessage(new Uint8Array(rawData));
+	public initialize(forceRestart = false): Promise<void> {
+		return new Promise((resolve, reject) => {
+			// Restart if web socket is active.
+			if (this._ws && [0, 1].includes(this._ws.readyState)) {
+				if (forceRestart) {
+					this._ws.close(1012, "Restarting connection.");
 				} else {
-					const msg = JSON.parse(rawData) as ServerMessage;
-					handleServerMessage(msg.msgCode, msg.payload);
-				}
-			} catch (error) {
-				if (error instanceof SyntaxError) {
-					console.error("Error while handling server event. JSON couldn't be parsed");
-				} else {
-					console.error("Error while handling server event.", error);
+					resolve();
 				}
 			}
-		});
+			const ws = new WebSocket(this._syncUrl);
 
-		ws.addEventListener("close", () => {
-			console.log("Closed connection to the synchronization manager.");
-		});
+			ws.addEventListener("error", (event) => {
+				console.error(event);
+				// Error connecting to WebSocket (device could be offline).
+				messageWorker({
+					msgCode: AppMessageCode.NoSyncConnection
+				});
+				reject(event);
+			});
 
-		this._ws = ws;
+			ws.addEventListener("message", async ({ data: rawData }) => {
+				try {
+					if (rawData instanceof ArrayBuffer) {
+						await handleServerBinaryMessage(new Uint8Array(rawData));
+					} else {
+						const msg = JSON.parse(rawData) as ServerMessage;
+						handleServerMessage(msg.msgCode, msg.payload);
+					}
+				} catch (error) {
+					if (error instanceof SyntaxError) {
+						console.error("Error while handling server event. JSON couldn't be parsed");
+					} else {
+						console.error("Error while handling server event.", error);
+					}
+				}
+			});
+
+			ws.addEventListener("close", () => {
+				console.log("Closed connection to the synchronization manager.");
+			});
+
+			ws.addEventListener("open", async () => {
+				// Perform time synchronization poll on socket initialization.
+				this.messageServer({
+					msgCode: ClientMessageCode.TimeSync,
+					payload: { t0: new Date().valueOf() }
+				});
+				resolve();
+			});
+
+			this._ws = ws;
+		});
+	}
+
+	/**
+	 * ### Sync connection is initialized?
+	 *
+	 * Whether or not the sync connection was initialized properly.
+	 */
+	public is_initialized(): boolean {
+		return !!this._ws;
 	}
 
 	//#region Getters

@@ -287,6 +287,19 @@ export class BrowserHLC {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }
     }
+    /**
+    * ### Deserialize HLC
+    *
+    * Constructs an HLC from an encoded version.
+    * @param {Uint8Array} encoded
+    * @returns {BrowserHLC}
+    */
+    static deserialize(encoded) {
+        var ptr0 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.browserhlc_deserialize(ptr0, len0);
+        return BrowserHLC.__wrap(ret);
+    }
 }
 /**
 * ## CRDT Engine

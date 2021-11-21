@@ -53,6 +53,14 @@ export class BrowserHLC {
 * @returns {Uint8Array}
 */
   serialize(): Uint8Array;
+/**
+* ### Deserialize HLC
+*
+* Constructs an HLC from an encoded version.
+* @param {Uint8Array} encoded
+* @returns {BrowserHLC}
+*/
+  static deserialize(encoded: Uint8Array): BrowserHLC;
 }
 /**
 * ## CRDT Engine

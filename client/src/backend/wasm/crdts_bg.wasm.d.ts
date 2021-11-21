@@ -12,6 +12,7 @@ export function browserhlc_new(): number;
 export function browserhlc_getOffset(a: number, b: number): void;
 export function browserhlc_setOffset(a: number, b: number, c: number): void;
 export function browserhlc_serialize(a: number, b: number): void;
+export function browserhlc_deserialize(a: number, b: number): number;
 export function __wbg_serverhlc_free(a: number): void;
 export function serverhlc_new(): number;
 export function serverhlc_get_timestamp(a: number): number;

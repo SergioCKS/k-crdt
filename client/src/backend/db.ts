@@ -122,6 +122,15 @@ export class LocalDb {
 	}
 
 	/**
+	 * ### DB interface is initialized?
+	 *
+	 * Whether or not the DB interface was initialized properly.
+	 */
+	public is_initialized(): boolean {
+		return !!this.db;
+	}
+
+	/**
 	 * ### Put DB record
 	 *
 	 * Adds or updates a database record in the `crdt` store.
@@ -133,6 +142,23 @@ export class LocalDb {
 	public putRecord(record: DbRecord): Promise<IDBValidKey> {
 		return new Promise((resolve, reject) => {
 			const request = this.db.transaction(["crdts"], "readwrite").objectStore("crdts").put(record);
+			request.onerror = () => reject(request.error);
+			request.onsuccess = () => resolve(request.result);
+		});
+	}
+
+	/**
+	 * ### Get DB record
+	 *
+	 * Retrieves a database record from the `crdt` store.
+	 *
+	 * @param id ID of the record
+	 * @returns Record or undefined if no matching record was found
+	 * @throws Errors encountered while trying to retrieve record from the local database
+	 */
+	public getRecord(id: string): Promise<DbRecord | undefined> {
+		return new Promise((resolve, reject) => {
+			const request = this.db.transaction(["crdts"], "readonly").objectStore("crdts").get(id);
 			request.onerror = () => reject(request.error);
 			request.onsuccess = () => resolve(request.result);
 		});

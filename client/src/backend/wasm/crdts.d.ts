@@ -53,6 +53,14 @@ export class BrowserHLC {
 * @returns {Uint8Array}
 */
   serialize(): Uint8Array;
+/**
+* ### Deserialize HLC
+*
+* Constructs an HLC from an encoded version.
+* @param {Uint8Array} encoded
+* @returns {BrowserHLC}
+*/
+  static deserialize(encoded: Uint8Array): BrowserHLC;
 }
 /**
 * ## CRDT Engine
@@ -316,6 +324,7 @@ export interface InitOutput {
   readonly browserhlc_getOffset: (a: number, b: number) => void;
   readonly browserhlc_setOffset: (a: number, b: number, c: number) => void;
   readonly browserhlc_serialize: (a: number, b: number) => void;
+  readonly browserhlc_deserialize: (a: number, b: number) => number;
   readonly __wbg_serverhlc_free: (a: number) => void;
   readonly serverhlc_new: () => number;
   readonly serverhlc_get_timestamp: (a: number) => number;

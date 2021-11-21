@@ -113,4 +113,5 @@ export enum ServerMessageCode {
 export const requireWasm: AppMessageCode[] = [
   AppMessageCode.CreateBoolRegister,
   AppMessageCode.UpdateTimeOffset,
+  AppMessageCode.Test,
 ];

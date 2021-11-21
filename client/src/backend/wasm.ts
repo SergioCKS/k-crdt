@@ -43,6 +43,15 @@ export class Wasm {
 	}
 
 	/**
+	 * ### WASM is initialized?
+	 *
+	 * Whether or not the WASM interface is initialized.
+	 */
+	public is_initialized(): boolean {
+		return !!this.engine && !!this.hlc;
+	}
+
+	/**
 	 * ### Set node ID
 	 *
 	 * Set the node ID for the WASM engine.
@@ -89,5 +98,17 @@ export class Wasm {
 	 */
 	public serializeClock(): ArrayBuffer {
 		return this.hlc.serialize().buffer;
+	}
+
+	/**
+	 * ### Deserialize clock
+	 *
+	 * Updates the HLC with an encoded version.
+	 *
+	 * @param encoded Encoded version of the HLC
+	 * @throws Error if deserialization fails.
+	 */
+	public deserializeClock(encoded: ArrayBuffer): void {
+		this.hlc = BrowserHLC.deserialize(new Uint8Array(encoded));
 	}
 }

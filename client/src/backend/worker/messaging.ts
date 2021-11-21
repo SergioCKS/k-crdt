@@ -90,8 +90,16 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	// 4. Set node ID in WASM engine.
 	wasm.setNodeId(nodeId);
 
-	// 7. Initialize connection to sync manager.
-	syncConnection.initialize(forceRestart);
+	// 5. Restore clock from local database.
+	try {
+		const encoded = await localDb.getRecord("HLC");
+		if (encoded) wasm.deserializeClock(encoded.value);
+	} catch (error) {
+		console.error(error);
+	}
+
+	// 6. Initialize connection to sync manager.
+	await syncConnection.initialize(forceRestart);
 }
 
 /**
@@ -108,13 +116,20 @@ export async function handleClientMessage(
 	msgCode: AppMessageCode,
 	payload: Record<string, unknown>
 ): Promise<boolean> {
-	// 1. Ensure WASM is initialized if the message requires it.
-	if (msgCode in requireWasm && !wasm) await initializeInterfaces();
+	// 1. Ensure the interfaces are initialized.
+	if (
+		!wasm ||
+		!wasm.is_initialized() ||
+		!localDb ||
+		!localDb.is_initialized() ||
+		!syncConnection ||
+		!syncConnection.is_initialized()
+	)
+		await initializeInterfaces();
 
 	// 2. Handle incoming message.
 	switch (msgCode) {
 		case AppMessageCode.Initialize: {
-			await initializeInterfaces();
 			broadcastMessage({ msgCode: WorkerMessageCode.Initialized });
 			return true;
 		}
@@ -126,7 +141,7 @@ export async function handleClientMessage(
 		}
 		case AppMessageCode.UpdateTimeOffset: {
 			const newOffset = payload.value as number;
-			wasm.setOffset(BigInt(newOffset));
+			wasm.setOffset(BigInt(Math.round(newOffset)));
 			try {
 				const encodedClock = wasm.serializeClock();
 				localDb.putRecord({
