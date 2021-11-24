@@ -11,14 +11,14 @@
 	import { onMount } from "svelte";
 	import { initialized, registers } from "../stores/engine";
 	import { offline } from "../stores/general";
-	import { AppMessageCode, WorkerMessageCode, AppMessage } from "$types/messages";
+	import { AppMessageCode, WorkerMessageCode, AppMessage, WorkerMessage } from "$types/messages";
 
 	/**
 	 * ## Service worker registration
 	 *
 	 * * Set on app mount.
 	 */
-	let registration: ServiceWorkerRegistration = undefined;
+	let registration: ServiceWorkerRegistration | undefined = undefined;
 
 	/**
 	 * ## Message worker
@@ -28,7 +28,7 @@
 	 * @param message - Message to send.
 	 */
 	function messageWorker(message: AppMessage) {
-		registration?.active.postMessage(message);
+		registration?.active?.postMessage(message);
 	}
 
 	/**
@@ -39,27 +39,24 @@
 	 * @param msgCode - Code of the message.
 	 * @param payload - Payload of the message.
 	 */
-	function handleWorkerMessage(
-		msgCode: WorkerMessageCode,
-		payload: Record<string, unknown>
-	): boolean {
-		switch (msgCode) {
+	function handleWorkerMessage(message: WorkerMessage): boolean {
+		switch (message.msgCode) {
 			case WorkerMessageCode.Initialized: {
 				if (!$initialized) messageWorker({ msgCode: AppMessageCode.RestoreRegisters });
 				$initialized = true;
 				return true;
 			}
 			case WorkerMessageCode.OfflineValue: {
-				$offline = payload.value as boolean;
+				$offline = message.payload.value;
 				return true;
 			}
 			case WorkerMessageCode.NewRegister: {
-				let { id, value, type } = payload as { id: string; value: boolean; type: string };
+				let { id, value, type } = message.payload;
 				$registers[id] = { value, type };
 				return true;
 			}
 			case WorkerMessageCode.RestoredRegisters: {
-				$registers = payload.value;
+				$registers = message.payload.value;
 				return true;
 			}
 		}
@@ -67,9 +64,9 @@
 
 	onMount(async () => {
 		// Attach message handler.
-		navigator.serviceWorker.addEventListener("message", ({ data: { msgCode, payload } }) => {
+		navigator.serviceWorker.addEventListener("message", ({ data: message }) => {
 			try {
-				handleWorkerMessage(msgCode, payload);
+				handleWorkerMessage(message);
 			} catch (error) {
 				console.error("Error while handling worker event.", error);
 			}
@@ -79,10 +76,10 @@
 
 		//#region Send initialization message when the worker is `active`
 		const worker = registration.active;
-		if (worker.state === "activated") {
+		if (worker?.state === "activated") {
 			messageWorker({ msgCode: AppMessageCode.Initialize });
 		} else {
-			worker.addEventListener("statechange", () => {
+			worker?.addEventListener("statechange", () => {
 				if (worker.state === "activated") {
 					messageWorker({ msgCode: AppMessageCode.Initialize });
 				}

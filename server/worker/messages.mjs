@@ -12,6 +12,8 @@
  * as such, they are copied to the corresponding places on the dependency build step.
  * @module
  */
+//#endregion
+//#region Message code
 /**
  * ## App message code
  *
@@ -34,8 +36,6 @@ export var AppMessageCode;
 export var WorkerMessageCode;
 (function (WorkerMessageCode) {
     WorkerMessageCode["Initialized"] = "initialized";
-    WorkerMessageCode["TimeOffsetValue"] = "time-offset-value";
-    WorkerMessageCode["RetrieveTimeOffset"] = "retrieve-time-offset";
     WorkerMessageCode["OfflineValue"] = "offline-value";
     WorkerMessageCode["NewRegister"] = "new-register";
     WorkerMessageCode["RestoredRegisters"] = "restored-registers";
@@ -60,6 +60,7 @@ export var ServerMessageCode;
     ServerMessageCode["TimeSync"] = "time-sync";
     ServerMessageCode["Test"] = "test";
 })(ServerMessageCode || (ServerMessageCode = {}));
+//#endregion
 /**
  * ## Messages requiring Wasm
  *
@@ -68,4 +69,5 @@ export var ServerMessageCode;
 export const requireWasm = [
     AppMessageCode.CreateBoolRegister,
     AppMessageCode.UpdateTimeOffset,
+    AppMessageCode.Test,
 ];

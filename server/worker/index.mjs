@@ -4,7 +4,7 @@ export { SyncAgent } from "./sync_agent.mjs";
 export default {
     async fetch(request, env) {
         return await handleRequest(request, env);
-    },
+    }
 };
 async function handleRequest(request, env) {
     try {

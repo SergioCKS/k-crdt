@@ -18,7 +18,8 @@ import {
 	ClientMessage,
 	ClientMessageCode,
 	ServerMessage,
-	ServerMessageCode
+	ServerMessageCode,
+	UpdateTimeOffsetPayload
 } from "$types/messages";
 
 /**
@@ -37,6 +38,17 @@ const worker = self as unknown as ServiceWorkerGlobalScope;
  */
 function messageWorker(message: AppMessage) {
 	worker.registration.active.postMessage(message);
+}
+
+/**
+ * ## Update time offset
+ *
+ * Send a message to the web worker to update the time offset of the node.
+ *
+ * @param payload - Message payload
+ */
+function updateTimeOffset(payload: UpdateTimeOffsetPayload) {
+	messageWorker({ msgCode: AppMessageCode.UpdateTimeOffset, payload });
 }
 
 /**
@@ -66,34 +78,6 @@ interface TimeSyncData {
 }
 
 /**
- * ## Time sync poll response payload
- *
- * Server response to a time synchronization poll request.
- */
-type TimeSyncPollResponsePayload = {
-	/**
-	 * ### Request transmission timestamp
-	 *
-	 * Client-side timestamp that is as close as possible to packet transmission of the request message in milliseconds since UNIX epoch.
-	 */
-	t0: number;
-
-	/**
-	 * ### Request reception timestamp
-	 *
-	 * Server-side timestamp that is as close as possible to packet reception of the request message in milliseconds since UNIX epoch.
-	 */
-	t1: number;
-
-	/**
-	 * ### Response transmission timestamp
-	 *
-	 * Server-side timestamp that is as close as possible to packet transmission of the response message in milliseconds since UNIX epoch.
-	 */
-	t2?: number;
-};
-
-/**
  * ## Get time sync data
  *
  * Compute the time offset and round-trip delay from the timestamps of a poll.
@@ -121,29 +105,23 @@ function getTimeSyncData(t0: number, t1: number, t2: number, t3: number): TimeSy
  * @param msgCode - Message code
  * @param payload - Message payload
  */
-function handleServerMessage(
-	msgCode: ServerMessageCode,
-	payload: Record<string, unknown>
-): boolean {
-	switch (msgCode) {
+function handleServerMessage(message: ServerMessage): boolean {
+	switch (message.msgCode) {
 		case ServerMessageCode.TimeSync: {
 			// Client-side response reception time (t4 in time-sync poll).
 			const receptionTime = new Date().valueOf();
-			const timeSyncPayload = payload as TimeSyncPollResponsePayload;
+			const timeSyncPayload = message.payload;
 			const syncData = getTimeSyncData(
 				timeSyncPayload.t0,
 				timeSyncPayload.t1,
 				timeSyncPayload.t1, // t2 = t1
 				receptionTime // t3
 			);
-			messageWorker({
-				msgCode: AppMessageCode.UpdateTimeOffset,
-				payload: { value: syncData.offset }
-			});
+			updateTimeOffset({ value: syncData.offset });
 			return true;
 		}
 		case ServerMessageCode.Test: {
-			console.log(payload);
+			console.log(message.payload);
 			return true;
 		}
 	}
@@ -224,10 +202,8 @@ export class SyncConnection {
 
 			ws.addEventListener("error", (event) => {
 				console.error(event);
-				// Error connecting to WebSocket (device could be offline).
-				messageWorker({
-					msgCode: AppMessageCode.NoSyncConnection
-				});
+				// Error connecting to WebSocket (device considered offline).
+				messageWorker({ msgCode: AppMessageCode.NoSyncConnection });
 				reject(event);
 			});
 
@@ -237,7 +213,7 @@ export class SyncConnection {
 						await handleServerBinaryMessage(new Uint8Array(rawData));
 					} else {
 						const msg = JSON.parse(rawData) as ServerMessage;
-						handleServerMessage(msg.msgCode, msg.payload);
+						handleServerMessage(msg);
 					}
 				} catch (error) {
 					if (error instanceof SyntaxError) {

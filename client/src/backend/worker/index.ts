@@ -56,9 +56,9 @@ worker.addEventListener("activate", (event) => {
  * * Parses the incoming event and relays the resulting objects to the event handler.
  * * Assumes the caller uses the correct data format as opposed to perform runtime checks.
  */
-worker.addEventListener("message", async ({ source, data: { msgCode, payload } }) => {
+worker.addEventListener("message", async ({ source, data: clientMessage }) => {
 	try {
-		await handleClientMessage(source, msgCode, payload);
+		await handleClientMessage(source, clientMessage);
 	} catch (error) {
 		console.error("Error while handling client event.", error);
 	}

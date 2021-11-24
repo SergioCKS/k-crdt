@@ -4,7 +4,6 @@
  * Interface to objects and methods from WASM linear memory.
  */
 import init, { Engine, UID, BrowserHLC } from "./wasm/crdts";
-import type { LocalDb } from "./db";
 
 /**
  * ## WASM
@@ -83,7 +82,7 @@ export class Wasm {
 	 *
 	 * @param offset - Offset in milliseconds
 	 */
-	public setOffset(offset: BigInt, db?: LocalDb): void {
+	public setOffset(offset: BigInt): void {
 		if (this.hlc) this.hlc.setOffset(offset);
 	}
 	//#endregion

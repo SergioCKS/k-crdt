@@ -28,7 +28,8 @@
 			"$lib": ["src/lib"],
 			"$lib/*": ["src/lib/*"],
 			"$types/*": ["src/types/*"]
-		}
+		},
+		// "strict": true
 	},
 	"include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts", "src/**/*.svelte"],
 	"exclude": ["dist"]

@@ -1,6 +1,10 @@
 <script lang="ts">
-	import { AppMessage, AppMessageCode } from "$types/messages";
-
+	import {
+		AppMessage,
+		AppMessageCode,
+		AppMessagePayload,
+		NewRegisterPayload
+	} from "$types/messages";
 	import { onMount } from "svelte";
 	import { initialized, registers } from "../stores/engine";
 	import { offline } from "../stores/general";
@@ -15,21 +19,27 @@
 	 * @param message - Message to send.
 	 */
 	function messageWorker(message: AppMessage) {
-		swRegistration?.active.postMessage(message);
+		swRegistration?.active?.postMessage(message);
+	}
+
+	/**
+	 * ## Create bool register
+	 *
+	 * Send a message to the web worker to create a new register with boolean value.
+	 *
+	 * @param payload - Payload of the message
+	 */
+	function createBoolRegister(initialValue: boolean) {
+		messageWorker({
+			msgCode: AppMessageCode.CreateBoolRegister,
+			payload: { value: initialValue }
+		});
 	}
 
 	function test() {
-		messageWorker({
-			msgCode: AppMessageCode.Test,
-			payload: { value: "test" }
-		});
+		messageWorker({ msgCode: AppMessageCode.Test });
 	}
-	function createBoolRegister() {
-		messageWorker({
-			msgCode: AppMessageCode.CreateBoolRegister,
-			payload: { value: false }
-		});
-	}
+
 	onMount(async () => {
 		swRegistration = await navigator.serviceWorker.ready;
 	});
@@ -39,6 +49,6 @@
 	Initializing ...
 {/if}
 <button on:click={test}>Test</button>
-<button on:click={createBoolRegister}>Create boolean register</button>
+<button on:click={() => createBoolRegister(false)}>Create boolean register</button>
 Offline: {$offline}
 {JSON.stringify($registers)}

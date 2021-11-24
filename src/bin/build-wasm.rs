@@ -4,6 +4,14 @@
 //! WASM module to be accessible both from the client node code as well as from the server node code.
 //!
 //! Based on [worker-build](https://github.com/cloudflare/workers-rs/tree/main/worker-build).
+//!
+//! ### Usage
+//!
+//! In the project root directory, run:
+//!
+//! ```shell
+//! cargo run --bin build-wasm
+//! ```
 use std::{
    process::Command,
    io::{Read, Write},
@@ -16,22 +24,22 @@ use anyhow::{anyhow, Result};
 //#region Constants
 const CLIENT_OUT_DIR: &str = "client/src/backend/wasm";
 const OUT_DIR: &str = "server/build";
-const TYPES_DIR: &str = "types";
-const CLIENT_TYPES_DIR: &str = "client/src/types";
 const MOD_DIR: &str = "server/worker";
 const OUT_NAME: &str = "engine";
 //#endregion
 
 fn main() -> Result<()> {
+   println!("Started build proccess.");
+
    client_wasm_pack_build()?;
    client_delete_gitignore()?;
+   println!("Client build done!");
 
    server_wasm_pack_build()?;
    server_copy_generated_code_to_worker_dir()?;
    server_write_worker_shim_to_worker_dir()?;
    server_replace_generated_import_with_custom_impl()?;
-
-   copy_types()?;
+   println!("Server build done!");
 
    Ok(())
 }
@@ -52,7 +60,10 @@ fn client_wasm_pack_build() -> Result<()> {
 }
 
 fn client_delete_gitignore() -> Result<()> {
-   fs::remove_file(PathBuf::from(CLIENT_OUT_DIR).join(".gitignore"))?;
+   let gitignore_path = PathBuf::from(CLIENT_OUT_DIR).join(".gitignore");
+   if gitignore_path.exists() {
+      fs::remove_file(gitignore_path)?;
+   }
    Ok(())
 }
 
@@ -145,23 +156,6 @@ fn read_file_to_string<P: AsRef<Path>>(path: P) -> Result<String> {
 fn write_string_to_file<P: AsRef<Path>>(path: P, contents: String) -> Result<()> {
    let mut file = File::create(path)?;
    file.write_all(contents.as_bytes())?;
-
-   Ok(())
-}
-
-fn copy_types() -> Result<()> {
-   let messages_src = PathBuf::from(TYPES_DIR).join("messages.ts");
-   let client_messages_dst = PathBuf::from(CLIENT_TYPES_DIR).join("messages.ts");
-   let server_messages_dst = PathBuf::from(MOD_DIR).join("messages.mjs.ts");
-
-   for (src, dst) in [
-      (&messages_src, client_messages_dst),
-      (&messages_src, server_messages_dst)
-   ] {
-      if src.exists() {
-         fs::copy(src, dst)?;
-      }
-   }
 
    Ok(())
 }

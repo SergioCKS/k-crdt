@@ -1,4 +1,4 @@
-import { ClientMessageCode, ServerMessageCode, } from "./messages.mjs";
+import { ClientMessageCode, ServerMessageCode } from "./messages.mjs";
 import { parse_update_message, ServerHLC } from "./engine_bg.mjs";
 export class SyncAgent {
     state;
@@ -11,13 +11,11 @@ export class SyncAgent {
         this.hlc = null;
         this.state.blockConcurrencyWhile(async () => {
             let hlcBuffer = (await this.state.storage.get("hlc"));
-            this.hlc = hlcBuffer
-                ? ServerHLC.deserialize(new Uint8Array(hlcBuffer))
-                : new ServerHLC();
+            this.hlc = hlcBuffer ? ServerHLC.deserialize(new Uint8Array(hlcBuffer)) : new ServerHLC();
         });
     }
     broadcastMessage(message) {
-        this.sessions = this.sessions.filter(session => {
+        this.sessions = this.sessions.filter((session) => {
             try {
                 session.send(message);
                 return true;
@@ -39,16 +37,16 @@ export class SyncAgent {
         function messageClient(message) {
             server.send(JSON.stringify(message));
         }
-        async function handleClientMessage(msgCode, payload) {
-            switch (msgCode) {
+        async function handleClientMessage(message) {
+            switch (message.msgCode) {
                 case ClientMessageCode.TimeSync: {
-                    const timeSyncPayload = payload;
+                    const timeSyncPayload = message.payload;
                     messageClient({
                         msgCode: ServerMessageCode.TimeSync,
                         payload: {
                             t0: timeSyncPayload.t0,
-                            t1: new Date().valueOf(),
-                        },
+                            t1: new Date().valueOf()
+                        }
                     });
                     return true;
                 }
@@ -58,7 +56,7 @@ export class SyncAgent {
                     currState.storage.put("hlc", encoded?.buffer);
                     messageClient({
                         msgCode: ServerMessageCode.Test,
-                        payload: { value: encoded },
+                        payload: { value: encoded }
                     });
                     return true;
                 }
@@ -71,13 +69,13 @@ export class SyncAgent {
                 const nodeId = parse_update_message(new Uint8Array(binData));
                 server.send(JSON.stringify({
                     msgCode: "test",
-                    payload: `Received binary data consisting of ${binData.byteLength} bytes. Parsed node ID: ${nodeId}`,
+                    payload: `Received binary data consisting of ${binData.byteLength} bytes. Parsed node ID: ${nodeId}`
                 }));
             }
             else {
                 try {
                     const msg = JSON.parse(rawData);
-                    handleClientMessage(msg.msgCode, msg.payload);
+                    await handleClientMessage(msg);
                 }
                 catch (e) {
                     if (e instanceof SyntaxError) {
@@ -93,7 +91,7 @@ export class SyncAgent {
         this.sessions.push(server);
         return new Response(null, {
             status: 101,
-            webSocket: client,
+            webSocket: client
         });
     }
 }

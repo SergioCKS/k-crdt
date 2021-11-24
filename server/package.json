@@ -1,11 +1,13 @@
 {
-  "name": "rust-wasm",
-  "version": "0.0.0",
-  "scripts": {
-    "build": "tsc && node build.js"
-  },
-  "devDependencies": {
-    "typescript": "^4.3.2",
-    "@cloudflare/workers-types": "^3.0.0"
-  }
+	"name": "rust-wasm",
+	"version": "0.0.0",
+	"scripts": {
+		"build": "tsc && node build.js",
+		"format": "prettier --check ./worker/**/*.mjs.ts"
+	},
+	"devDependencies": {
+		"typescript": "^4.3.2",
+		"prettier": "^2.4.1",
+		"@cloudflare/workers-types": "^3.0.0"
+	}
 }

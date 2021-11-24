@@ -3,17 +3,17 @@
  *
  * Handlers for incoming messages.
  *
- * * Handlers make use of other component interfaces: WASM, LocalDB, SyncConnection.
+ * * Handlers make use of component interfaces: WASM, LocalDB, SyncConnection.
  * @module
  */
 import { Wasm } from "../wasm";
 import { LocalDb, RecordType } from "../db";
 import { SyncConnection } from "../sync";
 import {
+	AppMessage,
 	WorkerMessage,
 	AppMessageCode,
 	WorkerMessageCode,
-	requireWasm,
 	ClientMessageCode
 } from "$types/messages";
 
@@ -99,7 +99,11 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	}
 
 	// 6. Initialize connection to sync manager.
-	await syncConnection.initialize(forceRestart);
+	try {
+		await syncConnection.initialize(forceRestart);
+	} catch (error) {
+		console.log("Error connecting to server node. Device considered offline.", error);
+	}
 }
 
 /**
@@ -113,22 +117,14 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
  */
 export async function handleClientMessage(
 	client: Client | MessagePort | ServiceWorker,
-	msgCode: AppMessageCode,
-	payload: Record<string, unknown>
+	message: AppMessage
 ): Promise<boolean> {
-	// 1. Ensure the interfaces are initialized.
-	if (
-		!wasm ||
-		!wasm.is_initialized() ||
-		!localDb ||
-		!localDb.is_initialized() ||
-		!syncConnection ||
-		!syncConnection.is_initialized()
-	)
-		await initializeInterfaces();
+	// Ensure the interfaces are initialized.
+	const interfaces_initialized =
+		wasm?.is_initialized() && localDb?.is_initialized() && syncConnection?.is_initialized();
+	if (!interfaces_initialized) await initializeInterfaces();
 
-	// 2. Handle incoming message.
-	switch (msgCode) {
+	switch (message.msgCode) {
 		case AppMessageCode.Initialize: {
 			broadcastMessage({ msgCode: WorkerMessageCode.Initialized });
 			return true;
@@ -140,8 +136,10 @@ export async function handleClientMessage(
 			return true;
 		}
 		case AppMessageCode.UpdateTimeOffset: {
-			const newOffset = payload.value as number;
+			const newOffset = message.payload.value;
+
 			wasm.setOffset(BigInt(Math.round(newOffset)));
+
 			try {
 				const encodedClock = wasm.serializeClock();
 				localDb.putRecord({
@@ -164,7 +162,7 @@ export async function handleClientMessage(
 		}
 		case AppMessageCode.CreateBoolRegister: {
 			// 1. Get register initial value from message.
-			const initialValue = payload.value as boolean;
+			const initialValue = message.payload.value;
 
 			// 2. Create register and retrieve values.
 			const register = wasm.engine.create_bool_register(initialValue);
@@ -207,7 +205,7 @@ export async function handleClientMessage(
 					type: string;
 				}[];
 
-				const crdts_obj = {};
+				const crdts_obj: Record<string, unknown> = {};
 				for (const crdt of crdts) {
 					crdts_obj[crdt.id] = { value: crdt.value, type: crdt.type };
 				}

@@ -13,14 +13,109 @@
  * @module
  */
 
+//#region App message
+export type AppMessage =
+  | CreateBoolRegisterMessage
+  | TestMessage
+  | InitializeMessage
+  | UpdateTimeOffsetMessage
+  | NoSyncConnectionMessage
+  | RestoreRegistersMessage;
+
+interface InitializeMessage {
+  msgCode: AppMessageCode.Initialize;
+}
+
+interface UpdateTimeOffsetMessage {
+  msgCode: AppMessageCode.UpdateTimeOffset;
+  payload: { value: number };
+}
+
+interface NoSyncConnectionMessage {
+  msgCode: AppMessageCode.NoSyncConnection;
+}
+
+interface RestoreRegistersMessage {
+  msgCode: AppMessageCode.RestoreRegisters;
+}
+
+interface CreateBoolRegisterMessage {
+  msgCode: AppMessageCode.CreateBoolRegister;
+  payload: { value: boolean };
+}
+
+interface TestMessage {
+  msgCode: AppMessageCode.Test;
+}
+//#endregion
+
+//#region Worker message
+export type WorkerMessage =
+  | InitializedMessage
+  | OfflineValueMessage
+  | NewRegisterMessage
+  | RestoredRegistersMessage;
+
+interface InitializedMessage {
+  msgCode: WorkerMessageCode.Initialized;
+}
+
+interface OfflineValueMessage {
+  msgCode: WorkerMessageCode.OfflineValue;
+  payload: { value: boolean };
+}
+
+interface NewRegisterMessage {
+  msgCode: WorkerMessageCode.NewRegister;
+  payload: {
+    id: string;
+    value: boolean;
+    type: "bool";
+  };
+}
+
+interface RestoredRegistersMessage {
+  msgCode: WorkerMessageCode.RestoredRegisters;
+  payload: { value: Record<string, unknown> };
+}
+//#endregion
+
+//#region Client message
+export type ClientMessage = ClientTimeSyncMessage | ClientTestMessage;
+
+interface ClientTimeSyncMessage {
+  msgCode: ClientMessageCode.TimeSync;
+  payload: TimeSyncPollRequestPayload;
+}
+
+interface ClientTestMessage {
+  msgCode: ClientMessageCode.Test;
+}
+//#endregion
+
+//#region Server message
+export type ServerMessage = ServerTimeSyncMessage | ServerTestMessage;
+
+interface ServerTimeSyncMessage {
+  msgCode: ServerMessageCode.TimeSync;
+  payload: TimeSyncPayload;
+}
+
+interface ServerTestMessage {
+  msgCode: ServerMessageCode.Test;
+  payload: any;
+}
+//#endregion
+
+//#region Message
 /**
  * ## Message
  *
- * Generic message.
+ * Generic message interface.
  */
 interface Message {
   msgCode: string;
-  payload?: Record<string, unknown>;
+  payload?: MessagePayload;
 }
 
 /**
@@ -28,8 +123,9 @@ interface Message {
  *
  * Message data from an app-originated event.
  */
-export interface AppMessage extends Message {
+export interface AppMessage2 extends Message {
   msgCode: AppMessageCode;
+  payload?: MessagePayload & AppMessagePayload;
 }
 
 /**
@@ -37,8 +133,9 @@ export interface AppMessage extends Message {
  *
  * Message data from a worker-originated event.
  */
-export interface WorkerMessage extends Message {
+export interface WorkerMessage2 extends Message {
   msgCode: WorkerMessageCode;
+  payload?: WorkerMessagePayload;
 }
 
 /**
@@ -46,8 +143,9 @@ export interface WorkerMessage extends Message {
  *
  * Message data from a client-originated event.
  */
-export interface ClientMessage extends Message {
+export interface ClientMessage2 extends Message {
   msgCode: ClientMessageCode;
+  payload?: ClientMessagePayload;
 }
 
 /**
@@ -55,10 +153,13 @@ export interface ClientMessage extends Message {
  *
  * Message data from a server-originated event.
  */
-export interface ServerMessage extends Message {
+export interface ServerMessage2 extends Message {
   msgCode: ServerMessageCode;
+  payload: ServerMessagePayload;
 }
+//#endregion
 
+//#region Message code
 /**
  * ## App message code
  *
@@ -104,6 +205,97 @@ export enum ServerMessageCode {
   TimeSync = "time-sync",
   Test = "test",
 }
+//#endregion
+
+//#region Message payload
+/**
+ * ## Message payload
+ *
+ * Generic message payload.
+ */
+export interface MessagePayload {}
+
+/**
+ * ## App message payload
+ *
+ * Groups payload interfaces of app messages.
+ */
+export interface AppMessagePayload extends MessagePayload {}
+
+/**
+ * ## Worker message payload
+ *
+ * Groups payload interfaces of worker messages.
+ */
+export interface WorkerMessagePayload extends MessagePayload {}
+
+/**
+ * ## Client message payload
+ *
+ * Groups payload interfaces of client messages.
+ */
+export interface ClientMessagePayload extends MessagePayload {}
+
+/**
+ * ## Server message payload
+ *
+ * Groups payload interfaces of server messages.
+ */
+export interface ServerMessagePayload extends MessagePayload {}
+//#endregion
+
+//#region Specific payload types
+
+/**
+ * ## Payload for `NewRegister` worker message
+ */
+export interface NewRegisterPayload extends WorkerMessagePayload {
+  /**
+   * ### Initial value of the register
+   */
+  value: boolean;
+}
+
+/**
+ * ## Payload for `UpdateTimeOffset` app message
+ */
+export interface UpdateTimeOffsetPayload extends AppMessagePayload {
+  /**
+   * ### New time offset.
+   */
+  value: number;
+}
+
+/**
+ * ## Time sync for `TimeSync` server message
+ */
+export interface TimeSyncPayload extends ServerMessagePayload {
+  /**
+   * ### Request transmission timestamp
+   *
+   * Client-side timestamp that is as close as possible to packet transmission of the request message in milliseconds since UNIX epoch.
+   */
+  t0: number;
+
+  /**
+   * ### Request reception timestamp
+   *
+   * Server-side timestamp that is as close as possible to packet reception of the request message in milliseconds since UNIX epoch.
+   */
+  t1: number;
+
+  /**
+   * ### Response transmission timestamp
+   *
+   * Server-side timestamp that is as close as possible to packet transmission of the response message in milliseconds since UNIX epoch.
+   */
+  t2?: number;
+}
+
+type TimeSyncPollRequestPayload = {
+  t0: number;
+};
+//#endregion
 
 /**
  * ## Messages requiring Wasm
