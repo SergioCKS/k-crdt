@@ -9,13 +9,7 @@
 import { Wasm } from "../wasm";
 import { LocalDb, RecordType } from "../db";
 import { SyncConnection } from "../sync";
-import {
-	AppMessage,
-	WorkerMessage,
-	AppMessageCode,
-	WorkerMessageCode,
-	ClientMessageCode
-} from "$types/messages";
+import type { AppMessage, WorkerMessage } from "$types/messages";
 
 /**
  * ## Worker Scope
@@ -125,17 +119,15 @@ export async function handleClientMessage(
 	if (!interfaces_initialized) await initializeInterfaces();
 
 	switch (message.msgCode) {
-		case AppMessageCode.Initialize: {
-			broadcastMessage({ msgCode: WorkerMessageCode.Initialized });
+		case "initialize": {
+			broadcastMessage({ msgCode: "initialized" });
 			return true;
 		}
-		case AppMessageCode.Test: {
-			syncConnection.messageServer({
-				msgCode: ClientMessageCode.Test
-			});
+		case "test": {
+			syncConnection.messageServer({ msgCode: "test" });
 			return true;
 		}
-		case AppMessageCode.UpdateTimeOffset: {
+		case "update-time-offset": {
 			const newOffset = message.payload.value;
 
 			wasm.setOffset(BigInt(Math.round(newOffset)));
@@ -152,15 +144,15 @@ export async function handleClientMessage(
 			}
 			return true;
 		}
-		case AppMessageCode.NoSyncConnection: {
+		case "no-sync-connection": {
 			// 2. Update offline values in client stores.
 			broadcastMessage({
-				msgCode: WorkerMessageCode.OfflineValue,
+				msgCode: "offline-value",
 				payload: { value: true }
 			});
 			return true;
 		}
-		case AppMessageCode.CreateBoolRegister: {
+		case "create-bool-register": {
 			// 1. Get register initial value from message.
 			const initialValue = message.payload.value;
 
@@ -172,7 +164,7 @@ export async function handleClientMessage(
 
 			// 3. Broadcast the newly created register to the front-end clients.
 			broadcastMessage({
-				msgCode: WorkerMessageCode.NewRegister,
+				msgCode: "new-register",
 				payload: { id, value, type: "bool" }
 			});
 
@@ -196,7 +188,7 @@ export async function handleClientMessage(
 			register.free();
 			return true;
 		}
-		case AppMessageCode.RestoreRegisters: {
+		case "restore-registers": {
 			try {
 				const crdts = (await localDb.retrieveCrdts()) as {
 					id: string;
@@ -211,7 +203,7 @@ export async function handleClientMessage(
 				}
 
 				messageClient(client, {
-					msgCode: WorkerMessageCode.RestoredRegisters,
+					msgCode: "restored-registers",
 					payload: { value: crdts_obj }
 				});
 			} catch (e) {

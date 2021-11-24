@@ -1,4 +1,3 @@
-import { ClientMessageCode, ServerMessageCode } from "./messages.mjs";
 import { parse_update_message, ServerHLC } from "./engine_bg.mjs";
 export class SyncAgent {
     state;
@@ -39,10 +38,10 @@ export class SyncAgent {
         }
         async function handleClientMessage(message) {
             switch (message.msgCode) {
-                case ClientMessageCode.TimeSync: {
+                case "time-sync": {
                     const timeSyncPayload = message.payload;
                     messageClient({
-                        msgCode: ServerMessageCode.TimeSync,
+                        msgCode: "time-sync",
                         payload: {
                             t0: timeSyncPayload.t0,
                             t1: new Date().valueOf()
@@ -50,12 +49,12 @@ export class SyncAgent {
                     });
                     return true;
                 }
-                case ClientMessageCode.Test: {
+                case "test": {
                     currentHLC?.get_timestamp();
                     const encoded = currentHLC?.serialize();
                     currState.storage.put("hlc", encoded?.buffer);
                     messageClient({
-                        msgCode: ServerMessageCode.Test,
+                        msgCode: "test",
                         payload: { value: encoded }
                     });
                     return true;

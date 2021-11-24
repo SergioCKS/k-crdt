@@ -11,7 +11,7 @@
 	import { onMount } from "svelte";
 	import { initialized, registers } from "../stores/engine";
 	import { offline } from "../stores/general";
-	import { AppMessageCode, WorkerMessageCode, AppMessage, WorkerMessage } from "$types/messages";
+	import type { AppMessage, WorkerMessage } from "$types/messages";
 
 	/**
 	 * ## Service worker registration
@@ -41,21 +41,21 @@
 	 */
 	function handleWorkerMessage(message: WorkerMessage): boolean {
 		switch (message.msgCode) {
-			case WorkerMessageCode.Initialized: {
-				if (!$initialized) messageWorker({ msgCode: AppMessageCode.RestoreRegisters });
+			case "initialized": {
+				if (!$initialized) messageWorker({ msgCode: "restore-registers" });
 				$initialized = true;
 				return true;
 			}
-			case WorkerMessageCode.OfflineValue: {
+			case "offline-value": {
 				$offline = message.payload.value;
 				return true;
 			}
-			case WorkerMessageCode.NewRegister: {
+			case "new-register": {
 				let { id, value, type } = message.payload;
 				$registers[id] = { value, type };
 				return true;
 			}
-			case WorkerMessageCode.RestoredRegisters: {
+			case "restored-registers": {
 				$registers = message.payload.value;
 				return true;
 			}
@@ -77,11 +77,11 @@
 		//#region Send initialization message when the worker is `active`
 		const worker = registration.active;
 		if (worker?.state === "activated") {
-			messageWorker({ msgCode: AppMessageCode.Initialize });
+			messageWorker({ msgCode: "initialize" });
 		} else {
 			worker?.addEventListener("statechange", () => {
 				if (worker.state === "activated") {
-					messageWorker({ msgCode: AppMessageCode.Initialize });
+					messageWorker({ msgCode: "initialize" });
 				}
 			});
 		}

@@ -198,7 +198,6 @@ impl Timestamp {
     }
 }
 
-
 //#region Construction from other types
 impl TryFrom<Duration> for Timestamp {
     type Error = TimestampError;

@@ -12,15 +12,7 @@
  * @module
  */
 
-import {
-	AppMessage,
-	AppMessageCode,
-	ClientMessage,
-	ClientMessageCode,
-	ServerMessage,
-	ServerMessageCode,
-	UpdateTimeOffsetPayload
-} from "$types/messages";
+import type { AppMessage, ClientMessage, ServerMessage } from "$types/messages";
 
 /**
  * ## Worker scope
@@ -47,8 +39,8 @@ function messageWorker(message: AppMessage) {
  *
  * @param payload - Message payload
  */
-function updateTimeOffset(payload: UpdateTimeOffsetPayload) {
-	messageWorker({ msgCode: AppMessageCode.UpdateTimeOffset, payload });
+function updateTimeOffset(offset: number) {
+	messageWorker({ msgCode: "update-time-offset", payload: { value: offset } });
 }
 
 /**
@@ -107,7 +99,7 @@ function getTimeSyncData(t0: number, t1: number, t2: number, t3: number): TimeSy
  */
 function handleServerMessage(message: ServerMessage): boolean {
 	switch (message.msgCode) {
-		case ServerMessageCode.TimeSync: {
+		case "time-sync": {
 			// Client-side response reception time (t4 in time-sync poll).
 			const receptionTime = new Date().valueOf();
 			const timeSyncPayload = message.payload;
@@ -117,10 +109,10 @@ function handleServerMessage(message: ServerMessage): boolean {
 				timeSyncPayload.t1, // t2 = t1
 				receptionTime // t3
 			);
-			updateTimeOffset({ value: syncData.offset });
+			updateTimeOffset(syncData.offset);
 			return true;
 		}
-		case ServerMessageCode.Test: {
+		case "test": {
 			console.log(message.payload);
 			return true;
 		}
@@ -203,7 +195,7 @@ export class SyncConnection {
 			ws.addEventListener("error", (event) => {
 				console.error(event);
 				// Error connecting to WebSocket (device considered offline).
-				messageWorker({ msgCode: AppMessageCode.NoSyncConnection });
+				messageWorker({ msgCode: "no-sync-connection" });
 				reject(event);
 			});
 
@@ -231,7 +223,7 @@ export class SyncConnection {
 			ws.addEventListener("open", async () => {
 				// Perform time synchronization poll on socket initialization.
 				this.messageServer({
-					msgCode: ClientMessageCode.TimeSync,
+					msgCode: "time-sync",
 					payload: { t0: new Date().valueOf() }
 				});
 				resolve();

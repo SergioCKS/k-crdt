@@ -1,10 +1,5 @@
 <script lang="ts">
-	import {
-		AppMessage,
-		AppMessageCode,
-		AppMessagePayload,
-		NewRegisterPayload
-	} from "$types/messages";
+	import type { AppMessage } from "$types/messages";
 	import { onMount } from "svelte";
 	import { initialized, registers } from "../stores/engine";
 	import { offline } from "../stores/general";
@@ -31,13 +26,13 @@
 	 */
 	function createBoolRegister(initialValue: boolean) {
 		messageWorker({
-			msgCode: AppMessageCode.CreateBoolRegister,
+			msgCode: "create-bool-register",
 			payload: { value: initialValue }
 		});
 	}
 
 	function test() {
-		messageWorker({ msgCode: AppMessageCode.Test });
+		messageWorker({ msgCode: "test" });
 	}
 
 	onMount(async () => {
