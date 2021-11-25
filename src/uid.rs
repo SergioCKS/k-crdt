@@ -122,6 +122,7 @@ impl UID {
         Ok(nid_str.parse::<Self>()?)
     }
 
+    #[wasm_bindgen(js_name = toString)]
     pub fn as_string(&self) -> String {
         self.to_string()
     }

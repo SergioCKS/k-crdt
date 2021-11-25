@@ -3,7 +3,14 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, { Engine, UID, BrowserHLC } from "./wasm/crdts";
+import init, {
+	Engine,
+	UID,
+	BrowserHLC,
+	Timestamp,
+	createBoolRegister,
+	PackedBoolRegister
+} from "./wasm/crdts";
 
 /**
  * ## WASM
@@ -23,8 +30,9 @@ export class Wasm {
 	 *
 	 * HLC based on browser time. It is persisted in the local database when updated and restored from it on initialization.
 	 */
-	public hlc: BrowserHLC = undefined;
+	public hlc: BrowserHLC | undefined = undefined;
 
+	//#region Initialization
 	/**
 	 * ### Initialize WASM
 	 *
@@ -38,7 +46,7 @@ export class Wasm {
 		// Starts with a default state, which is replaced by a stored one later if found.
 		this.hlc = new BrowserHLC();
 
-		return this.engine.get_node_id().as_string();
+		return this.engine.get_node_id().toString();
 	}
 
 	/**
@@ -49,7 +57,6 @@ export class Wasm {
 	public is_initialized(): boolean {
 		return !!this.engine && !!this.hlc;
 	}
-
 	/**
 	 * ### Set node ID
 	 *
@@ -62,8 +69,9 @@ export class Wasm {
 			this.engine.set_node_id(UID.from_string(nodeId));
 		}
 	}
+	//#endregion
 
-	//#region Time offset
+	//#region Clock
 	/**
 	 * ### Get clock offset
 	 *
@@ -85,7 +93,6 @@ export class Wasm {
 	public setOffset(offset: BigInt): void {
 		if (this.hlc) this.hlc.setOffset(offset);
 	}
-	//#endregion
 
 	/**
 	 * ### Serialize clock
@@ -109,5 +116,24 @@ export class Wasm {
 	 */
 	public deserializeClock(encoded: ArrayBuffer): void {
 		this.hlc = BrowserHLC.deserialize(new Uint8Array(encoded));
+	}
+
+	/**
+	 * ### Generate timestamp
+	 *
+	 * Generates a timestamp polling the browser time and updating the state of the HLC.
+	 *
+	 * @returns Generated timestamp
+	 * @throws Any error encountered while polling the browser time or updating the HLC.
+	 */
+	public generateTimeStamp(): Timestamp {
+		return this.hlc?.generateTimestamp();
+	}
+	//#endregion
+
+	public createBoolRegister(initialValue: boolean): PackedBoolRegister {
+		const ts = this.generateTimeStamp();
+		const register = createBoolRegister(ts, initialValue);
+		return register;
 	}
 }

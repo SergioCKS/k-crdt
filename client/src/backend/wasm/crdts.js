@@ -184,6 +184,19 @@ export function parse_update_message(update_msg) {
     }
 }
 
+/**
+* @param {Timestamp} ts
+* @param {boolean} value
+* @returns {PackedBoolRegister}
+*/
+export function createBoolRegister(ts, value) {
+    _assertClass(ts, Timestamp);
+    var ptr0 = ts.ptr;
+    ts.ptr = 0;
+    var ret = wasm.createBoolRegister(ptr0, value);
+    return PackedBoolRegister.__wrap(ret);
+}
+
 const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
 
 function handleError(f, args) {
@@ -296,6 +309,16 @@ export class BrowserHLC {
         var len0 = WASM_VECTOR_LEN;
         var ret = wasm.browserhlc_deserialize(ptr0, len0);
         return BrowserHLC.__wrap(ret);
+    }
+    /**
+    * ### Generate timestamp (JS)
+    *
+    * Generates a timestamp polling the browser time source.
+    * @returns {Timestamp}
+    */
+    generateTimestamp() {
+        var ret = wasm.browserhlc_generateTimestamp(this.ptr);
+        return Timestamp.__wrap(ret);
     }
 }
 /**
@@ -490,6 +513,33 @@ export class PackedBoolRegister {
         wasm.__wbg_packedboolregister_free(ptr);
     }
     /**
+    */
+    get id() {
+        var ret = wasm.__wbg_get_packedboolregister_id(this.ptr);
+        return UID.__wrap(ret);
+    }
+    /**
+    * @param {UID} arg0
+    */
+    set id(arg0) {
+        _assertClass(arg0, UID);
+        var ptr0 = arg0.ptr;
+        arg0.ptr = 0;
+        wasm.__wbg_set_packedboolregister_id(this.ptr, ptr0);
+    }
+    /**
+    */
+    get value() {
+        var ret = wasm.__wbg_get_packedboolregister_value(this.ptr);
+        return ret !== 0;
+    }
+    /**
+    * @param {boolean} arg0
+    */
+    set value(arg0) {
+        wasm.__wbg_set_packedboolregister_value(this.ptr, arg0);
+    }
+    /**
     * @param {UID} id
     * @param {boolean} value
     * @param {Uint8Array} encoded
@@ -505,34 +555,12 @@ export class PackedBoolRegister {
         return PackedBoolRegister.__wrap(ret);
     }
     /**
-    * @returns {string}
-    */
-    get_id() {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.packedboolregister_get_id(retptr, this.ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            return getStringFromWasm0(r0, r1);
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-            wasm.__wbindgen_free(r0, r1);
-        }
-    }
-    /**
-    * @returns {boolean}
-    */
-    get_value() {
-        var ret = wasm.packedboolregister_get_value(this.ptr);
-        return ret !== 0;
-    }
-    /**
     * @returns {Uint8Array}
     */
-    get_encoded() {
+    getEncoded() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.packedboolregister_get_encoded(retptr, this.ptr);
+            wasm.packedboolregister_getEncoded(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU8FromWasm0(r0, r1).slice();
@@ -543,11 +571,14 @@ export class PackedBoolRegister {
         }
     }
     /**
+    * ### Get update message
+    *
+    * Constructs an encoded update message from the register.
     * @param {UID} nid
     * @param {Timestamp} ts
     * @returns {Uint8Array}
     */
-    get_update_message(nid, ts) {
+    getUpdateMessage(nid, ts) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
             _assertClass(nid, UID);
@@ -556,7 +587,7 @@ export class PackedBoolRegister {
             _assertClass(ts, Timestamp);
             var ptr1 = ts.ptr;
             ts.ptr = 0;
-            wasm.packedboolregister_get_update_message(retptr, this.ptr, ptr0, ptr1);
+            wasm.packedboolregister_getUpdateMessage(retptr, this.ptr, ptr0, ptr1);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v2 = getArrayU8FromWasm0(r0, r1).slice();
@@ -807,10 +838,10 @@ export class UID {
     /**
     * @returns {string}
     */
-    as_string() {
+    toString() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.uid_as_string(retptr, this.ptr);
+            wasm.uid_toString(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             return getStringFromWasm0(r0, r1);

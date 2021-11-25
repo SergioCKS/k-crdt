@@ -14,6 +14,12 @@ export function get_message(): string;
 */
 export function parse_update_message(update_msg: Uint8Array): string;
 /**
+* @param {Timestamp} ts
+* @param {boolean} value
+* @returns {PackedBoolRegister}
+*/
+export function createBoolRegister(ts: Timestamp, value: boolean): PackedBoolRegister;
+/**
 * ## Browser HLC
 *
 * Hybrid logical clock based on browser time.
@@ -61,6 +67,13 @@ export class BrowserHLC {
 * @returns {BrowserHLC}
 */
   static deserialize(encoded: Uint8Array): BrowserHLC;
+/**
+* ### Generate timestamp (JS)
+*
+* Generates a timestamp polling the browser time source.
+* @returns {Timestamp}
+*/
+  generateTimestamp(): Timestamp;
 }
 /**
 * ## CRDT Engine
@@ -175,23 +188,24 @@ export class PackedBoolRegister {
 */
   static new(id: UID, value: boolean, encoded: Uint8Array): PackedBoolRegister;
 /**
-* @returns {string}
-*/
-  get_id(): string;
-/**
-* @returns {boolean}
-*/
-  get_value(): boolean;
-/**
 * @returns {Uint8Array}
 */
-  get_encoded(): Uint8Array;
+  getEncoded(): Uint8Array;
 /**
+* ### Get update message
+*
+* Constructs an encoded update message from the register.
 * @param {UID} nid
 * @param {Timestamp} ts
 * @returns {Uint8Array}
 */
-  get_update_message(nid: UID, ts: Timestamp): Uint8Array;
+  getUpdateMessage(nid: UID, ts: Timestamp): Uint8Array;
+/**
+*/
+  id: UID;
+/**
+*/
+  value: boolean;
 }
 /**
 */
@@ -302,7 +316,7 @@ export class UID {
 /**
 * @returns {string}
 */
-  as_string(): string;
+  toString(): string;
 /**
 * @returns {Uint8Array}
 */
@@ -314,17 +328,20 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_packedboolregister_free: (a: number) => void;
+  readonly __wbg_get_packedboolregister_id: (a: number) => number;
+  readonly __wbg_set_packedboolregister_id: (a: number, b: number) => void;
+  readonly __wbg_get_packedboolregister_value: (a: number) => number;
+  readonly __wbg_set_packedboolregister_value: (a: number, b: number) => void;
   readonly packedboolregister_new: (a: number, b: number, c: number, d: number) => number;
-  readonly packedboolregister_get_id: (a: number, b: number) => void;
-  readonly packedboolregister_get_value: (a: number) => number;
-  readonly packedboolregister_get_encoded: (a: number, b: number) => void;
-  readonly packedboolregister_get_update_message: (a: number, b: number, c: number, d: number) => void;
+  readonly packedboolregister_getEncoded: (a: number, b: number) => void;
+  readonly packedboolregister_getUpdateMessage: (a: number, b: number, c: number, d: number) => void;
   readonly __wbg_browserhlc_free: (a: number) => void;
   readonly browserhlc_new: () => number;
   readonly browserhlc_getOffset: (a: number, b: number) => void;
   readonly browserhlc_setOffset: (a: number, b: number, c: number) => void;
   readonly browserhlc_serialize: (a: number, b: number) => void;
   readonly browserhlc_deserialize: (a: number, b: number) => number;
+  readonly browserhlc_generateTimestamp: (a: number) => number;
   readonly __wbg_serverhlc_free: (a: number) => void;
   readonly serverhlc_new: () => number;
   readonly serverhlc_get_timestamp: (a: number) => number;
@@ -334,7 +351,7 @@ export interface InitOutput {
   readonly __wbg_uid_free: (a: number) => void;
   readonly uid_new: () => number;
   readonly uid_from_string: (a: number, b: number) => number;
-  readonly uid_as_string: (a: number, b: number) => void;
+  readonly uid_toString: (a: number, b: number) => void;
   readonly uid_as_byte_string: (a: number, b: number) => void;
   readonly generate_id: (a: number) => void;
   readonly __wbg_engine_free: (a: number) => void;
@@ -350,6 +367,7 @@ export interface InitOutput {
   readonly engine_create_bool_register: (a: number, b: number) => number;
   readonly get_message: (a: number) => void;
   readonly parse_update_message: (a: number, b: number, c: number) => void;
+  readonly createBoolRegister: (a: number, b: number) => number;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;
   readonly timestamp_get_time: (a: number, b: number) => void;

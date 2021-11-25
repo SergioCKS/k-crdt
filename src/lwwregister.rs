@@ -12,8 +12,8 @@ use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct PackedBoolRegister {
-    id: UID,
-    value: bool,
+    pub id: UID,
+    pub value: bool,
     encoded: Vec<u8>
 }
 
@@ -23,18 +23,23 @@ impl PackedBoolRegister {
         Self { id, value, encoded }
     }
 
-    pub fn get_id(&self) -> String {
-        self.id.to_string()
-    }
-
-    pub fn get_value(&self) -> bool {
-        self.value
-    }
-
+    // pub fn get_id(&self) -> String {
+    //     self.id.to_string()
+    // }
+    //
+    // pub fn get_value(&self) -> bool {
+    //     self.value
+    // }
+    //
+    #[wasm_bindgen(js_name = getEncoded)]
     pub fn get_encoded(&self) -> Vec<u8> {
         self.encoded.clone()
     }
 
+    /// ### Get update message
+    ///
+    /// Constructs an encoded update message from the register.
+    #[wasm_bindgen(js_name = getUpdateMessage)]
     pub fn get_update_message(&self, nid: UID, ts: Timestamp) -> Vec<u8> {
         let update_msg = UpdateMessage::new(
             nid,
@@ -43,7 +48,8 @@ impl PackedBoolRegister {
             MessageCode::NewBoolRegister,
             self.encoded.clone()
         );
-        bincode::serialize(&update_msg).unwrap()
+        bincode::serialize(&update_msg)
+            .expect_throw("Error while trying to serialize update message.")
     }
 }
 

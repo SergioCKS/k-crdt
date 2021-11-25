@@ -14,6 +14,12 @@ export function get_message(): string;
 */
 export function parse_update_message(update_msg: Uint8Array): string;
 /**
+* @param {Timestamp} ts
+* @param {boolean} value
+* @returns {PackedBoolRegister}
+*/
+export function createBoolRegister(ts: Timestamp, value: boolean): PackedBoolRegister;
+/**
 * ## Browser HLC
 *
 * Hybrid logical clock based on browser time.
@@ -61,6 +67,13 @@ export class BrowserHLC {
 * @returns {BrowserHLC}
 */
   static deserialize(encoded: Uint8Array): BrowserHLC;
+/**
+* ### Generate timestamp (JS)
+*
+* Generates a timestamp polling the browser time source.
+* @returns {Timestamp}
+*/
+  generateTimestamp(): Timestamp;
 }
 /**
 * ## CRDT Engine
@@ -175,23 +188,24 @@ export class PackedBoolRegister {
 */
   static new(id: UID, value: boolean, encoded: Uint8Array): PackedBoolRegister;
 /**
-* @returns {string}
-*/
-  get_id(): string;
-/**
-* @returns {boolean}
-*/
-  get_value(): boolean;
-/**
 * @returns {Uint8Array}
 */
-  get_encoded(): Uint8Array;
+  getEncoded(): Uint8Array;
 /**
+* ### Get update message
+*
+* Constructs an encoded update message from the register.
 * @param {UID} nid
 * @param {Timestamp} ts
 * @returns {Uint8Array}
 */
-  get_update_message(nid: UID, ts: Timestamp): Uint8Array;
+  getUpdateMessage(nid: UID, ts: Timestamp): Uint8Array;
+/**
+*/
+  id: UID;
+/**
+*/
+  value: boolean;
 }
 /**
 */
@@ -302,7 +316,7 @@ export class UID {
 /**
 * @returns {string}
 */
-  as_string(): string;
+  toString(): string;
 /**
 * @returns {Uint8Array}
 */

@@ -339,6 +339,14 @@ impl BrowserHLC {
         let decoded: BrowserHLC = bincode::deserialize(&encoded[..]).expect_throw("Failed to deserialize HLC.");
         decoded
     }
+
+    /// ### Generate timestamp (JS)
+    ///
+    /// Generates a timestamp polling the browser time source.
+    #[wasm_bindgen(js_name = generateTimestamp)]
+    pub fn generate_timestamp_js(&mut self) -> Result<Timestamp, JsValue> {
+        Ok(self.generate_timestamp()?)
+    }
 }
 
 impl BrowserHLC {
