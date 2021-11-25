@@ -118,6 +118,7 @@ impl UID {
         Self(random::<u128>())
     }
 
+    #[wasm_bindgen(js_name = fromString)]
     pub fn from_string(nid_str: String) -> Result<UID, JsValue> {
         Ok(nid_str.parse::<Self>()?)
     }

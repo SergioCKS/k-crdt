@@ -1,4 +1,4 @@
-import { parse_update_message, ServerHLC } from "./engine_bg.mjs";
+import { parseUpdateMessage, ServerHLC } from "./engine_bg.mjs";
 export class SyncAgent {
     state;
     sessions;
@@ -65,7 +65,7 @@ export class SyncAgent {
         server.addEventListener("message", async ({ data: rawData }) => {
             if (rawData instanceof ArrayBuffer) {
                 let binData = rawData;
-                const nodeId = parse_update_message(new Uint8Array(binData));
+                const nodeId = parseUpdateMessage(new Uint8Array(binData));
                 server.send(JSON.stringify({
                     msgCode: "test",
                     payload: `Received binary data consisting of ${binData.byteLength} bytes. Parsed node ID: ${nodeId}`

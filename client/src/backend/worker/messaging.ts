@@ -37,18 +37,6 @@ async function broadcastMessage(message: WorkerMessage) {
 }
 
 /**
- * ## Message any client
- *
- * Send a message to any connected client.
- *
- * @param message Message to send
- */
-// async function messageAnyClient(message: WorkerMessage) {
-// 	const anyClient = (await worker.clients.matchAll())[0];
-// 	anyClient.postMessage(message);
-// }
-
-/**
  * ## Message client
  *
  * Send a message to a specific connected client.
@@ -74,16 +62,12 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 		// syncConnection = new SyncConnection(new URL("wss://crdt.zeda.tech/ws"));
 		syncConnection = new SyncConnection(new URL("wss://rust-wasm.zeda.workers.dev/ws"));
 	}
-
 	// 2. Initialize WASM
-	let nodeId = await wasm.initialize();
-
+	let nid = await wasm.initialize();
 	// 3. Open DB
-	nodeId = await localDb.initialize(nodeId);
-
+	nid = await localDb.initialize(nid);
 	// 4. Set node ID in WASM engine.
-	wasm.setNodeId(nodeId);
-
+	wasm.setNodeId(nid);
 	// 5. Restore clock from local database.
 	try {
 		const encoded = await localDb.getRecord("HLC");
@@ -91,7 +75,6 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	} catch (error) {
 		console.error(error);
 	}
-
 	// 6. Initialize connection to sync manager.
 	try {
 		await syncConnection.initialize(forceRestart);
@@ -155,27 +138,21 @@ export async function handleClientMessage(
 		case "create-bool-register": {
 			// 1. Get register initial value from message.
 			const value = message.payload.value;
-
 			// 2. Create register and retrieve values.
 			const register = wasm.createBoolRegister(value);
 			const id = register.id.toString();
-
+			const type = "bool";
 			// 3. Broadcast the newly created register to the front-end clients.
-			broadcastMessage({ msgCode: "new-register", payload: { id, value, type: "bool" } });
-
+			broadcastMessage({ msgCode: "new-register", payload: { id, value, type } });
 			// 4. Persist encoded version in local database.
 			try {
-				await localDb.put_crdt({ id, value, encoded: register.getEncoded(), type: "bool" });
+				await localDb.put_crdt({ id, value, encoded: register.getEncoded(), type });
 			} catch (e) {
 				console.error(e);
 				return true;
 			}
-
 			// 5. Broadcast the event to other nodes.
-			const updateMessage = register.getUpdateMessage(
-				wasm.engine.get_node_id(),
-				wasm.generateTimeStamp()
-			);
+			const updateMessage = register.getUpdateMessage(wasm.nid, wasm.generateTimeStamp());
 			syncConnection.sendMessage(updateMessage);
 
 			register.free();

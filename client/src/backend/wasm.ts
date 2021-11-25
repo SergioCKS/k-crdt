@@ -3,14 +3,7 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, {
-	Engine,
-	UID,
-	BrowserHLC,
-	Timestamp,
-	createBoolRegister,
-	PackedBoolRegister
-} from "./wasm/crdts";
+import init, { UID, BrowserHLC, Timestamp, createBoolRegister, PackedRegister } from "./wasm/crdts";
 
 /**
  * ## WASM
@@ -19,11 +12,11 @@ import init, {
  */
 export class Wasm {
 	/**
-	 * ### CRDT Engine
+	 * ### Node ID
 	 *
-	 * Object containing all "live" CRDTs in WASM linear memory as well as methods for interacting with them.
+	 * Unique ID of the node in the system.
 	 */
-	public engine: Engine = undefined;
+	public nid: UID | undefined = undefined;
 
 	/**
 	 * ### Hybrid logical clock
@@ -34,19 +27,19 @@ export class Wasm {
 
 	//#region Initialization
 	/**
-	 * ### Initialize WASM
+	 * ### Initialize
 	 *
-	 * Initialize WASM. Once initialized, WASM objects become interactive.
+	 * Initialize Wasm interface.
 	 */
 	public async initialize(): Promise<string> {
+		// Initialize Wasm instance. Once initialized, Wasm objects are available.
 		await init();
 		// Starts with a random node ID, which is replaced by a stored one later if found.
-		this.engine = new Engine();
-
-		// Starts with a default state, which is replaced by a stored one later if found.
+		this.nid = new UID();
+		// Starts with a default clock, which is replaced by a stored one later if found.
 		this.hlc = new BrowserHLC();
 
-		return this.engine.get_node_id().toString();
+		return this.nid.toString();
 	}
 
 	/**
@@ -55,8 +48,9 @@ export class Wasm {
 	 * Whether or not the WASM interface is initialized.
 	 */
 	public is_initialized(): boolean {
-		return !!this.engine && !!this.hlc;
+		return !!this.nid && !!this.hlc;
 	}
+
 	/**
 	 * ### Set node ID
 	 *
@@ -65,9 +59,7 @@ export class Wasm {
 	 * @param nodeId - ID of the node in the system.
 	 */
 	public setNodeId(nodeId: string): void {
-		if (this.engine) {
-			this.engine.set_node_id(UID.from_string(nodeId));
-		}
+		this.nid = UID.fromString(nodeId);
 	}
 	//#endregion
 
@@ -139,9 +131,8 @@ export class Wasm {
 	 * @param initialValue Initial value of the register
 	 * @returns Encoded register with metadata
 	 */
-	public createBoolRegister(initialValue: boolean): PackedBoolRegister {
+	public createBoolRegister(initialValue: boolean): PackedRegister {
 		const ts = this.generateTimeStamp();
-		const register = createBoolRegister(ts, initialValue);
-		return register;
+		return createBoolRegister(ts, initialValue);
 	}
 }

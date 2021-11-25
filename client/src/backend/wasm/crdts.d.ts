@@ -1,11 +1,18 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* ## Create bool register
+*
+* Constructs a last-write-wins register over a boolean value, serializes it and
+* returns a packed version of the register.
+*
+* * `ts` - Timestamp marking the moment of creation of the register.
+* * `value` - Initial value of the register.
 * @param {Timestamp} ts
 * @param {boolean} value
-* @returns {PackedBoolRegister}
+* @returns {PackedRegister}
 */
-export function createBoolRegister(ts: Timestamp, value: boolean): PackedBoolRegister;
+export function createBoolRegister(ts: Timestamp, value: boolean): PackedRegister;
 /**
 * @returns {string}
 */
@@ -71,118 +78,27 @@ export class BrowserHLC {
   generateTimestamp(): Timestamp;
 }
 /**
-* ## CRDT Engine
+* ## Packed register
 *
-* Representation of a CRDT engine.
+* Encoded version of a register with some added metadata.
 */
-export class Engine {
+export class PackedRegister {
   free(): void;
 /**
-* ### New CRDT engine
+* ### New packed register
 *
-* Creates an engine instance.
+* Constructs a new packed register.
 *
-* * `node_id` - The ID of the node in the system.
-*     Can be omitted and set after engine creation.
-* @param {UID | undefined} node_id
-*/
-  constructor(node_id?: UID);
-/**
-* ### Restore register
-*
-* Restores the state of the register from a serialized string.
-*
-* * `serialized` - JSON-serialized counter state.
-* @param {string | undefined} serialized
-*/
-  restore_register(serialized?: string): void;
-/**
-* ### Set node ID
-*
-* Sets the ID of the node in the system.
-* @param {UID} node_id
-*/
-  set_node_id(node_id: UID): void;
-/**
-* ### Set time offset
-*
-* Sets the time offset of the node.
-* @param {BigInt} offset_millis
-*/
-  set_time_offset(offset_millis: BigInt): void;
-/**
-* ### Get node ID
-*
-* Returns the node ID associated with the engine.
-* @returns {UID}
-*/
-  get_node_id(): UID;
-/**
-* ### Get time offset
-*
-* Returns the time offset of the node.
-* @returns {BigInt}
-*/
-  get_time_offset(): BigInt;
-/**
-* ### Get register value
-*
-* Returns the current value of the register.
-* @returns {boolean}
-*/
-  get_register_value(): boolean;
-/**
-* ### Toggle register value
-*
-* Flips the value of the register.
-*/
-  toggle_register(): void;
-/**
-* ### Serialize counter
-*
-* Serialize the counter as JSON.
-* Serialize register
-*
-* Serialize the register as JSON.
-* ### Merge from message
-*
-* Merge the state of the counter with the state of another
-*
-* * `msg` - Serialized state of another counter (update message from sync manage).
-* ### Merge register from message
-*
-* Merge an incoming message with a serialized register.
-*
-* * `msg` - Serialized state of another register.
-* * `other_id` - ID of the other node.
-* ### Generate timestamp
-*
-* Generates an HLC timestamp.
-* @returns {Timestamp}
-*/
-  generate_timestamp(): Timestamp;
-/**
-* ### Create bool register
-*
-* Creates a new last-write-wins register wrapping a boolean value, serializes it and passes
-* the result to the client.
-* @param {boolean} initial
-* @returns {PackedBoolRegister}
-*/
-  create_bool_register(initial: boolean): PackedBoolRegister;
-}
-/**
-*/
-export class PackedBoolRegister {
-  free(): void;
-/**
-* @param {UID} id
-* @param {boolean} value
+* * `id` - If not provided, a random UID is generated and used instead.
+* * `encoded` - Encoded version of the register.
+* @param {UID | undefined} id
 * @param {Uint8Array} encoded
-* @returns {PackedBoolRegister}
 */
-  static new(id: UID, value: boolean, encoded: Uint8Array): PackedBoolRegister;
+  constructor(id: UID | undefined, encoded: Uint8Array);
 /**
+* ### Get encoded
+*
+* Returns the encoded version of the register.
 * @returns {Uint8Array}
 */
   getEncoded(): Uint8Array;
@@ -190,17 +106,20 @@ export class PackedBoolRegister {
 * ### Get update message
 *
 * Constructs an encoded update message from the register.
+*
+* * `nid` - Unique ID of the node in the system.
+* * `ts` - Timemstamp marking the moment of message emission.
 * @param {UID} nid
 * @param {Timestamp} ts
 * @returns {Uint8Array}
 */
   getUpdateMessage(nid: UID, ts: Timestamp): Uint8Array;
 /**
+* ### Uinque ID
+*
+* Unique identifier of the register.
 */
   id: UID;
-/**
-*/
-  value: boolean;
 }
 /**
 */
@@ -307,7 +226,7 @@ export class UID {
 * @param {string} nid_str
 * @returns {UID}
 */
-  static from_string(nid_str: string): UID;
+  static fromString(nid_str: string): UID;
 /**
 * @returns {string}
 */
@@ -322,14 +241,12 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly __wbg_packedboolregister_free: (a: number) => void;
-  readonly __wbg_get_packedboolregister_id: (a: number) => number;
-  readonly __wbg_set_packedboolregister_id: (a: number, b: number) => void;
-  readonly __wbg_get_packedboolregister_value: (a: number) => number;
-  readonly __wbg_set_packedboolregister_value: (a: number, b: number) => void;
-  readonly packedboolregister_new: (a: number, b: number, c: number, d: number) => number;
-  readonly packedboolregister_getEncoded: (a: number, b: number) => void;
-  readonly packedboolregister_getUpdateMessage: (a: number, b: number, c: number, d: number) => void;
+  readonly __wbg_packedregister_free: (a: number) => void;
+  readonly __wbg_get_packedregister_id: (a: number) => number;
+  readonly __wbg_set_packedregister_id: (a: number, b: number) => void;
+  readonly packedregister_new: (a: number, b: number, c: number) => number;
+  readonly packedregister_getEncoded: (a: number, b: number) => void;
+  readonly packedregister_getUpdateMessage: (a: number, b: number, c: number, d: number) => void;
   readonly createBoolRegister: (a: number, b: number) => number;
   readonly __wbg_browserhlc_free: (a: number) => void;
   readonly browserhlc_new: () => number;
@@ -346,21 +263,10 @@ export interface InitOutput {
   readonly serverhlc_deserialize: (a: number, b: number) => number;
   readonly __wbg_uid_free: (a: number) => void;
   readonly uid_new: () => number;
-  readonly uid_from_string: (a: number, b: number) => number;
+  readonly uid_fromString: (a: number, b: number) => number;
   readonly uid_toString: (a: number, b: number) => void;
   readonly uid_as_byte_string: (a: number, b: number) => void;
   readonly generate_id: (a: number) => void;
-  readonly __wbg_engine_free: (a: number) => void;
-  readonly engine_new: (a: number) => number;
-  readonly engine_restore_register: (a: number, b: number, c: number) => void;
-  readonly engine_set_node_id: (a: number, b: number) => void;
-  readonly engine_set_time_offset: (a: number, b: number, c: number) => void;
-  readonly engine_get_node_id: (a: number) => number;
-  readonly engine_get_time_offset: (a: number, b: number) => void;
-  readonly engine_get_register_value: (a: number) => number;
-  readonly engine_toggle_register: (a: number) => void;
-  readonly engine_generate_timestamp: (a: number) => number;
-  readonly engine_create_bool_register: (a: number, b: number) => number;
   readonly get_message: (a: number) => void;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;

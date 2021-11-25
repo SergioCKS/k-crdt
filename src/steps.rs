@@ -18,19 +18,19 @@ const CLIENT_TYPES_DIR: &str = "client/src/types";
 
 //#region Client build
 pub fn client_wasm_pack_build() -> Result<()> {
-    let exit_status = Command::new("wasm-pack")
+    let status = Command::new("wasm-pack")
         .arg("build")
         .args(&["--target", "web"])
         .args(&["--out-dir", CLIENT_OUT_DIR])
         .arg("--release")
         .arg("--")
         .args(&["--features", "client"])
-        .spawn()?
-        .wait()?;
+        .output()?
+        .status;
 
-    match exit_status.success() {
+    match status.success() {
         true => Ok(()),
-        false => Err(anyhow!("wasm-pack exited with status {}", exit_status)),
+        false => Err(anyhow!("wasm-pack exited with status {}", status)),
     }
 }
 
@@ -45,19 +45,19 @@ pub fn client_delete_gitignore() -> Result<()> {
 
 //#region Server build
 pub fn server_wasm_pack_build() -> Result<()> {
-    let exit_status = Command::new("wasm-pack")
+    let status = Command::new("wasm-pack")
         .arg("build")
         .args(&["--out-dir", OUT_DIR])
         .args(&["--out-name", OUT_NAME])
         .arg("--release")
         .arg("--")
         .args(&["--features", "server"])
-        .spawn()?
-        .wait()?;
+        .output()?
+        .status;
 
-    match exit_status.success() {
+    match status.success() {
         true => Ok(()),
-        false => Err(anyhow!("wasm-pack exited with status {}", exit_status)),
+        false => Err(anyhow!("wasm-pack exited with status {}", status)),
     }
 }
 

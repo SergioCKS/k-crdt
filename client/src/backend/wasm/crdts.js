@@ -53,6 +53,10 @@ function _assertClass(instance, klass) {
     return instance.ptr;
 }
 
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
 let WASM_VECTOR_LEN = 0;
 
 function passArray8ToWasm0(arg, malloc) {
@@ -74,16 +78,23 @@ function getArrayU8FromWasm0(ptr, len) {
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 /**
+* ## Create bool register
+*
+* Constructs a last-write-wins register over a boolean value, serializes it and
+* returns a packed version of the register.
+*
+* * `ts` - Timestamp marking the moment of creation of the register.
+* * `value` - Initial value of the register.
 * @param {Timestamp} ts
 * @param {boolean} value
-* @returns {PackedBoolRegister}
+* @returns {PackedRegister}
 */
 export function createBoolRegister(ts, value) {
     _assertClass(ts, Timestamp);
     var ptr0 = ts.ptr;
     ts.ptr = 0;
     var ret = wasm.createBoolRegister(ptr0, value);
-    return PackedBoolRegister.__wrap(ret);
+    return PackedRegister.__wrap(ret);
 }
 
 const u32CvtShim = new Uint32Array(2);
@@ -158,9 +169,6 @@ export function generate_id() {
     }
 }
 
-function isLikeNone(x) {
-    return x === undefined || x === null;
-}
 /**
 * @returns {string}
 */
@@ -302,14 +310,14 @@ export class BrowserHLC {
     }
 }
 /**
-* ## CRDT Engine
+* ## Packed register
 *
-* Representation of a CRDT engine.
+* Encoded version of a register with some added metadata.
 */
-export class Engine {
+export class PackedRegister {
 
     static __wrap(ptr) {
-        const obj = Object.create(Engine.prototype);
+        const obj = Object.create(PackedRegister.prototype);
         obj.ptr = ptr;
 
         return obj;
@@ -324,223 +332,61 @@ export class Engine {
 
     free() {
         const ptr = this.__destroy_into_raw();
-        wasm.__wbg_engine_free(ptr);
+        wasm.__wbg_packedregister_free(ptr);
     }
     /**
-    * ### New CRDT engine
+    * ### Uinque ID
     *
-    * Creates an engine instance.
-    *
-    * * `node_id` - The ID of the node in the system.
-    *     Can be omitted and set after engine creation.
-    * @param {UID | undefined} node_id
-    */
-    constructor(node_id) {
-        let ptr0 = 0;
-        if (!isLikeNone(node_id)) {
-            _assertClass(node_id, UID);
-            ptr0 = node_id.ptr;
-            node_id.ptr = 0;
-        }
-        var ret = wasm.engine_new(ptr0);
-        return Engine.__wrap(ret);
-    }
-    /**
-    * ### Restore register
-    *
-    * Restores the state of the register from a serialized string.
-    *
-    * * `serialized` - JSON-serialized counter state.
-    * @param {string | undefined} serialized
-    */
-    restore_register(serialized) {
-        var ptr0 = isLikeNone(serialized) ? 0 : passStringToWasm0(serialized, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len0 = WASM_VECTOR_LEN;
-        wasm.engine_restore_register(this.ptr, ptr0, len0);
-    }
-    /**
-    * ### Set node ID
-    *
-    * Sets the ID of the node in the system.
-    * @param {UID} node_id
-    */
-    set_node_id(node_id) {
-        _assertClass(node_id, UID);
-        var ptr0 = node_id.ptr;
-        node_id.ptr = 0;
-        wasm.engine_set_node_id(this.ptr, ptr0);
-    }
-    /**
-    * ### Set time offset
-    *
-    * Sets the time offset of the node.
-    * @param {BigInt} offset_millis
-    */
-    set_time_offset(offset_millis) {
-        int64CvtShim[0] = offset_millis;
-        const low0 = u32CvtShim[0];
-        const high0 = u32CvtShim[1];
-        wasm.engine_set_time_offset(this.ptr, low0, high0);
-    }
-    /**
-    * ### Get node ID
-    *
-    * Returns the node ID associated with the engine.
-    * @returns {UID}
-    */
-    get_node_id() {
-        var ret = wasm.engine_get_node_id(this.ptr);
-        return UID.__wrap(ret);
-    }
-    /**
-    * ### Get time offset
-    *
-    * Returns the time offset of the node.
-    * @returns {BigInt}
-    */
-    get_time_offset() {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.engine_get_time_offset(retptr, this.ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            u32CvtShim[0] = r0;
-            u32CvtShim[1] = r1;
-            const n0 = int64CvtShim[0];
-            return n0;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-    * ### Get register value
-    *
-    * Returns the current value of the register.
-    * @returns {boolean}
-    */
-    get_register_value() {
-        var ret = wasm.engine_get_register_value(this.ptr);
-        return ret !== 0;
-    }
-    /**
-    * ### Toggle register value
-    *
-    * Flips the value of the register.
-    */
-    toggle_register() {
-        wasm.engine_toggle_register(this.ptr);
-    }
-    /**
-    * ### Serialize counter
-    *
-    * Serialize the counter as JSON.
-    * Serialize register
-    *
-    * Serialize the register as JSON.
-    * ### Merge from message
-    *
-    * Merge the state of the counter with the state of another
-    *
-    * * `msg` - Serialized state of another counter (update message from sync manage).
-    * ### Merge register from message
-    *
-    * Merge an incoming message with a serialized register.
-    *
-    * * `msg` - Serialized state of another register.
-    * * `other_id` - ID of the other node.
-    * ### Generate timestamp
-    *
-    * Generates an HLC timestamp.
-    * @returns {Timestamp}
-    */
-    generate_timestamp() {
-        var ret = wasm.engine_generate_timestamp(this.ptr);
-        return Timestamp.__wrap(ret);
-    }
-    /**
-    * ### Create bool register
-    *
-    * Creates a new last-write-wins register wrapping a boolean value, serializes it and passes
-    * the result to the client.
-    * @param {boolean} initial
-    * @returns {PackedBoolRegister}
-    */
-    create_bool_register(initial) {
-        var ret = wasm.engine_create_bool_register(this.ptr, initial);
-        return PackedBoolRegister.__wrap(ret);
-    }
-}
-/**
-*/
-export class PackedBoolRegister {
-
-    static __wrap(ptr) {
-        const obj = Object.create(PackedBoolRegister.prototype);
-        obj.ptr = ptr;
-
-        return obj;
-    }
-
-    __destroy_into_raw() {
-        const ptr = this.ptr;
-        this.ptr = 0;
-
-        return ptr;
-    }
-
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_packedboolregister_free(ptr);
-    }
-    /**
+    * Unique identifier of the register.
     */
     get id() {
-        var ret = wasm.__wbg_get_packedboolregister_id(this.ptr);
+        var ret = wasm.__wbg_get_packedregister_id(this.ptr);
         return UID.__wrap(ret);
     }
     /**
+    * ### Uinque ID
+    *
+    * Unique identifier of the register.
     * @param {UID} arg0
     */
     set id(arg0) {
         _assertClass(arg0, UID);
         var ptr0 = arg0.ptr;
         arg0.ptr = 0;
-        wasm.__wbg_set_packedboolregister_id(this.ptr, ptr0);
+        wasm.__wbg_set_packedregister_id(this.ptr, ptr0);
     }
     /**
-    */
-    get value() {
-        var ret = wasm.__wbg_get_packedboolregister_value(this.ptr);
-        return ret !== 0;
-    }
-    /**
-    * @param {boolean} arg0
-    */
-    set value(arg0) {
-        wasm.__wbg_set_packedboolregister_value(this.ptr, arg0);
-    }
-    /**
-    * @param {UID} id
-    * @param {boolean} value
+    * ### New packed register
+    *
+    * Constructs a new packed register.
+    *
+    * * `id` - If not provided, a random UID is generated and used instead.
+    * * `encoded` - Encoded version of the register.
+    * @param {UID | undefined} id
     * @param {Uint8Array} encoded
-    * @returns {PackedBoolRegister}
     */
-    static new(id, value, encoded) {
-        _assertClass(id, UID);
-        var ptr0 = id.ptr;
-        id.ptr = 0;
+    constructor(id, encoded) {
+        let ptr0 = 0;
+        if (!isLikeNone(id)) {
+            _assertClass(id, UID);
+            ptr0 = id.ptr;
+            id.ptr = 0;
+        }
         var ptr1 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
         var len1 = WASM_VECTOR_LEN;
-        var ret = wasm.packedboolregister_new(ptr0, value, ptr1, len1);
-        return PackedBoolRegister.__wrap(ret);
+        var ret = wasm.packedregister_new(ptr0, ptr1, len1);
+        return PackedRegister.__wrap(ret);
     }
     /**
+    * ### Get encoded
+    *
+    * Returns the encoded version of the register.
     * @returns {Uint8Array}
     */
     getEncoded() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.packedboolregister_getEncoded(retptr, this.ptr);
+            wasm.packedregister_getEncoded(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU8FromWasm0(r0, r1).slice();
@@ -554,6 +400,9 @@ export class PackedBoolRegister {
     * ### Get update message
     *
     * Constructs an encoded update message from the register.
+    *
+    * * `nid` - Unique ID of the node in the system.
+    * * `ts` - Timemstamp marking the moment of message emission.
     * @param {UID} nid
     * @param {Timestamp} ts
     * @returns {Uint8Array}
@@ -567,7 +416,7 @@ export class PackedBoolRegister {
             _assertClass(ts, Timestamp);
             var ptr1 = ts.ptr;
             ts.ptr = 0;
-            wasm.packedboolregister_getUpdateMessage(retptr, this.ptr, ptr0, ptr1);
+            wasm.packedregister_getUpdateMessage(retptr, this.ptr, ptr0, ptr1);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v2 = getArrayU8FromWasm0(r0, r1).slice();
@@ -809,10 +658,10 @@ export class UID {
     * @param {string} nid_str
     * @returns {UID}
     */
-    static from_string(nid_str) {
+    static fromString(nid_str) {
         var ptr0 = passStringToWasm0(nid_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
-        var ret = wasm.uid_from_string(ptr0, len0);
+        var ret = wasm.uid_fromString(ptr0, len0);
         return UID.__wrap(ret);
     }
     /**

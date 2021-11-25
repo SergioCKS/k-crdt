@@ -105,19 +105,12 @@ export class LocalDb {
 		}
 		//#endregion
 
-		//#region 2. Open database.
-		try {
-			await this.openDb(`KCRDT:${nodeId}`);
-		} catch (exception) {
-			console.error(exception);
-			return;
-		}
-		//#endregion
+		//2. Open database.
+		await this.openDb(`KCRDT:${nodeId}`);
 
-		// Setup generic error handler for errors that were not handled locally and bubbled all the way up to the database object.
-		this.db.onerror = (event) => {
-			console.error("Database error:", event);
-		};
+		// Setup generic error handler for errors that were not handled locally.
+		this.db.onerror = (event) => console.error("Database error:", event);
+
 		return nodeId;
 	}
 
