@@ -97,21 +97,6 @@ export function parseUpdateMessage(update_msg) {
     }
 }
 
-const u32CvtShim = new Uint32Array(2);
-
-const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
-
-function getArrayU8FromWasm0(ptr, len) {
-    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
-}
-
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-    return instance.ptr;
-}
-
 const lTextEncoder = typeof TextEncoder === 'undefined' ? (0, module.require)('util').TextEncoder : TextEncoder;
 
 let cachedTextEncoder = new lTextEncoder('utf-8');
@@ -166,6 +151,10 @@ function passStringToWasm0(arg, malloc, realloc) {
     WASM_VECTOR_LEN = offset;
     return ptr;
 }
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
 /**
 * @returns {string}
 */
@@ -182,6 +171,15 @@ export function generate_id() {
     }
 }
 
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
+}
+
+const u32CvtShim = new Uint32Array(2);
+
 const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
 
 function handleError(f, args) {
@@ -189,121 +187,6 @@ function handleError(f, args) {
         return f.apply(this, args);
     } catch (e) {
         wasm.__wbindgen_exn_store(addHeapObject(e));
-    }
-}
-/**
-* ## Browser HLC
-*
-* Hybrid logical clock based on browser time.
-*/
-export class BrowserHLC {
-
-    static __wrap(ptr) {
-        const obj = Object.create(BrowserHLC.prototype);
-        obj.ptr = ptr;
-
-        return obj;
-    }
-
-    __destroy_into_raw() {
-        const ptr = this.ptr;
-        this.ptr = 0;
-
-        return ptr;
-    }
-
-    free() {
-        const ptr = this.__destroy_into_raw();
-        wasm.__wbg_browserhlc_free(ptr);
-    }
-    /**
-    * ### New browser HLC
-    *
-    * Creates a new HLC based on browser time.
-    *
-    * * Returns default HLC
-    */
-    constructor() {
-        var ret = wasm.browserhlc_new();
-        return BrowserHLC.__wrap(ret);
-    }
-    /**
-    * ### Get clock offset
-    *
-    * Returns the offset of the internal clock.
-    *
-    * * Returns offset in milliseconds
-    * @returns {BigInt}
-    */
-    getOffset() {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.browserhlc_getOffset(retptr, this.ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            u32CvtShim[0] = r0;
-            u32CvtShim[1] = r1;
-            const n0 = int64CvtShim[0];
-            return n0;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-    * ### Set clock offset
-    *
-    * Updates the offset of the internal clock.
-    *
-    * * `offset` - Offset in milliseconds
-    * @param {BigInt} offset
-    */
-    setOffset(offset) {
-        int64CvtShim[0] = offset;
-        const low0 = u32CvtShim[0];
-        const high0 = u32CvtShim[1];
-        wasm.browserhlc_setOffset(this.ptr, low0, high0);
-    }
-    /**
-    * ### Serialize HLC
-    *
-    * Returns an updated encoded version of the HLC.
-    * @returns {Uint8Array}
-    */
-    serialize() {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.browserhlc_serialize(retptr, this.ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            var v0 = getArrayU8FromWasm0(r0, r1).slice();
-            wasm.__wbindgen_free(r0, r1 * 1);
-            return v0;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-    * ### Deserialize HLC
-    *
-    * Constructs an HLC from an encoded version.
-    * @param {Uint8Array} encoded
-    * @returns {BrowserHLC}
-    */
-    static deserialize(encoded) {
-        var ptr0 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
-        var len0 = WASM_VECTOR_LEN;
-        var ret = wasm.browserhlc_deserialize(ptr0, len0);
-        return BrowserHLC.__wrap(ret);
-    }
-    /**
-    * ### Generate timestamp (JS)
-    *
-    * Generates a timestamp polling the browser time source.
-    * @returns {Timestamp}
-    */
-    generateTimestamp() {
-        var ret = wasm.browserhlc_generateTimestamp(this.ptr);
-        return Timestamp.__wrap(ret);
     }
 }
 /**
@@ -585,16 +468,6 @@ export function __wbindgen_object_drop_ref(arg0) {
     takeObject(arg0);
 };
 
-export function __wbg_timeOrigin_3dd709c1f8d57f0b(arg0) {
-    var ret = getObject(arg0).timeOrigin;
-    return ret;
-};
-
-export function __wbg_now_559193109055ebad(arg0) {
-    var ret = getObject(arg0).now();
-    return ret;
-};
-
 export function __wbg_getRandomValues_98117e9a7e993920() { return handleError(function (arg0, arg1) {
     getObject(arg0).getRandomValues(getObject(arg1));
 }, arguments) };
@@ -648,11 +521,6 @@ export function __wbg_newnoargs_be86524d73f67598(arg0, arg1) {
     var ret = new Function(getStringFromWasm0(arg0, arg1));
     return addHeapObject(ret);
 };
-
-export function __wbg_get_4d0f21c2f823742e() { return handleError(function (arg0, arg1) {
-    var ret = Reflect.get(getObject(arg0), getObject(arg1));
-    return addHeapObject(ret);
-}, arguments) };
 
 export function __wbg_call_888d259a5fefc347() { return handleError(function (arg0, arg1) {
     var ret = getObject(arg0).call(getObject(arg1));

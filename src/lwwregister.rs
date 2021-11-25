@@ -6,7 +6,6 @@
 use crate::time::timestamp::Timestamp;
 use crate::uid::UID;
 use serde::{Deserialize, Serialize};
-
 #[cfg(feature = "client")]
 use wasm_bindgen::prelude::*;
 #[cfg(feature = "client")]

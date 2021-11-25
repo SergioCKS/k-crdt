@@ -5,8 +5,11 @@ use crate::time::timestamp::Timestamp;
 use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
-use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
+use std::time::{Duration, SystemTimeError};
 use wasm_bindgen::prelude::*;
+#[cfg(test)]
+use std::time::{SystemTime, UNIX_EPOCH};
+#[cfg(feature = "client")]
 use wasm_bindgen::JsCast;
 use serde::{Serialize, Deserialize};
 
@@ -142,15 +145,17 @@ pub trait Clock {
     }
 }
 
-//#region System time clock
+//#region System time clock (test clock)
 /// ## System Time Clock
 ///
 /// A clock relying on [`SysTime`] as time source.
+#[cfg(test)]
 #[derive(Clone, Copy, Default)]
 pub struct SysTimeClock {
     offset: Offset // bincode: 8 bytes
 }
 
+#[cfg(test)]
 impl Clock for SysTimeClock {
     fn get_offset(&self) -> Offset {
         self.offset
@@ -169,18 +174,20 @@ impl Clock for SysTimeClock {
 }
 //#endregion
 
-//#region Browser clock
+//#region Browser clock (Client)
 /// ## Browser clock
 ///
 /// A clock relying on browser APIs to poll time.
 ///
 /// * The [`Performance` interface](https://developer.mozilla.org/en-US/docs/Web/API/Performance)
 ///   is used to poll time. The time resolution is vendor-dependent, but is at least in the millisecond range.
+#[cfg(feature = "client")]
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct BrowserClock {
     offset: Offset // bincode: 8 bytes
 }
 
+#[cfg(feature = "client")]
 impl Clock for BrowserClock {
     fn get_offset(&self) -> Offset {
         self.offset
@@ -204,12 +211,14 @@ impl Clock for BrowserClock {
         }
     }
 }
-//#endregion
+//#endregion ()
 
 //#region Server clock
+#[cfg(feature = "server")]
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct ServerClock;
 
+#[cfg(feature = "server")]
 impl Clock for ServerClock {
     fn get_offset(&self) -> Offset {
         Offset::default()

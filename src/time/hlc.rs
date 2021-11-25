@@ -67,11 +67,19 @@
 //! **Handling update rejections.** When a message timestamp drifts too far ahead into the future,
 //! the message is rejected. The emitting node should be notified of rejections, so that it adjusts
 //! it's clock/offset, and retries the rejected updates.
-use crate::time::clock::{BrowserClock, Clock, Offset, SysTimeClock, TimePollError, ServerClock};
-use crate::time::timestamp::Timestamp;
+use crate::time::{Timestamp, Clock, TimePollError};
+#[cfg(feature = "client")]
+use crate::time::BrowserClock;
+#[cfg(feature = "server")]
+use crate::time::ServerClock;
+#[cfg(test)]
+use crate::time::SysTimeClock;
+#[cfg(not(all(not(feature = "client"), not(feature = "server"))))]
+use crate::time::Offset;
 use std::cmp;
 use std::fmt::{Debug, Display, Formatter};
 use std::time::Duration;
+#[cfg(not(all(not(feature = "client"), not(feature = "server"))))]
 use serde::{Serialize, Deserialize};
 use wasm_bindgen::prelude::*;
 
@@ -237,6 +245,7 @@ impl From<UpdateWithTimestampError> for JsValue {
 /// ## System time clock
 ///
 /// Clock function relying on [`SystemTime`] as time source.
+#[cfg(test)]
 #[derive(Clone, Copy, Default)]
 pub struct SysTimeHLC {
     /// ### Last time
@@ -250,6 +259,7 @@ pub struct SysTimeHLC {
     clock: SysTimeClock,
 }
 
+#[cfg(test)]
 impl SysTimeHLC {
     pub fn get_offset(&self) -> Offset {
         self.clock.get_offset()
@@ -260,6 +270,7 @@ impl SysTimeHLC {
     }
 }
 
+#[cfg(test)]
 impl HybridLogicalClock<SysTimeClock> for SysTimeHLC {
     fn get_last_time(&self) -> Timestamp {
         self.last_time.clone()
@@ -275,10 +286,11 @@ impl HybridLogicalClock<SysTimeClock> for SysTimeHLC {
 }
 //#endregion
 
-//#region BrowserHLC
+//#region BrowserHLC (Client clock)
 /// ## Browser HLC
 ///
 /// Hybrid logical clock based on browser time.
+#[cfg(feature = "client")]
 #[wasm_bindgen]
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct BrowserHLC {
@@ -293,6 +305,7 @@ pub struct BrowserHLC {
     clock: BrowserClock // bincode: 8 bytes
 }
 
+#[cfg(feature = "client")]
 #[wasm_bindgen]
 impl BrowserHLC {
     /// ### New browser HLC
@@ -349,6 +362,7 @@ impl BrowserHLC {
     }
 }
 
+#[cfg(feature = "client")]
 impl BrowserHLC {
     pub fn get_offset(&self) -> Offset {
         self.clock.get_offset()
@@ -359,6 +373,7 @@ impl BrowserHLC {
     }
 }
 
+#[cfg(feature = "client")]
 impl HybridLogicalClock<BrowserClock> for BrowserHLC {
     fn get_last_time(&self) -> Timestamp {
         self.last_time
@@ -374,13 +389,15 @@ impl HybridLogicalClock<BrowserClock> for BrowserHLC {
 }
 //#endregion
 
-//#region ServerHLC
+//#region ServerHLC (Server clock)
+#[cfg(feature = "server")]
 #[wasm_bindgen]
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct ServerHLC {
     last_time: Timestamp
 }
 
+#[cfg(feature = "server")]
 #[wasm_bindgen]
 impl ServerHLC {
     #[wasm_bindgen(constructor)]
@@ -407,6 +424,7 @@ impl ServerHLC {
     }
 }
 
+#[cfg(feature = "server")]
 impl HybridLogicalClock<ServerClock> for ServerHLC {
     fn get_last_time(&self) -> Timestamp {
         self.last_time

@@ -14,62 +14,6 @@ export function parseUpdateMessage(update_msg: Uint8Array): string;
 */
 export function generate_id(): string;
 /**
-* ## Browser HLC
-*
-* Hybrid logical clock based on browser time.
-*/
-export class BrowserHLC {
-  free(): void;
-/**
-* ### New browser HLC
-*
-* Creates a new HLC based on browser time.
-*
-* * Returns default HLC
-*/
-  constructor();
-/**
-* ### Get clock offset
-*
-* Returns the offset of the internal clock.
-*
-* * Returns offset in milliseconds
-* @returns {BigInt}
-*/
-  getOffset(): BigInt;
-/**
-* ### Set clock offset
-*
-* Updates the offset of the internal clock.
-*
-* * `offset` - Offset in milliseconds
-* @param {BigInt} offset
-*/
-  setOffset(offset: BigInt): void;
-/**
-* ### Serialize HLC
-*
-* Returns an updated encoded version of the HLC.
-* @returns {Uint8Array}
-*/
-  serialize(): Uint8Array;
-/**
-* ### Deserialize HLC
-*
-* Constructs an HLC from an encoded version.
-* @param {Uint8Array} encoded
-* @returns {BrowserHLC}
-*/
-  static deserialize(encoded: Uint8Array): BrowserHLC;
-/**
-* ### Generate timestamp (JS)
-*
-* Generates a timestamp polling the browser time source.
-* @returns {Timestamp}
-*/
-  generateTimestamp(): Timestamp;
-}
-/**
 */
 export class ServerHLC {
   free(): void;

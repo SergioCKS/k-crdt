@@ -2,8 +2,12 @@ pub mod clock;
 pub mod hlc;
 pub mod timestamp;
 
-//#region Re-exports
 pub use self::timestamp::Timestamp;
-pub use self::clock::{BrowserClock, Offset};
-pub use self::hlc::{BrowserHLC, HybridLogicalClock};
-//#endregion
+pub use self::clock::{Clock, Offset, TimePollError};
+
+#[cfg(feature = "client")]
+pub use self::clock::BrowserClock;
+#[cfg(feature = "server")]
+pub use self::clock::ServerClock;
+#[cfg(test)]
+pub use self::clock::SysTimeClock;

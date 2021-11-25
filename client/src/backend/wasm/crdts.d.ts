@@ -16,11 +16,11 @@ export function createBoolRegister(ts: Timestamp, value: boolean): PackedRegiste
 /**
 * @returns {string}
 */
-export function generate_id(): string;
+export function get_message(): string;
 /**
 * @returns {string}
 */
-export function get_message(): string;
+export function generate_id(): string;
 /**
 * ## Browser HLC
 *
@@ -120,32 +120,6 @@ export class PackedRegister {
 * Unique identifier of the register.
 */
   id: UID;
-}
-/**
-*/
-export class ServerHLC {
-  free(): void;
-/**
-*/
-  constructor();
-/**
-* @returns {Timestamp}
-*/
-  get_timestamp(): Timestamp;
-/**
-* @param {Timestamp} ts
-* @returns {Timestamp}
-*/
-  update(ts: Timestamp): Timestamp;
-/**
-* @returns {Uint8Array}
-*/
-  serialize(): Uint8Array;
-/**
-* @param {Uint8Array} encoded
-* @returns {ServerHLC}
-*/
-  static deserialize(encoded: Uint8Array): ServerHLC;
 }
 /**
 * ## HLC Timestamp
@@ -248,26 +222,13 @@ export interface InitOutput {
   readonly packedregister_getEncoded: (a: number, b: number) => void;
   readonly packedregister_getUpdateMessage: (a: number, b: number, c: number, d: number) => void;
   readonly createBoolRegister: (a: number, b: number) => number;
-  readonly __wbg_browserhlc_free: (a: number) => void;
-  readonly browserhlc_new: () => number;
-  readonly browserhlc_getOffset: (a: number, b: number) => void;
-  readonly browserhlc_setOffset: (a: number, b: number, c: number) => void;
-  readonly browserhlc_serialize: (a: number, b: number) => void;
-  readonly browserhlc_deserialize: (a: number, b: number) => number;
-  readonly browserhlc_generateTimestamp: (a: number) => number;
-  readonly __wbg_serverhlc_free: (a: number) => void;
-  readonly serverhlc_new: () => number;
-  readonly serverhlc_get_timestamp: (a: number) => number;
-  readonly serverhlc_update: (a: number, b: number) => number;
-  readonly serverhlc_serialize: (a: number, b: number) => void;
-  readonly serverhlc_deserialize: (a: number, b: number) => number;
+  readonly get_message: (a: number) => void;
   readonly __wbg_uid_free: (a: number) => void;
   readonly uid_new: () => number;
   readonly uid_fromString: (a: number, b: number) => number;
   readonly uid_toString: (a: number, b: number) => void;
   readonly uid_as_byte_string: (a: number, b: number) => void;
   readonly generate_id: (a: number) => void;
-  readonly get_message: (a: number) => void;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;
   readonly timestamp_get_time: (a: number, b: number) => void;
@@ -276,6 +237,13 @@ export interface InitOutput {
   readonly timestamp_get_count: (a: number) => number;
   readonly timestamp_get_nanoseconds: (a: number) => number;
   readonly timestamp_increase_counter: (a: number) => void;
+  readonly __wbg_browserhlc_free: (a: number) => void;
+  readonly browserhlc_new: () => number;
+  readonly browserhlc_getOffset: (a: number, b: number) => void;
+  readonly browserhlc_setOffset: (a: number, b: number, c: number) => void;
+  readonly browserhlc_serialize: (a: number, b: number) => void;
+  readonly browserhlc_deserialize: (a: number, b: number) => number;
+  readonly browserhlc_generateTimestamp: (a: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
