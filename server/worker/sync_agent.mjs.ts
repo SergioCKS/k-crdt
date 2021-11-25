@@ -1,5 +1,5 @@
 import { ClientMessage, ServerMessage } from "./messages.mjs";
-import { parse_update_message, ServerHLC } from "./engine_bg.mjs";
+import { parseUpdateMessage, ServerHLC } from "./engine_bg.mjs";
 
 interface Env {
 	COUNTER: any;
@@ -81,7 +81,7 @@ export class SyncAgent {
 		server.addEventListener("message", async ({ data: rawData }) => {
 			if (rawData instanceof ArrayBuffer) {
 				let binData = rawData as ArrayBuffer;
-				const nodeId = parse_update_message(new Uint8Array(binData));
+				const nodeId = parseUpdateMessage(new Uint8Array(binData));
 				server.send(
 					JSON.stringify({
 						msgCode: "test",

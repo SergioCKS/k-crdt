@@ -131,6 +131,14 @@ export class Wasm {
 	}
 	//#endregion
 
+	/**
+	 * ### Create bool register
+	 *
+	 * Creates a new last-write-wins register over a boolean value.
+	 *
+	 * @param initialValue Initial value of the register
+	 * @returns Encoded register with metadata
+	 */
 	public createBoolRegister(initialValue: boolean): PackedBoolRegister {
 		const ts = this.generateTimeStamp();
 		const register = createBoolRegister(ts, initialValue);

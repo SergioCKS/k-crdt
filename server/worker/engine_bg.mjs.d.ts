@@ -12,7 +12,7 @@ export function get_message(): string;
 * @param {Uint8Array} update_msg
 * @returns {string}
 */
-export function parse_update_message(update_msg: Uint8Array): string;
+export function parseUpdateMessage(update_msg: Uint8Array): string;
 /**
 * @param {Timestamp} ts
 * @param {boolean} value

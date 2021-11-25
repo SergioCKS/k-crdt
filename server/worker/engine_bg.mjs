@@ -172,12 +172,12 @@ export function get_message() {
 * @param {Uint8Array} update_msg
 * @returns {string}
 */
-export function parse_update_message(update_msg) {
+export function parseUpdateMessage(update_msg) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
         var ptr0 = passArray8ToWasm0(update_msg, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
-        wasm.parse_update_message(retptr, ptr0, len0);
+        wasm.parseUpdateMessage(retptr, ptr0, len0);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
         return getStringFromWasm0(r0, r1);

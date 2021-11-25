@@ -1,6 +1,12 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* @param {Timestamp} ts
+* @param {boolean} value
+* @returns {PackedBoolRegister}
+*/
+export function createBoolRegister(ts: Timestamp, value: boolean): PackedBoolRegister;
+/**
 * @returns {string}
 */
 export function generate_id(): string;
@@ -8,17 +14,6 @@ export function generate_id(): string;
 * @returns {string}
 */
 export function get_message(): string;
-/**
-* @param {Uint8Array} update_msg
-* @returns {string}
-*/
-export function parse_update_message(update_msg: Uint8Array): string;
-/**
-* @param {Timestamp} ts
-* @param {boolean} value
-* @returns {PackedBoolRegister}
-*/
-export function createBoolRegister(ts: Timestamp, value: boolean): PackedBoolRegister;
 /**
 * ## Browser HLC
 *
@@ -335,6 +330,7 @@ export interface InitOutput {
   readonly packedboolregister_new: (a: number, b: number, c: number, d: number) => number;
   readonly packedboolregister_getEncoded: (a: number, b: number) => void;
   readonly packedboolregister_getUpdateMessage: (a: number, b: number, c: number, d: number) => void;
+  readonly createBoolRegister: (a: number, b: number) => number;
   readonly __wbg_browserhlc_free: (a: number) => void;
   readonly browserhlc_new: () => number;
   readonly browserhlc_getOffset: (a: number, b: number) => void;
@@ -366,8 +362,6 @@ export interface InitOutput {
   readonly engine_generate_timestamp: (a: number) => number;
   readonly engine_create_bool_register: (a: number, b: number) => number;
   readonly get_message: (a: number) => void;
-  readonly parse_update_message: (a: number, b: number, c: number) => void;
-  readonly createBoolRegister: (a: number, b: number) => number;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;
   readonly timestamp_get_time: (a: number, b: number) => void;

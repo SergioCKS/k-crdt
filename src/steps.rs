@@ -23,6 +23,8 @@ pub fn client_wasm_pack_build() -> Result<()> {
         .args(&["--target", "web"])
         .args(&["--out-dir", CLIENT_OUT_DIR])
         .arg("--release")
+        .arg("--")
+        .args(&["--features", "client"])
         .spawn()?
         .wait()?;
 
@@ -45,10 +47,11 @@ pub fn client_delete_gitignore() -> Result<()> {
 pub fn server_wasm_pack_build() -> Result<()> {
     let exit_status = Command::new("wasm-pack")
         .arg("build")
-        // .arg("--no-typescript")
         .args(&["--out-dir", OUT_DIR])
         .args(&["--out-name", OUT_NAME])
         .arg("--release")
+        .arg("--")
+        .args(&["--features", "server"])
         .spawn()?
         .wait()?;
 

@@ -2,7 +2,7 @@
 //!
 //! A library to manage a collection of CRDTS in a WASM context.
 use wasm_bindgen::prelude::*;
-use crate::time::timestamp::Timestamp;
+use crate::time::Timestamp;
 use crate::lwwregister::{LWWRegister, PackedBoolRegister};
 use crate::uid::UID;
 

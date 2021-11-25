@@ -10,6 +10,9 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 
+// TODO: Remove `value` field (unused in client methods).
+// TODO: Check if it can be excluded from server build.
+// This would allow this struct to generalize to arbitrary Registers and even arbitrary encoded objects.
 #[wasm_bindgen]
 pub struct PackedBoolRegister {
     pub id: UID,

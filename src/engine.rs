@@ -2,13 +2,9 @@
 //!
 //! An interface designed to manage a collection of CRDTs in a WASM context.
 use crate::lwwregister::{LWWRegister, PackedBoolRegister};
-// use crate::pncounter::PNCounter;
-use crate::time::clock::Offset;
-use crate::time::hlc::{BrowserHLC, HybridLogicalClock};
-use crate::time::timestamp::Timestamp;
-// use crate::uid::UID;
-use wasm_bindgen::prelude::*;
+use crate::time::{Offset, Timestamp, BrowserHLC, HybridLogicalClock};
 use crate::uid::UID;
+use wasm_bindgen::prelude::*;
 use serde::{Serialize, Deserialize};
 
 //#region UpdateMessage
@@ -222,7 +218,8 @@ pub fn get_message() -> String {
     String::from("Hello, hello-wasm! V3")
 }
 
-#[wasm_bindgen]
+#[cfg(feature = "server")]
+#[wasm_bindgen(js_name = parseUpdateMessage)]
 pub fn parse_update_message(update_msg: Vec<u8>) -> String {
     let decoded: UpdateMessage = match bincode::deserialize(&update_msg[..]) {
         Ok(val) => val,
