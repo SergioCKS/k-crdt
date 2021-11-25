@@ -2,6 +2,9 @@
 name = "crdts"
 version = "0.1.0"
 edition = "2018"
+description = "Local-first data management application."
+repository = "https://github.com/SergioCKS/k-crdt.git"
+license = "MIT"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
