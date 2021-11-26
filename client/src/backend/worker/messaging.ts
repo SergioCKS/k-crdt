@@ -142,20 +142,19 @@ export async function handleClientMessage(
 			const register = wasm.createBoolRegister(value);
 			const id = register.id.toString();
 			const type = "bool";
+			const encoded = register.getEncoded();
 			// 3. Broadcast the newly created register to the front-end clients.
 			broadcastMessage({ msgCode: "new-register", payload: { id, value, type } });
 			// 4. Persist encoded version in local database.
 			try {
-				await localDb.put_crdt({ id, value, encoded: register.getEncoded(), type });
+				await localDb.put_crdt({ id, value, encoded, type });
 			} catch (e) {
 				console.error(e);
 				return true;
 			}
 			// 5. Broadcast the event to other nodes.
-			const updateMessage = register.getUpdateMessage(wasm.nid, wasm.generateTimeStamp());
+			const updateMessage = register.getMessage(wasm.getNodeId(), wasm.generateTimeStamp());
 			syncConnection.sendMessage(updateMessage);
-
-			register.free();
 			return true;
 		}
 		case "restore-registers": {

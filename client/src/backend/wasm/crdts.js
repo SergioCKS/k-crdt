@@ -52,31 +52,6 @@ function _assertClass(instance, klass) {
     }
     return instance.ptr;
 }
-
-function isLikeNone(x) {
-    return x === undefined || x === null;
-}
-
-let WASM_VECTOR_LEN = 0;
-
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1);
-    getUint8Memory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
-
-let cachegetInt32Memory0 = null;
-function getInt32Memory0() {
-    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
-        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
-    }
-    return cachegetInt32Memory0;
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
-}
 /**
 * ## Create bool register
 *
@@ -97,21 +72,7 @@ export function createBoolRegister(ts, value) {
     return PackedRegister.__wrap(ret);
 }
 
-/**
-* @returns {string}
-*/
-export function get_message() {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.get_message(retptr);
-        var r0 = getInt32Memory0()[retptr / 4 + 0];
-        var r1 = getInt32Memory0()[retptr / 4 + 1];
-        return getStringFromWasm0(r0, r1);
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_free(r0, r1);
-    }
-}
+let WASM_VECTOR_LEN = 0;
 
 let cachedTextEncoder = new TextEncoder('utf-8');
 
@@ -165,6 +126,18 @@ function passStringToWasm0(arg, malloc, realloc) {
     WASM_VECTOR_LEN = offset;
     return ptr;
 }
+
+let cachegetInt32Memory0 = null;
+function getInt32Memory0() {
+    if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
+        cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
+    }
+    return cachegetInt32Memory0;
+}
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
 /**
 * @returns {string}
 */
@@ -181,11 +154,37 @@ export function generate_id() {
     }
 }
 
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1);
+    getUint8Memory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
 const u32CvtShim = new Uint32Array(2);
 
 const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
 
 const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
+/**
+* @returns {string}
+*/
+export function get_message() {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.get_message(retptr);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        return getStringFromWasm0(r0, r1);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_free(r0, r1);
+    }
+}
 
 function handleError(f, args) {
     try {
@@ -194,6 +193,9 @@ function handleError(f, args) {
         wasm.__wbindgen_exn_store(addHeapObject(e));
     }
 }
+/**
+*/
+export const RegisterValueType = Object.freeze({ Bool:0,"0":"Bool", });
 /**
 * ## Browser HLC
 *
@@ -356,16 +358,36 @@ export class PackedRegister {
         wasm.__wbg_set_packedregister_id(this.ptr, ptr0);
     }
     /**
+    * ### Value type
+    *
+    * Type of the value wrapped by the register.
+    */
+    get valueType() {
+        var ret = wasm.__wbg_get_packedregister_valueType(this.ptr);
+        return ret >>> 0;
+    }
+    /**
+    * ### Value type
+    *
+    * Type of the value wrapped by the register.
+    * @param {number} arg0
+    */
+    set valueType(arg0) {
+        wasm.__wbg_set_packedregister_valueType(this.ptr, arg0);
+    }
+    /**
     * ### New packed register
     *
     * Constructs a new packed register.
     *
     * * `id` - If not provided, a random UID is generated and used instead.
+    * * `value_type` - Type of the value wrapped by the register.
     * * `encoded` - Encoded version of the register.
     * @param {UID | undefined} id
+    * @param {number} value_type
     * @param {Uint8Array} encoded
     */
-    constructor(id, encoded) {
+    constructor(id, value_type, encoded) {
         let ptr0 = 0;
         if (!isLikeNone(id)) {
             _assertClass(id, UID);
@@ -374,7 +396,7 @@ export class PackedRegister {
         }
         var ptr1 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
         var len1 = WASM_VECTOR_LEN;
-        var ret = wasm.packedregister_new(ptr0, ptr1, len1);
+        var ret = wasm.packedregister_new(ptr0, value_type, ptr1, len1);
         return PackedRegister.__wrap(ret);
     }
     /**
@@ -397,17 +419,11 @@ export class PackedRegister {
         }
     }
     /**
-    * ### Get update message
-    *
-    * Constructs an encoded update message from the register.
-    *
-    * * `nid` - Unique ID of the node in the system.
-    * * `ts` - Timemstamp marking the moment of message emission.
     * @param {UID} nid
     * @param {Timestamp} ts
     * @returns {Uint8Array}
     */
-    getUpdateMessage(nid, ts) {
+    getMessage(nid, ts) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
             _assertClass(nid, UID);
@@ -416,7 +432,7 @@ export class PackedRegister {
             _assertClass(ts, Timestamp);
             var ptr1 = ts.ptr;
             ts.ptr = 0;
-            wasm.packedregister_getUpdateMessage(retptr, this.ptr, ptr0, ptr1);
+            wasm.packedregister_getMessage(retptr, this.ptr, ptr0, ptr1);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v2 = getArrayU8FromWasm0(r0, r1).slice();
@@ -579,6 +595,13 @@ export class UID {
     */
     constructor() {
         var ret = wasm.uid_new();
+        return UID.__wrap(ret);
+    }
+    /**
+    * @returns {UID}
+    */
+    getCopy() {
+        var ret = wasm.uid_getCopy(this.ptr);
         return UID.__wrap(ret);
     }
     /**

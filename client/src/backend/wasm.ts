@@ -61,6 +61,10 @@ export class Wasm {
 	public setNodeId(nodeId: string): void {
 		this.nid = UID.fromString(nodeId);
 	}
+
+	public getNodeId(): UID {
+		return this.nid.getCopy();
+	}
 	//#endregion
 
 	//#region Clock

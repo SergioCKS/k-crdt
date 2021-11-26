@@ -65,10 +65,10 @@ export class SyncAgent {
         server.addEventListener("message", async ({ data: rawData }) => {
             if (rawData instanceof ArrayBuffer) {
                 let binData = rawData;
-                const nodeId = parseUpdateMessage(new Uint8Array(binData));
+                const id = parseUpdateMessage(new Uint8Array(binData));
                 server.send(JSON.stringify({
                     msgCode: "test",
-                    payload: `Received binary data consisting of ${binData.byteLength} bytes. Parsed node ID: ${nodeId}`
+                    payload: `Received binary data consisting of ${binData.byteLength} bytes. Parsed ID: ${id}`
                 }));
             }
             else {

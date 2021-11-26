@@ -8,7 +8,7 @@ use crate::lwwregister::LWWRegister;
 #[cfg(feature = "client")]
 use wasm_bindgen::prelude::*;
 #[cfg(feature = "client")]
-use crate::lwwregister::PackedRegister;
+use crate::lwwregister::{PackedRegister, RegisterValueType};
 
 
 pub mod engine;
@@ -34,7 +34,5 @@ pub fn create_bool_register(ts: Timestamp, value: bool) -> PackedRegister {
     let register = LWWRegister::new(ts, value);
     let encoded = bincode::serialize(&register)
         .expect_throw("Error while serializing register");
-    PackedRegister::new(None, encoded)
+    PackedRegister::new(None, RegisterValueType::Bool, encoded)
 }
-
-

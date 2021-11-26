@@ -6,21 +6,45 @@
 use crate::time::timestamp::Timestamp;
 use crate::uid::UID;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "client")]
 use wasm_bindgen::prelude::*;
-#[cfg(feature = "client")]
-use crate::engine::{UpdateMessage, MessageCode};
+
+//#region Packed register
+#[derive(Serialize, Deserialize)]
+pub struct RegisterMessage {
+    pub nid: UID,
+    pub ts: Timestamp,
+    pub register: PackedRegister
+}
+
+impl RegisterMessage {
+    pub fn new(nid: UID, ts: Timestamp, register: PackedRegister) -> Self {
+        Self { nid, ts, register }
+    }
+}
+
+#[wasm_bindgen]
+#[repr(u8)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
+pub enum RegisterValueType {
+    Bool = 0
+}
 
 /// ## Packed register
 ///
 /// Encoded version of a register with some added metadata.
-#[cfg(feature = "client")]
 #[wasm_bindgen]
+#[derive(Serialize, Deserialize)]
 pub struct PackedRegister {
     /// ### Uinque ID
     ///
     /// Unique identifier of the register.
     pub id: UID,
+
+    /// ### Value type
+    ///
+    /// Type of the value wrapped by the register.
+    #[wasm_bindgen(js_name = "valueType")]
+    pub value_type: RegisterValueType,
 
     /// ## Encoded value
     ///
@@ -28,7 +52,6 @@ pub struct PackedRegister {
     encoded: Vec<u8>
 }
 
-#[cfg(feature = "client")]
 #[wasm_bindgen]
 impl PackedRegister {
     /// ### New packed register
@@ -36,11 +59,13 @@ impl PackedRegister {
     /// Constructs a new packed register.
     ///
     /// * `id` - If not provided, a random UID is generated and used instead.
+    /// * `value_type` - Type of the value wrapped by the register.
     /// * `encoded` - Encoded version of the register.
     #[wasm_bindgen(constructor)]
-    pub fn new(id: Option<UID>, encoded: Vec<u8>) -> Self {
+    pub fn new(id: Option<UID>, value_type: RegisterValueType, encoded: Vec<u8>) -> Self {
         Self {
             id: id.unwrap_or(UID::new()),
+            value_type,
             encoded
         }
     }
@@ -53,24 +78,17 @@ impl PackedRegister {
         self.encoded.clone()
     }
 
-    /// ### Get update message
-    ///
-    /// Constructs an encoded update message from the register.
-    ///
-    /// * `nid` - Unique ID of the node in the system.
-    /// * `ts` - Timemstamp marking the moment of message emission.
-    #[wasm_bindgen(js_name = getUpdateMessage)]
-    pub fn get_update_message(&self, nid: UID, ts: Timestamp) -> Vec<u8> {
-        let update_msg = UpdateMessage::new(
-            nid,
-            ts,
-            MessageCode::NewBoolRegister,
-            self.encoded.clone()
-        );
-        bincode::serialize(&update_msg)
-            .expect_throw("Error while trying to serialize update message.")
+    #[wasm_bindgen(js_name = getMessage)]
+    pub fn get_message(&self, nid: UID, ts: Timestamp) -> Vec<u8> {
+        let message = RegisterMessage::new(nid, ts, Self {
+            id: self.id,
+            value_type: self.value_type,
+            encoded: self.encoded.clone()
+        });
+        bincode::serialize(&message).expect_throw("Error while serializing message.")
     }
 }
+//#endregion
 
 /// ## LWWRegister
 ///

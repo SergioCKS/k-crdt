@@ -118,6 +118,9 @@ impl UID {
         Self(random::<u128>())
     }
 
+    #[wasm_bindgen(js_name = getCopy)]
+    pub fn get_copy(&self) -> Self { self.clone() }
+
     #[wasm_bindgen(js_name = fromString)]
     pub fn from_string(nid_str: String) -> Result<UID, JsValue> {
         Ok(nid_str.parse::<Self>()?)
