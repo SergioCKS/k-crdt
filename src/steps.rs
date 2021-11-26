@@ -18,19 +18,19 @@ const CLIENT_TYPES_DIR: &str = "client/src/types";
 
 //#region Client build
 pub fn client_wasm_pack_build() -> Result<()> {
-    let status = Command::new("wasm-pack")
+    let result = Command::new("wasm-pack")
         .arg("build")
         .args(&["--target", "web"])
         .args(&["--out-dir", CLIENT_OUT_DIR])
         .arg("--release")
         .arg("--")
         .args(&["--features", "client"])
-        .output()?
-        .status;
+        .spawn()?
+        .wait()?;
 
-    match status.success() {
+    match result.success() {
         true => Ok(()),
-        false => Err(anyhow!("wasm-pack exited with status {}", status)),
+        false => Err(anyhow!("wasm-pack exited with status {}", result)),
     }
 }
 
@@ -52,8 +52,8 @@ pub fn server_wasm_pack_build() -> Result<()> {
         .arg("--release")
         .arg("--")
         .args(&["--features", "server"])
-        .output()?
-        .status;
+        .spawn()?
+        .wait()?;
 
     match status.success() {
         true => Ok(()),

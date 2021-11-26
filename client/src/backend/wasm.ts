@@ -3,7 +3,13 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, { UID, BrowserHLC, Timestamp, createBoolRegister, PackedRegister } from "./wasm/crdts";
+import init, {
+	UID,
+	BrowserHLC,
+	Timestamp,
+	createBoolRegister,
+	getBoolRegisterMessage
+} from "./wasm/crdts";
 
 /**
  * ## WASM
@@ -128,15 +134,29 @@ export class Wasm {
 	//#endregion
 
 	/**
+	 * ### Generate ID
+	 *
+	 * Generates a globally unique ID.
+	 *
+	 * @returns Unique ID
+	 */
+	public generateId(): UID {
+		return new UID();
+	}
+
+	/**
 	 * ### Create bool register
 	 *
 	 * Creates a new last-write-wins register over a boolean value.
 	 *
 	 * @param initialValue Initial value of the register
-	 * @returns Encoded register with metadata
+	 * @returns Encoded register
 	 */
-	public createBoolRegister(initialValue: boolean): PackedRegister {
-		const ts = this.generateTimeStamp();
-		return createBoolRegister(ts, initialValue);
+	public createBoolRegister(initialValue: boolean): Uint8Array {
+		return createBoolRegister(this.generateTimeStamp(), initialValue);
+	}
+
+	public getBoolRegisterMessage(id: UID, encoded: Uint8Array): Uint8Array {
+		return getBoolRegisterMessage(this.generateTimeStamp(), id, encoded);
 	}
 }

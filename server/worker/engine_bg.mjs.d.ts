@@ -3,10 +3,6 @@
 /**
 * @returns {string}
 */
-export function generate_id(): string;
-/**
-* @returns {string}
-*/
 export function get_message(): string;
 /**
 * @param {Uint8Array} update_msg
@@ -14,55 +10,9 @@ export function get_message(): string;
 */
 export function parseUpdateMessage(update_msg: Uint8Array): string;
 /**
+* @returns {string}
 */
-export enum RegisterValueType {
-  Bool,
-}
-/**
-* ## Packed register
-*
-* Encoded version of a register with some added metadata.
-*/
-export class PackedRegister {
-  free(): void;
-/**
-* ### New packed register
-*
-* Constructs a new packed register.
-*
-* * `id` - If not provided, a random UID is generated and used instead.
-* * `value_type` - Type of the value wrapped by the register.
-* * `encoded` - Encoded version of the register.
-* @param {UID | undefined} id
-* @param {number} value_type
-* @param {Uint8Array} encoded
-*/
-  constructor(id: UID | undefined, value_type: number, encoded: Uint8Array);
-/**
-* ### Get encoded
-*
-* Returns the encoded version of the register.
-* @returns {Uint8Array}
-*/
-  getEncoded(): Uint8Array;
-/**
-* @param {Timestamp} ts
-* @returns {Uint8Array}
-*/
-  getMessage(ts: Timestamp): Uint8Array;
-/**
-* ### Uinque ID
-*
-* Unique identifier of the register.
-*/
-  id: UID;
-/**
-* ### Value type
-*
-* Type of the value wrapped by the register.
-*/
-  valueType: number;
-}
+export function generateId(): string;
 /**
 */
 export class ServerHLC {

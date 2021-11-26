@@ -1,22 +1,15 @@
 /* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
-export function createBoolRegister(a: number, b: number): number;
+export function createBoolRegister(a: number, b: number, c: number): void;
+export function getBoolRegisterMessage(a: number, b: number, c: number, d: number, e: number): void;
 export function __wbg_uid_free(a: number): void;
 export function uid_new(): number;
 export function uid_getCopy(a: number): number;
 export function uid_fromString(a: number, b: number): number;
 export function uid_toString(a: number, b: number): void;
 export function uid_as_byte_string(a: number, b: number): void;
-export function generate_id(a: number): void;
-export function __wbg_packedregister_free(a: number): void;
-export function __wbg_get_packedregister_id(a: number): number;
-export function __wbg_set_packedregister_id(a: number, b: number): void;
-export function __wbg_get_packedregister_valueType(a: number): number;
-export function __wbg_set_packedregister_valueType(a: number, b: number): void;
-export function packedregister_new(a: number, b: number, c: number, d: number): number;
-export function packedregister_getEncoded(a: number, b: number): void;
-export function packedregister_getMessage(a: number, b: number, c: number): void;
+export function generateId(a: number): void;
 export function __wbg_timestamp_free(a: number): void;
 export function timestamp_as_u64(a: number, b: number): void;
 export function timestamp_get_time(a: number, b: number): void;
@@ -33,8 +26,8 @@ export function browserhlc_serialize(a: number, b: number): void;
 export function browserhlc_deserialize(a: number, b: number): number;
 export function browserhlc_generateTimestamp(a: number): number;
 export function get_message(a: number): void;
-export function __wbindgen_malloc(a: number): number;
-export function __wbindgen_realloc(a: number, b: number, c: number): number;
 export function __wbindgen_add_to_stack_pointer(a: number): number;
 export function __wbindgen_free(a: number, b: number): void;
+export function __wbindgen_malloc(a: number): number;
+export function __wbindgen_realloc(a: number, b: number, c: number): number;
 export function __wbindgen_exn_store(a: number): void;

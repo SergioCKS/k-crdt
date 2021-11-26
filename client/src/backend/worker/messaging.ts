@@ -139,10 +139,10 @@ export async function handleClientMessage(
 			// 1. Get register initial value from message.
 			const value = message.payload.value;
 			// 2. Create register and retrieve values.
-			const register = wasm.createBoolRegister(value);
-			const id = register.id.toString();
+			const encoded = wasm.createBoolRegister(value);
+			const uid = wasm.generateId();
+			const id = uid.toString();
 			const type = "bool";
-			const encoded = register.getEncoded();
 			// 3. Broadcast the newly created register to the front-end clients.
 			broadcastMessage({ msgCode: "new-register", payload: { id, value, type } });
 			// 4. Persist encoded version in local database.
@@ -153,7 +153,7 @@ export async function handleClientMessage(
 				return true;
 			}
 			// 5. Broadcast the event to other nodes.
-			const updateMessage = register.getMessage(wasm.generateTimeStamp());
+			const updateMessage = wasm.getBoolRegisterMessage(uid, encoded);
 			syncConnection.sendMessage(updateMessage);
 			return true;
 		}

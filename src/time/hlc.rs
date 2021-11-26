@@ -74,7 +74,7 @@ use crate::time::BrowserClock;
 use crate::time::ServerClock;
 #[cfg(test)]
 use crate::time::SysTimeClock;
-#[cfg(not(all(not(feature = "client"), not(feature = "server"))))]
+#[cfg(not(all(not(feature = "client"), not(test))))]
 use crate::time::Offset;
 use std::cmp;
 use std::fmt::{Debug, Display, Formatter};

@@ -5,88 +5,56 @@
 //! last-write-wins strategy.
 use crate::time::timestamp::Timestamp;
 use crate::uid::UID;
-use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
+use serde::{Deserialize,Serialize};
 
 //#region Packed register
-#[derive(Serialize, Deserialize)]
-pub struct RegisterMessage {
-    pub ts: Timestamp,
-    pub register: PackedRegister
-}
-
-impl RegisterMessage {
-    pub fn new(ts: Timestamp, register: PackedRegister) -> Self {
-        Self { ts, register }
-    }
-}
-
-#[wasm_bindgen]
-#[repr(u8)]
-#[derive(Clone, Copy, Serialize, Deserialize)]
-pub enum RegisterValueType {
-    Bool = 0
-}
-
-/// ## Packed register
+/// ## Register Message
 ///
-/// Encoded version of a register with some added metadata.
-#[wasm_bindgen]
+/// Register with added metadata to be sent as an update message.
+///
+/// * Encoded size: 24 + REG_SIZE bytes (where REG_SIZE is the size of an encoded register)
 #[derive(Serialize, Deserialize)]
-pub struct PackedRegister {
-    /// ### Uinque ID
+pub struct RegisterMessage<const REG_SIZE: usize> {
+    /// ### Message emission timestamp
     ///
-    /// Unique identifier of the register.
+    /// Timestamp marking the moment of emission of the message.
+    ///
+    /// * Encoding size: 8 bytes
+    pub ts: Timestamp,
+
+    /// ### Register ID
+    ///
+    /// Unique ID of the register in the system.
+    ///
+    /// * Encoding size: 16 bytes
     pub id: UID,
 
-    /// ### Value type
-    ///
-    /// Type of the value wrapped by the register.
-    #[wasm_bindgen(js_name = "valueType")]
-    pub value_type: RegisterValueType,
-
-    /// ## Encoded value
+    /// ### Register
     ///
     /// Encoded version of the register.
-    encoded: Vec<u8>
+    ///
+    /// * Encoding size: SIZE bytes
+    #[serde(with = "serde_arrays")]
+    pub register: [u8; REG_SIZE]
 }
 
-#[wasm_bindgen]
-impl PackedRegister {
-    /// ### New packed register
-    ///
-    /// Constructs a new packed register.
-    ///
-    /// * `id` - If not provided, a random UID is generated and used instead.
-    /// * `value_type` - Type of the value wrapped by the register.
-    /// * `encoded` - Encoded version of the register.
-    #[wasm_bindgen(constructor)]
-    pub fn new(id: Option<UID>, value_type: RegisterValueType, encoded: Vec<u8>) -> Self {
-        Self {
-            id: id.unwrap_or(UID::new()),
-            value_type,
-            encoded
-        }
-    }
-
-    /// ### Get encoded
-    ///
-    /// Returns the encoded version of the register.
-    #[wasm_bindgen(js_name = getEncoded)]
-    pub fn get_encoded(&self) -> Vec<u8> {
-        self.encoded.clone()
-    }
-
-    #[wasm_bindgen(js_name = getMessage)]
-    pub fn get_message(&self, ts: Timestamp) -> Vec<u8> {
-        let message = RegisterMessage::new(ts, Self {
-            id: self.id,
-            value_type: self.value_type,
-            encoded: self.encoded.clone()
-        });
-        bincode::serialize(&message).expect_throw("Error while serializing message.")
+impl<const REG_SIZE: usize> RegisterMessage<REG_SIZE> {
+    pub fn new(ts: Timestamp, id: UID, register: [u8; REG_SIZE]) -> RegisterMessage<REG_SIZE> {
+        Self { ts, id, register }
     }
 }
+
+// impl <const REG_SIZE: usize> Serialize for RegisterMessage<REG_SIZE> {
+//     fn serialize<S>(&self, serializer: S) -> Result<Ok, Error> where S: Serializer {
+//         todo!()
+//     }
+// }
+//
+// impl <const REG_SIZE: usize> Deserialize for RegisterMessage<REG_SIZE> {
+//     fn deserialize_in_place<D>(deserializer: D, place: &mut Self) -> Result<(), serde::de::Error> where D: Deserializer<'de> {
+//         todo!()
+//     }
+// }
 //#endregion
 
 /// ## LWWRegister
@@ -97,7 +65,7 @@ pub struct LWWRegister<T: Clone> {
     /// ### Timestamp
     ///
     /// HLC timestamp indicating the last update to the register.
-    ts: Timestamp,
+    ts: Timestamp, // bincode: 8 bytes
 
     /// ### Value
     ///
@@ -111,16 +79,13 @@ impl<T: Clone> LWWRegister<T> {
     /// ### New LWWRegister
     ///
     /// Creates a new LWWRegister that wraps an arbitrary value.
-    ///
-    /// * `ts` - Timestamp generated at the moment of creation.
-    /// * `value` - Value of the register. The type of the value is arbitrary
-    ///   but cannot change throughout the lifetime of the register.
-    /// * `returns` - LWWRegister wrapping the given value with an initial timestamp.
     pub fn new(ts: Timestamp, value: T) -> Self {
         Self { ts, value }
     }
 
-
+    /// ### Get timestamp
+    ///
+    /// Returns the current timestamp of the register.
     pub fn get_timestamp(&self) -> Timestamp {
         self.ts
     }
@@ -186,6 +151,18 @@ impl<T: Clone> LWWRegister<T> {
 mod lwwregister_tests {
     use super::*;
     use crate::time::hlc::{SysTimeHLC, HybridLogicalClock};
+    use std::convert::TryInto;
+
+    #[derive(Serialize, Deserialize)]
+    struct TestStruct {
+        encoded: [u8; 9]
+    }
+
+    impl TestStruct {
+        fn new(encoded: [u8; 9]) -> Self {
+            Self { encoded }
+        }
+    }
 
     #[test]
     fn merge_works() {
@@ -233,4 +210,22 @@ mod lwwregister_tests {
     //     assert_eq!(register_a.get_timestamp(), clock);
     //     //#endregion
     // }
+
+    #[test]
+    fn some() {
+        let register = LWWRegister::new(Timestamp::default(), true);
+        let enc_register = bincode::serialize(&register).unwrap();
+        let cast: [u8; 9] = enc_register.try_into().unwrap();
+        let test_struct  = TestStruct::new(cast);
+        let enc_test_struct = bincode::serialize(&test_struct).unwrap();
+        println!("Encoded test struct: {} bytes", enc_test_struct.len()); // Expected 9 bytes
+
+        // let packed = PackedRegister::new(
+        //     Some(UID::new()), // 16 bytes
+        //     RegisterValueType::Bool, // 4 bytes
+        //     enc_register // 9 bytes
+        // );
+        // let enc_packed = bincode::serialize(&packed).unwrap();
+        // println!("Packed register: {}", enc_packed.len());
+    }
 }

@@ -4,28 +4,30 @@
 * ## Create bool register
 *
 * Constructs a last-write-wins register over a boolean value, serializes it and
-* returns a packed version of the register.
+* returns the encoded version of the register.
 *
 * * `ts` - Timestamp marking the moment of creation of the register.
 * * `value` - Initial value of the register.
 * @param {Timestamp} ts
 * @param {boolean} value
-* @returns {PackedRegister}
+* @returns {Uint8Array}
 */
-export function createBoolRegister(ts: Timestamp, value: boolean): PackedRegister;
+export function createBoolRegister(ts: Timestamp, value: boolean): Uint8Array;
+/**
+* @param {Timestamp} ts
+* @param {UID} id
+* @param {Uint8Array} encoded
+* @returns {Uint8Array}
+*/
+export function getBoolRegisterMessage(ts: Timestamp, id: UID, encoded: Uint8Array): Uint8Array;
 /**
 * @returns {string}
 */
-export function generate_id(): string;
+export function generateId(): string;
 /**
 * @returns {string}
 */
 export function get_message(): string;
-/**
-*/
-export enum RegisterValueType {
-  Bool,
-}
 /**
 * ## Browser HLC
 *
@@ -81,51 +83,6 @@ export class BrowserHLC {
 * @returns {Timestamp}
 */
   generateTimestamp(): Timestamp;
-}
-/**
-* ## Packed register
-*
-* Encoded version of a register with some added metadata.
-*/
-export class PackedRegister {
-  free(): void;
-/**
-* ### New packed register
-*
-* Constructs a new packed register.
-*
-* * `id` - If not provided, a random UID is generated and used instead.
-* * `value_type` - Type of the value wrapped by the register.
-* * `encoded` - Encoded version of the register.
-* @param {UID | undefined} id
-* @param {number} value_type
-* @param {Uint8Array} encoded
-*/
-  constructor(id: UID | undefined, value_type: number, encoded: Uint8Array);
-/**
-* ### Get encoded
-*
-* Returns the encoded version of the register.
-* @returns {Uint8Array}
-*/
-  getEncoded(): Uint8Array;
-/**
-* @param {Timestamp} ts
-* @returns {Uint8Array}
-*/
-  getMessage(ts: Timestamp): Uint8Array;
-/**
-* ### Uinque ID
-*
-* Unique identifier of the register.
-*/
-  id: UID;
-/**
-* ### Value type
-*
-* Type of the value wrapped by the register.
-*/
-  valueType: number;
 }
 /**
 * ## HLC Timestamp
@@ -225,22 +182,15 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly createBoolRegister: (a: number, b: number) => number;
+  readonly createBoolRegister: (a: number, b: number, c: number) => void;
+  readonly getBoolRegisterMessage: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly __wbg_uid_free: (a: number) => void;
   readonly uid_new: () => number;
   readonly uid_getCopy: (a: number) => number;
   readonly uid_fromString: (a: number, b: number) => number;
   readonly uid_toString: (a: number, b: number) => void;
   readonly uid_as_byte_string: (a: number, b: number) => void;
-  readonly generate_id: (a: number) => void;
-  readonly __wbg_packedregister_free: (a: number) => void;
-  readonly __wbg_get_packedregister_id: (a: number) => number;
-  readonly __wbg_set_packedregister_id: (a: number, b: number) => void;
-  readonly __wbg_get_packedregister_valueType: (a: number) => number;
-  readonly __wbg_set_packedregister_valueType: (a: number, b: number) => void;
-  readonly packedregister_new: (a: number, b: number, c: number, d: number) => number;
-  readonly packedregister_getEncoded: (a: number, b: number) => void;
-  readonly packedregister_getMessage: (a: number, b: number, c: number) => void;
+  readonly generateId: (a: number) => void;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;
   readonly timestamp_get_time: (a: number, b: number) => void;
@@ -257,10 +207,10 @@ export interface InitOutput {
   readonly browserhlc_deserialize: (a: number, b: number) => number;
   readonly browserhlc_generateTimestamp: (a: number) => number;
   readonly get_message: (a: number) => void;
-  readonly __wbindgen_malloc: (a: number) => number;
-  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly __wbindgen_malloc: (a: number) => number;
+  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_exn_store: (a: number) => void;
 }
 

@@ -100,7 +100,7 @@ fn alphabet_char_to_num(c: char) -> Result<u8, UIDParseError> {
 /// Unique ID represented compactly as [`u128`].
 #[wasm_bindgen]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Debug)]
-pub struct UID(u128);
+pub struct UID(u128); // bincode: 16 bytes
 
 #[wasm_bindgen]
 impl UID {
@@ -286,7 +286,7 @@ impl From<UIDParseError> for JsValue {
 }
 //#endregion
 
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = generateId)]
 pub fn generate_id() -> String {
     UID::new().to_string()
 }
