@@ -11,14 +11,13 @@ use wasm_bindgen::prelude::*;
 //#region Packed register
 #[derive(Serialize, Deserialize)]
 pub struct RegisterMessage {
-    pub nid: UID,
     pub ts: Timestamp,
     pub register: PackedRegister
 }
 
 impl RegisterMessage {
-    pub fn new(nid: UID, ts: Timestamp, register: PackedRegister) -> Self {
-        Self { nid, ts, register }
+    pub fn new(ts: Timestamp, register: PackedRegister) -> Self {
+        Self { ts, register }
     }
 }
 
@@ -79,8 +78,8 @@ impl PackedRegister {
     }
 
     #[wasm_bindgen(js_name = getMessage)]
-    pub fn get_message(&self, nid: UID, ts: Timestamp) -> Vec<u8> {
-        let message = RegisterMessage::new(nid, ts, Self {
+    pub fn get_message(&self, ts: Timestamp) -> Vec<u8> {
+        let message = RegisterMessage::new(ts, Self {
             id: self.id,
             value_type: self.value_type,
             encoded: self.encoded.clone()

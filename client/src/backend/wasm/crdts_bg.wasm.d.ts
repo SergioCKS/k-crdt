@@ -16,7 +16,7 @@ export function __wbg_get_packedregister_valueType(a: number): number;
 export function __wbg_set_packedregister_valueType(a: number, b: number): void;
 export function packedregister_new(a: number, b: number, c: number, d: number): number;
 export function packedregister_getEncoded(a: number, b: number): void;
-export function packedregister_getMessage(a: number, b: number, c: number, d: number): void;
+export function packedregister_getMessage(a: number, b: number, c: number): void;
 export function __wbg_timestamp_free(a: number): void;
 export function timestamp_as_u64(a: number, b: number): void;
 export function timestamp_get_time(a: number, b: number): void;

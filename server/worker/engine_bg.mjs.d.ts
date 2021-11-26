@@ -46,11 +46,10 @@ export class PackedRegister {
 */
   getEncoded(): Uint8Array;
 /**
-* @param {UID} nid
 * @param {Timestamp} ts
 * @returns {Uint8Array}
 */
-  getMessage(nid: UID, ts: Timestamp): Uint8Array;
+  getMessage(ts: Timestamp): Uint8Array;
 /**
 * ### Uinque ID
 *

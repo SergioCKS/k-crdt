@@ -305,25 +305,21 @@ export class PackedRegister {
         }
     }
     /**
-    * @param {UID} nid
     * @param {Timestamp} ts
     * @returns {Uint8Array}
     */
-    getMessage(nid, ts) {
+    getMessage(ts) {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            _assertClass(nid, UID);
-            var ptr0 = nid.ptr;
-            nid.ptr = 0;
             _assertClass(ts, Timestamp);
-            var ptr1 = ts.ptr;
+            var ptr0 = ts.ptr;
             ts.ptr = 0;
-            wasm.packedregister_getMessage(retptr, this.ptr, ptr0, ptr1);
+            wasm.packedregister_getMessage(retptr, this.ptr, ptr0);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
-            var v2 = getArrayU8FromWasm0(r0, r1).slice();
+            var v1 = getArrayU8FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 1);
-            return v2;
+            return v1;
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
         }

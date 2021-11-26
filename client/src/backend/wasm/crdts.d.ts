@@ -110,11 +110,10 @@ export class PackedRegister {
 */
   getEncoded(): Uint8Array;
 /**
-* @param {UID} nid
 * @param {Timestamp} ts
 * @returns {Uint8Array}
 */
-  getMessage(nid: UID, ts: Timestamp): Uint8Array;
+  getMessage(ts: Timestamp): Uint8Array;
 /**
 * ### Uinque ID
 *
@@ -241,7 +240,7 @@ export interface InitOutput {
   readonly __wbg_set_packedregister_valueType: (a: number, b: number) => void;
   readonly packedregister_new: (a: number, b: number, c: number, d: number) => number;
   readonly packedregister_getEncoded: (a: number, b: number) => void;
-  readonly packedregister_getMessage: (a: number, b: number, c: number, d: number) => void;
+  readonly packedregister_getMessage: (a: number, b: number, c: number) => void;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_as_u64: (a: number, b: number) => void;
   readonly timestamp_get_time: (a: number, b: number) => void;

@@ -153,7 +153,7 @@ export async function handleClientMessage(
 				return true;
 			}
 			// 5. Broadcast the event to other nodes.
-			const updateMessage = register.getMessage(wasm.getNodeId(), wasm.generateTimeStamp());
+			const updateMessage = register.getMessage(wasm.generateTimeStamp());
 			syncConnection.sendMessage(updateMessage);
 			return true;
 		}

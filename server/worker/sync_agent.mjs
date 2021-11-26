@@ -89,7 +89,9 @@ export class SyncAgent {
                 }
             }
         });
-        server.addEventListener("close", (event) => console.log(event));
+        server.addEventListener("close", () => {
+            delete this.sessions[connectionId];
+        });
         // Store the connection in memory.
         this.sessions[connectionId] = { ws: server };
         return new Response(null, {
