@@ -77,7 +77,7 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	}
 	// 6. Initialize connection to sync manager.
 	try {
-		await syncConnection.initialize(forceRestart);
+		await syncConnection.initialize(forceRestart, nid);
 	} catch (error) {
 		console.log("Error connecting to server node. Device considered offline.", error);
 	}

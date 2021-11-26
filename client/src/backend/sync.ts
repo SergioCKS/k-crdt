@@ -180,7 +180,7 @@ export class SyncConnection {
 	 *
 	 * Initializes the connection to the sync manager.
 	 */
-	public initialize(forceRestart = false): Promise<void> {
+	public initialize(forceRestart = false, nid: string): Promise<void> {
 		return new Promise((resolve, reject) => {
 			// Restart if web socket is active.
 			if (this._ws && [0, 1].includes(this._ws.readyState)) {
@@ -225,6 +225,10 @@ export class SyncConnection {
 				this.messageServer({
 					msgCode: "time-sync",
 					payload: { t0: new Date().valueOf() }
+				});
+				this.messageServer({
+					msgCode: "node-id",
+					payload: { value: nid }
 				});
 				resolve();
 			});
