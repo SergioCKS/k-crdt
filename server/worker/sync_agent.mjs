@@ -1,4 +1,4 @@
-import { parseUpdateMessage, ServerHLC } from "./engine_bg.mjs";
+import { parseUpdateMessage, ServerHLC, UID } from "./engine_bg.mjs";
 export class SyncAgent {
     state;
     sessions;
@@ -6,7 +6,7 @@ export class SyncAgent {
     constructor(state, env) {
         env;
         this.state = state;
-        this.sessions = [];
+        this.sessions = {};
         this.hlc = null;
         this.state.blockConcurrencyWhile(async () => {
             let hlcBuffer = (await this.state.storage.get("hlc"));
@@ -14,23 +14,26 @@ export class SyncAgent {
         });
     }
     broadcastMessage(message) {
-        this.sessions = this.sessions.filter((session) => {
+        for (const cid in this.sessions) {
             try {
-                session.send(message);
-                return true;
+                this.sessions[cid].ws.send(message);
             }
             catch {
-                return false;
+                delete this.sessions[cid];
             }
-        });
+        }
     }
     async fetch(request) {
-        let currentHLC = this.hlc;
-        let currState = this.state;
+        // let currentHLC = this.hlc;
+        // let currState = this.state;
+        let sessions = this.sessions;
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             return new Response("Expected Upgrade: websocket", { status: 426 });
         }
+        // Generate a random connection ID.
+        const connectionId = new UID().toString();
+        // Establish WebSocket connection.
         const webSocketPair = new WebSocketPair();
         const [client, server] = Object.values(webSocketPair);
         function messageClient(message) {
@@ -49,13 +52,13 @@ export class SyncAgent {
                     });
                     return true;
                 }
+                case "node-id": {
+                    sessions[connectionId].nid = message.payload.value;
+                }
                 case "test": {
-                    currentHLC?.get_timestamp();
-                    const encoded = currentHLC?.serialize();
-                    currState.storage.put("hlc", encoded?.buffer);
                     messageClient({
                         msgCode: "test",
-                        payload: { value: encoded }
+                        payload: JSON.stringify(Object.keys(sessions).map((k) => k + (sessions[k].nid || "no nid")))
                     });
                     return true;
                 }
@@ -87,7 +90,8 @@ export class SyncAgent {
             }
         });
         server.addEventListener("close", (event) => console.log(event));
-        this.sessions.push(server);
+        // Store the connection in memory.
+        this.sessions[connectionId] = { ws: server };
         return new Response(null, {
             status: 101,
             webSocket: client

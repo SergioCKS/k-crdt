@@ -9,7 +9,11 @@
  * * Client <-> Server (Via WebSockets)
  *
  * These types are a dependency for both the client node code as well as the server node code,
- * as such, they are copied to the corresponding places on the dependency build step.
+ * as such, they are copied to the corresponding places on the build process.
+ *
+ * Messages of each actor (App, Worker, Client, Server) are added to a message object for which the
+ * keys correspond to message codes and values are the types of the payload. From these message objects,
+ * message types are built automatically and exported.
  * @module
  */
 
@@ -50,6 +54,7 @@ type WorkerMessageObj = {
  */
 type ClientMessageObj = {
   "time-sync": { t0: number };
+  "node-id": { value: string };
   test: undefined;
 };
 

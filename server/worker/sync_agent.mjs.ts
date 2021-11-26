@@ -1,19 +1,24 @@
 import { ClientMessage, ServerMessage } from "./messages.mjs";
-import { parseUpdateMessage, ServerHLC } from "./engine_bg.mjs";
+import { parseUpdateMessage, ServerHLC, UID } from "./engine_bg.mjs";
 
 interface Env {
 	COUNTER: any;
 }
 
+interface Session {
+	ws: WebSocket;
+	nid?: string;
+}
+
 export class SyncAgent {
 	state: DurableObjectState;
-	sessions: WebSocket[];
+	sessions: Record<string, Session>;
 	hlc: ServerHLC | null;
 
 	constructor(state: DurableObjectState, env: Env) {
 		env;
 		this.state = state;
-		this.sessions = [];
+		this.sessions = {};
 		this.hlc = null;
 
 		this.state.blockConcurrencyWhile(async () => {
@@ -23,25 +28,29 @@ export class SyncAgent {
 	}
 
 	broadcastMessage(message: string | ArrayBuffer) {
-		this.sessions = this.sessions.filter((session) => {
+		for (const cid in this.sessions) {
 			try {
-				session.send(message);
-				return true;
+				this.sessions[cid].ws.send(message);
 			} catch {
-				return false;
+				delete this.sessions[cid];
 			}
-		});
+		}
 	}
 
 	async fetch(request: Request): Promise<Response> {
-		let currentHLC = this.hlc;
-		let currState = this.state;
+		// let currentHLC = this.hlc;
+		// let currState = this.state;
+		let sessions = this.sessions;
 
 		const upgradeHeader = request.headers.get("Upgrade");
 		if (!upgradeHeader || upgradeHeader !== "websocket") {
 			return new Response("Expected Upgrade: websocket", { status: 426 });
 		}
 
+		// Generate a random connection ID.
+		const connectionId = new UID().toString();
+
+		// Establish WebSocket connection.
 		const webSocketPair = new WebSocketPair();
 		const [client, server] = Object.values(webSocketPair);
 
@@ -63,13 +72,15 @@ export class SyncAgent {
 					});
 					return true;
 				}
+				case "node-id": {
+					sessions[connectionId].nid = message.payload.value;
+				}
 				case "test": {
-					currentHLC?.get_timestamp();
-					const encoded = currentHLC?.serialize();
-					currState.storage.put("hlc", encoded?.buffer);
 					messageClient({
 						msgCode: "test",
-						payload: { value: encoded }
+						payload: JSON.stringify(
+							Object.keys(sessions).map((k) => k + (sessions[k].nid || "no nid"))
+						)
 					});
 					return true;
 				}
@@ -103,7 +114,9 @@ export class SyncAgent {
 		});
 
 		server.addEventListener("close", (event: any) => console.log(event));
-		this.sessions.push(server);
+
+		// Store the connection in memory.
+		this.sessions[connectionId] = { ws: server };
 
 		return new Response(null, {
 			status: 101,

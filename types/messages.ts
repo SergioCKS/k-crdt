@@ -54,6 +54,7 @@ type WorkerMessageObj = {
  */
 type ClientMessageObj = {
   "time-sync": { t0: number };
+  "node-id": { value: string };
   test: undefined;
 };
 
