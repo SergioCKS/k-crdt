@@ -131,6 +131,16 @@ pub struct Timestamp(u64);
 
 #[wasm_bindgen]
 impl Timestamp {
+    /// ### To String
+    ///
+    /// Returns a string representation of the timestamp.
+    #[wasm_bindgen(js_name = toString)]
+    pub fn as_string(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl Timestamp {
     /// ### As `u64`
     ///
     /// Returns the timestamp as a 64-bit unsigned integer.
@@ -141,7 +151,7 @@ impl Timestamp {
 
     /// ### Get time part
     ///
-    /// Returns the counter part of the timestamp.
+    /// Returns the time part of the timestamp.
     #[inline]
     pub fn get_time(&self) -> u64 {
         self.0 & TIME_MASK
@@ -186,9 +196,7 @@ impl Timestamp {
     pub fn increase_counter(&mut self) {
         self.0 += 1;
     }
-}
 
-impl Timestamp {
     /// ### To duration
     ///
     /// Converts the timestamp to a [`Duration`].

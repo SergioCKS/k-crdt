@@ -68,6 +68,10 @@
 //! the message is rejected. The emitting node should be notified of rejections, so that it adjusts
 //! it's clock/offset, and retries the rejected updates.
 use crate::time::{Timestamp, Clock, TimePollError};
+use std::cmp;
+use std::fmt::{Debug, Display, Formatter};
+use std::time::Duration;
+use wasm_bindgen::prelude::*;
 #[cfg(feature = "client")]
 use crate::time::BrowserClock;
 #[cfg(feature = "server")]
@@ -76,12 +80,9 @@ use crate::time::ServerClock;
 use crate::time::SysTimeClock;
 #[cfg(not(all(not(feature = "client"), not(test))))]
 use crate::time::Offset;
-use std::cmp;
-use std::fmt::{Debug, Display, Formatter};
-use std::time::Duration;
 #[cfg(not(all(not(feature = "client"), not(feature = "server"))))]
 use serde::{Serialize, Deserialize};
-use wasm_bindgen::prelude::*;
+
 
 /// ## Maximum drift
 ///
@@ -394,7 +395,7 @@ impl HybridLogicalClock<BrowserClock> for BrowserHLC {
 #[wasm_bindgen]
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct ServerHLC {
-    last_time: Timestamp
+    pub last_time: Timestamp
 }
 
 #[cfg(feature = "server")]

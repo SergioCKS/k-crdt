@@ -1,6 +1,13 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
+* ## Generate ID
+*
+* Generates a unique ID in string format.
+* @returns {string}
+*/
+export function generateId(): string;
+/**
 * ## Create bool register
 *
 * Constructs a last-write-wins register over a boolean value, serializes it and
@@ -8,22 +15,29 @@
 *
 * * `ts` - Timestamp marking the moment of creation of the register.
 * * `value` - Initial value of the register.
+* * Throws a JS exception if the created register could not be serialized.
 * @param {Timestamp} ts
 * @param {boolean} value
 * @returns {Uint8Array}
 */
 export function createBoolRegister(ts: Timestamp, value: boolean): Uint8Array;
 /**
+* ## Get bool register message
+*
+* Constructs a message containing a bool register to be sent to a server node.
+*
+* * `ts` - Timestamp marking the moment of emission of the message
+* * `id` - Unique ID of the register
+* * `encoded` - Encoded version of the register
+* * Throws a JS exception if:
+*   * The the encoded register has the wrong number of bytes.
+*   * The message could not be serialized.
 * @param {Timestamp} ts
 * @param {UID} id
 * @param {Uint8Array} encoded
 * @returns {Uint8Array}
 */
 export function getBoolRegisterMessage(ts: Timestamp, id: UID, encoded: Uint8Array): Uint8Array;
-/**
-* @returns {string}
-*/
-export function generateId(): string;
 /**
 * ## Browser HLC
 *
@@ -88,53 +102,12 @@ export class BrowserHLC {
 export class Timestamp {
   free(): void;
 /**
-* ### As `u64`
+* ### To String
 *
-* Returns the timestamp as a 64-bit unsigned integer.
-* @returns {BigInt}
+* Returns a string representation of the timestamp.
+* @returns {string}
 */
-  as_u64(): BigInt;
-/**
-* ### Get time part
-*
-* Returns the counter part of the timestamp.
-* @returns {BigInt}
-*/
-  get_time(): BigInt;
-/**
-* ### Get seconds
-*
-* Returns the seconds part of the timestamp (leading 32 bits).
-* @returns {number}
-*/
-  get_seconds(): number;
-/**
-* ### Get second fractions
-*
-* Returns the second fractions part of the timestamp.
-* @returns {number}
-*/
-  get_fractions(): number;
-/**
-* ### Get counter part
-*
-* Returns the counter part of the timestamp.
-* @returns {number}
-*/
-  get_count(): number;
-/**
-* ### Get nanoseconds
-*
-* Returns the second fractions part as nanoseconds.
-* @returns {number}
-*/
-  get_nanoseconds(): number;
-/**
-* ### Increase counter
-*
-* Increases the counter part of the timestamp by 1.
-*/
-  increase_counter(): void;
+  toString(): string;
 }
 /**
 * ## UID
@@ -143,6 +116,15 @@ export class Timestamp {
 */
 export class UID {
   free(): void;
+/**
+* @returns {UID}
+*/
+  getCopy(): UID;
+/**
+* @param {string} nid_str
+* @returns {UID}
+*/
+  static fromString(nid_str: string): UID;
 /**
 * ### Generate new ID
 *
@@ -156,45 +138,23 @@ export class UID {
 */
   constructor();
 /**
-* @returns {UID}
-*/
-  getCopy(): UID;
-/**
-* @param {string} nid_str
-* @returns {UID}
-*/
-  static fromString(nid_str: string): UID;
-/**
 * @returns {string}
 */
   toString(): string;
-/**
-* @returns {Uint8Array}
-*/
-  as_byte_string(): Uint8Array;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly createBoolRegister: (a: number, b: number, c: number) => void;
-  readonly getBoolRegisterMessage: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly __wbg_uid_free: (a: number) => void;
-  readonly uid_new: () => number;
   readonly uid_getCopy: (a: number) => number;
   readonly uid_fromString: (a: number, b: number) => number;
+  readonly uid_new: () => number;
   readonly uid_toString: (a: number, b: number) => void;
-  readonly uid_as_byte_string: (a: number, b: number) => void;
   readonly generateId: (a: number) => void;
-  readonly __wbg_timestamp_free: (a: number) => void;
-  readonly timestamp_as_u64: (a: number, b: number) => void;
-  readonly timestamp_get_time: (a: number, b: number) => void;
-  readonly timestamp_get_seconds: (a: number) => number;
-  readonly timestamp_get_fractions: (a: number) => number;
-  readonly timestamp_get_count: (a: number) => number;
-  readonly timestamp_get_nanoseconds: (a: number) => number;
-  readonly timestamp_increase_counter: (a: number) => void;
+  readonly createBoolRegister: (a: number, b: number, c: number) => void;
+  readonly getBoolRegisterMessage: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly __wbg_browserhlc_free: (a: number) => void;
   readonly browserhlc_new: () => number;
   readonly browserhlc_getOffset: (a: number, b: number) => void;
@@ -202,10 +162,12 @@ export interface InitOutput {
   readonly browserhlc_serialize: (a: number, b: number) => void;
   readonly browserhlc_deserialize: (a: number, b: number) => number;
   readonly browserhlc_generateTimestamp: (a: number) => number;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
-  readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly __wbg_timestamp_free: (a: number) => void;
+  readonly timestamp_toString: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
+  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
 }
 

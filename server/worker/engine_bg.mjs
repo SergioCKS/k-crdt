@@ -1,5 +1,34 @@
 import wasm from './export_wasm.mjs';
 
+const heap = new Array(32).fill(undefined);
+
+heap.push(undefined, null, true, false);
+
+function getObject(idx) { return heap[idx]; }
+
+let heap_next = heap.length;
+
+function dropObject(idx) {
+    if (idx < 36) return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
+}
+
+function addHeapObject(obj) {
+    if (heap_next === heap.length) heap.push(heap.length + 1);
+    const idx = heap_next;
+    heap_next = heap[idx];
+
+    heap[idx] = obj;
+    return idx;
+}
+
 const lTextDecoder = typeof TextDecoder === 'undefined' ? (0, module.require)('util').TextDecoder : TextDecoder;
 
 let cachedTextDecoder = new lTextDecoder('utf-8', { ignoreBOM: true, fatal: true });
@@ -18,41 +47,32 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
-const heap = new Array(32).fill(undefined);
-
-heap.push(undefined, null, true, false);
-
-let heap_next = heap.length;
-
-function addHeapObject(obj) {
-    if (heap_next === heap.length) heap.push(heap.length + 1);
-    const idx = heap_next;
-    heap_next = heap[idx];
-
-    heap[idx] = obj;
-    return idx;
-}
-
-function getObject(idx) { return heap[idx]; }
-
-function dropObject(idx) {
-    if (idx < 36) return;
-    heap[idx] = heap_next;
-    heap_next = idx;
-}
-
-function takeObject(idx) {
-    const ret = getObject(idx);
-    dropObject(idx);
-    return ret;
-}
-
 let cachegetInt32Memory0 = null;
 function getInt32Memory0() {
     if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
         cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
     }
     return cachegetInt32Memory0;
+}
+
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
+}
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+let WASM_VECTOR_LEN = 0;
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1);
+    getUint8Memory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
 }
 /**
 * @returns {string}
@@ -70,116 +90,15 @@ export function get_message() {
     }
 }
 
-let WASM_VECTOR_LEN = 0;
-
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1);
-    getUint8Memory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 /**
 * @param {Uint8Array} update_msg
-* @returns {string}
+* @returns {Timestamp}
 */
 export function parseUpdateMessage(update_msg) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        var ptr0 = passArray8ToWasm0(update_msg, wasm.__wbindgen_malloc);
-        var len0 = WASM_VECTOR_LEN;
-        wasm.parseUpdateMessage(retptr, ptr0, len0);
-        var r0 = getInt32Memory0()[retptr / 4 + 0];
-        var r1 = getInt32Memory0()[retptr / 4 + 1];
-        return getStringFromWasm0(r0, r1);
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_free(r0, r1);
-    }
-}
-
-const lTextEncoder = typeof TextEncoder === 'undefined' ? (0, module.require)('util').TextEncoder : TextEncoder;
-
-let cachedTextEncoder = new lTextEncoder('utf-8');
-
-const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
-    ? function (arg, view) {
-    return cachedTextEncoder.encodeInto(arg, view);
-}
-    : function (arg, view) {
-    const buf = cachedTextEncoder.encode(arg);
-    view.set(buf);
-    return {
-        read: arg.length,
-        written: buf.length
-    };
-});
-
-function passStringToWasm0(arg, malloc, realloc) {
-
-    if (realloc === undefined) {
-        const buf = cachedTextEncoder.encode(arg);
-        const ptr = malloc(buf.length);
-        getUint8Memory0().subarray(ptr, ptr + buf.length).set(buf);
-        WASM_VECTOR_LEN = buf.length;
-        return ptr;
-    }
-
-    let len = arg.length;
-    let ptr = malloc(len);
-
-    const mem = getUint8Memory0();
-
-    let offset = 0;
-
-    for (; offset < len; offset++) {
-        const code = arg.charCodeAt(offset);
-        if (code > 0x7F) break;
-        mem[ptr + offset] = code;
-    }
-
-    if (offset !== len) {
-        if (offset !== 0) {
-            arg = arg.slice(offset);
-        }
-        ptr = realloc(ptr, len, len = offset + arg.length * 3);
-        const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
-        const ret = encodeString(arg, view);
-
-        offset += ret.written;
-    }
-
-    WASM_VECTOR_LEN = offset;
-    return ptr;
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
-}
-/**
-* @returns {string}
-*/
-export function generateId() {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.generateId(retptr);
-        var r0 = getInt32Memory0()[retptr / 4 + 0];
-        var r1 = getInt32Memory0()[retptr / 4 + 1];
-        return getStringFromWasm0(r0, r1);
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_free(r0, r1);
-    }
-}
-
-const u32CvtShim = new Uint32Array(2);
-
-const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
-
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-    return instance.ptr;
+    var ptr0 = passArray8ToWasm0(update_msg, wasm.__wbindgen_malloc);
+    var len0 = WASM_VECTOR_LEN;
+    var ret = wasm.parseUpdateMessage(ptr0, len0);
+    return Timestamp.__wrap(ret);
 }
 
 function handleError(f, args) {
@@ -210,6 +129,21 @@ export class ServerHLC {
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_serverhlc_free(ptr);
+    }
+    /**
+    */
+    get last_time() {
+        var ret = wasm.__wbg_get_serverhlc_last_time(this.ptr);
+        return Timestamp.__wrap(ret);
+    }
+    /**
+    * @param {Timestamp} arg0
+    */
+    set last_time(arg0) {
+        _assertClass(arg0, Timestamp);
+        var ptr0 = arg0.ptr;
+        arg0.ptr = 0;
+        wasm.__wbg_set_serverhlc_last_time(this.ptr, ptr0);
     }
     /**
     * ### New server HLC
@@ -303,92 +237,22 @@ export class Timestamp {
         wasm.__wbg_timestamp_free(ptr);
     }
     /**
-    * ### As `u64`
+    * ### To String
     *
-    * Returns the timestamp as a 64-bit unsigned integer.
-    * @returns {BigInt}
+    * Returns a string representation of the timestamp.
+    * @returns {string}
     */
-    as_u64() {
+    toString() {
         try {
             const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.timestamp_as_u64(retptr, this.ptr);
+            wasm.timestamp_toString(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
-            u32CvtShim[0] = r0;
-            u32CvtShim[1] = r1;
-            const n0 = uint64CvtShim[0];
-            return n0;
+            return getStringFromWasm0(r0, r1);
         } finally {
             wasm.__wbindgen_add_to_stack_pointer(16);
+            wasm.__wbindgen_free(r0, r1);
         }
-    }
-    /**
-    * ### Get time part
-    *
-    * Returns the counter part of the timestamp.
-    * @returns {BigInt}
-    */
-    get_time() {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.timestamp_get_time(retptr, this.ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            u32CvtShim[0] = r0;
-            u32CvtShim[1] = r1;
-            const n0 = uint64CvtShim[0];
-            return n0;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
-    /**
-    * ### Get seconds
-    *
-    * Returns the seconds part of the timestamp (leading 32 bits).
-    * @returns {number}
-    */
-    get_seconds() {
-        var ret = wasm.timestamp_get_seconds(this.ptr);
-        return ret >>> 0;
-    }
-    /**
-    * ### Get second fractions
-    *
-    * Returns the second fractions part of the timestamp.
-    * @returns {number}
-    */
-    get_fractions() {
-        var ret = wasm.timestamp_get_fractions(this.ptr);
-        return ret >>> 0;
-    }
-    /**
-    * ### Get counter part
-    *
-    * Returns the counter part of the timestamp.
-    * @returns {number}
-    */
-    get_count() {
-        var ret = wasm.timestamp_get_count(this.ptr);
-        return ret;
-    }
-    /**
-    * ### Get nanoseconds
-    *
-    * Returns the second fractions part as nanoseconds.
-    * @returns {number}
-    */
-    get_nanoseconds() {
-        var ret = wasm.timestamp_get_nanoseconds(this.ptr);
-        return ret >>> 0;
-    }
-    /**
-    * ### Increase counter
-    *
-    * Increases the counter part of the timestamp by 1.
-    */
-    increase_counter() {
-        wasm.timestamp_increase_counter(this.ptr);
     }
 }
 /**
@@ -432,23 +296,6 @@ export class UID {
         return UID.__wrap(ret);
     }
     /**
-    * @returns {UID}
-    */
-    getCopy() {
-        var ret = wasm.uid_getCopy(this.ptr);
-        return UID.__wrap(ret);
-    }
-    /**
-    * @param {string} nid_str
-    * @returns {UID}
-    */
-    static fromString(nid_str) {
-        var ptr0 = passStringToWasm0(nid_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len0 = WASM_VECTOR_LEN;
-        var ret = wasm.uid_fromString(ptr0, len0);
-        return UID.__wrap(ret);
-    }
-    /**
     * @returns {string}
     */
     toString() {
@@ -463,28 +310,7 @@ export class UID {
             wasm.__wbindgen_free(r0, r1);
         }
     }
-    /**
-    * @returns {Uint8Array}
-    */
-    as_byte_string() {
-        try {
-            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-            wasm.uid_as_byte_string(retptr, this.ptr);
-            var r0 = getInt32Memory0()[retptr / 4 + 0];
-            var r1 = getInt32Memory0()[retptr / 4 + 1];
-            var v0 = getArrayU8FromWasm0(r0, r1).slice();
-            wasm.__wbindgen_free(r0, r1 * 1);
-            return v0;
-        } finally {
-            wasm.__wbindgen_add_to_stack_pointer(16);
-        }
-    }
 }
-
-export function __wbindgen_string_new(arg0, arg1) {
-    var ret = getStringFromWasm0(arg0, arg1);
-    return addHeapObject(ret);
-};
 
 export function __wbindgen_object_drop_ref(arg0) {
     takeObject(arg0);
@@ -615,10 +441,6 @@ export function __wbindgen_object_clone_ref(arg0) {
 
 export function __wbindgen_throw(arg0, arg1) {
     throw new Error(getStringFromWasm0(arg0, arg1));
-};
-
-export function __wbindgen_rethrow(arg0) {
-    throw takeObject(arg0);
 };
 
 export function __wbindgen_memory() {

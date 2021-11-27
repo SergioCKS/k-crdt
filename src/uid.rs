@@ -102,35 +102,7 @@ fn alphabet_char_to_num(c: char) -> Result<u8, UIDParseError> {
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Debug)]
 pub struct UID(u128); // bincode: 16 bytes
 
-#[wasm_bindgen]
 impl UID {
-    /// ### Generate new ID
-    ///
-    /// Generates a new random unique ID.
-    ///
-    /// An ID can be represented as a string consisting of 21 random characters over the
-    /// alphabet `A-Za-z0-9_-` followed by a random character over the alphabet `ABCD`
-    /// (22 characters total).
-    ///
-    /// To generate random data, a `ThreadRNG` is used.
-    #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
-        Self(random::<u128>())
-    }
-
-    #[wasm_bindgen(js_name = getCopy)]
-    pub fn get_copy(&self) -> Self { self.clone() }
-
-    #[wasm_bindgen(js_name = fromString)]
-    pub fn from_string(nid_str: String) -> Result<UID, JsValue> {
-        Ok(nid_str.parse::<Self>()?)
-    }
-
-    #[wasm_bindgen(js_name = toString)]
-    pub fn as_string(&self) -> String {
-        self.to_string()
-    }
-
     pub fn as_byte_string(&self) -> Vec<u8> {
         vec![
             (self.0 >> 120) as u8,
@@ -150,6 +122,40 @@ impl UID {
             (self.0 >> 8) as u8,
             self.0 as u8
         ]
+    }
+}
+
+#[cfg(feature = "client")]
+#[wasm_bindgen]
+impl UID {
+    #[wasm_bindgen(js_name = getCopy)]
+    pub fn get_copy(&self) -> Self { self.clone() }
+
+    #[wasm_bindgen(js_name = fromString)]
+    pub fn from_string(nid_str: String) -> Result<UID, JsValue> {
+        Ok(nid_str.parse::<Self>()?)
+    }
+}
+
+#[wasm_bindgen]
+impl UID {
+    /// ### Generate new ID
+    ///
+    /// Generates a new random unique ID.
+    ///
+    /// An ID can be represented as a string consisting of 21 random characters over the
+    /// alphabet `A-Za-z0-9_-` followed by a random character over the alphabet `ABCD`
+    /// (22 characters total).
+    ///
+    /// To generate random data, a `ThreadRNG` is used.
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self(random::<u128>())
+    }
+
+    #[wasm_bindgen(js_name = toString)]
+    pub fn as_string(&self) -> String {
+        self.to_string()
     }
 }
 
@@ -285,11 +291,6 @@ impl From<UIDParseError> for JsValue {
     }
 }
 //#endregion
-
-#[wasm_bindgen(js_name = generateId)]
-pub fn generate_id() -> String {
-    UID::new().to_string()
-}
 
 #[cfg(test)]
 mod uid_tests {

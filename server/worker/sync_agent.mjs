@@ -63,7 +63,7 @@ export class SyncAgent {
      * @returns WebSocket upgrade response
      */
     async fetch(request) {
-        // let currentHLC = this.hlc;
+        let currentHLC = this.hlc;
         // let currState = this.state;
         let sessions = this.sessions;
         // Assert request is a WebSocket upgrade request.
@@ -77,7 +77,6 @@ export class SyncAgent {
         const webSocketPair = new WebSocketPair();
         const [client, server] = Object.values(webSocketPair);
         server.accept();
-        //#region Helper functions
         function messageClient(message) {
             server.send(JSON.stringify(message));
         }
@@ -96,6 +95,7 @@ export class SyncAgent {
                 }
                 case "node-id": {
                     sessions[connectionId].nid = message.payload.value;
+                    return true;
                 }
                 case "test": {
                     messageClient({
@@ -106,20 +106,30 @@ export class SyncAgent {
                 }
             }
         }
-        //#endregion
         //#region WebSocket event handlers
         server.addEventListener("message", async ({ data }) => {
             if (data instanceof ArrayBuffer) {
-                // Message is binary.
+                // Binary message.
                 let binData = data;
-                const id = parseUpdateMessage(new Uint8Array(binData));
+                //#region Update HLC
+                if (!currentHLC)
+                    return;
+                const ts = parseUpdateMessage(new Uint8Array(binData));
+                try {
+                    currentHLC.updateWithTimestamp(ts);
+                }
+                catch {
+                    server.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
+                    return;
+                }
+                //#endregion
                 server.send(JSON.stringify({
                     msgCode: "test",
-                    payload: `Received binary data consisting of ${binData.byteLength} bytes. Parsed ID: ${id}`
+                    payload: `Received binary data consisting of ${binData.byteLength} bytes. Last time: ${currentHLC.last_time.toString()}`
                 }));
             }
             else {
-                // Message is UTF-8 encoded (string).
+                // UTF-8 encoded message (string).
                 try {
                     const msg = JSON.parse(data);
                     await handleClientMessage(msg);

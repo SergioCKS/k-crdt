@@ -6,13 +6,9 @@
 export function get_message(): string;
 /**
 * @param {Uint8Array} update_msg
-* @returns {string}
+* @returns {Timestamp}
 */
-export function parseUpdateMessage(update_msg: Uint8Array): string;
-/**
-* @returns {string}
-*/
-export function generateId(): string;
+export function parseUpdateMessage(update_msg: Uint8Array): Timestamp;
 /**
 */
 export class ServerHLC {
@@ -53,6 +49,9 @@ export class ServerHLC {
 * @returns {ServerHLC}
 */
   static deserialize(encoded: Uint8Array): ServerHLC;
+/**
+*/
+  last_time: Timestamp;
 }
 /**
 * ## HLC Timestamp
@@ -62,53 +61,12 @@ export class ServerHLC {
 export class Timestamp {
   free(): void;
 /**
-* ### As `u64`
+* ### To String
 *
-* Returns the timestamp as a 64-bit unsigned integer.
-* @returns {BigInt}
+* Returns a string representation of the timestamp.
+* @returns {string}
 */
-  as_u64(): BigInt;
-/**
-* ### Get time part
-*
-* Returns the counter part of the timestamp.
-* @returns {BigInt}
-*/
-  get_time(): BigInt;
-/**
-* ### Get seconds
-*
-* Returns the seconds part of the timestamp (leading 32 bits).
-* @returns {number}
-*/
-  get_seconds(): number;
-/**
-* ### Get second fractions
-*
-* Returns the second fractions part of the timestamp.
-* @returns {number}
-*/
-  get_fractions(): number;
-/**
-* ### Get counter part
-*
-* Returns the counter part of the timestamp.
-* @returns {number}
-*/
-  get_count(): number;
-/**
-* ### Get nanoseconds
-*
-* Returns the second fractions part as nanoseconds.
-* @returns {number}
-*/
-  get_nanoseconds(): number;
-/**
-* ### Increase counter
-*
-* Increases the counter part of the timestamp by 1.
-*/
-  increase_counter(): void;
+  toString(): string;
 }
 /**
 * ## UID
@@ -130,20 +88,7 @@ export class UID {
 */
   constructor();
 /**
-* @returns {UID}
-*/
-  getCopy(): UID;
-/**
-* @param {string} nid_str
-* @returns {UID}
-*/
-  static fromString(nid_str: string): UID;
-/**
 * @returns {string}
 */
   toString(): string;
-/**
-* @returns {Uint8Array}
-*/
-  as_byte_string(): Uint8Array;
 }
