@@ -72,9 +72,6 @@ use std::cmp;
 use std::fmt::{Debug, Display, Formatter};
 use std::time::Duration;
 use wasm_bindgen::prelude::*;
-#[cfg(test)]
-use crate::time::{SysTimeClock, Offset};
-
 
 /// ## Maximum drift
 ///
@@ -234,54 +231,52 @@ impl From<UpdateWithTimestampError> for JsValue {
 }
 //#endregion
 
-//#region SysTimeHLC
-/// ## System time clock
-///
-/// Clock function relying on [`SystemTime`] as time source.
-#[cfg(test)]
-#[derive(Clone, Copy, Default)]
-pub struct SysTimeHLC {
-    /// ### Last time
-    ///
-    /// Last accepted time as HLC/NTP timestamp.
-    last_time: Timestamp,
-
-    /// ### Clock
-    ///
-    /// Internal clock used for polling time.
-    clock: SysTimeClock,
-}
-
-#[cfg(test)]
-impl SysTimeHLC {
-    pub fn get_offset(&self) -> Offset {
-        self.clock.get_offset()
-    }
-
-    pub fn set_offset(&mut self, offset: Offset) -> Result<(), TimePollError> {
-        self.clock.set_offset(offset)
-    }
-}
-
-#[cfg(test)]
-impl HybridLogicalClock<SysTimeClock> for SysTimeHLC {
-    fn get_last_time(&self) -> Timestamp {
-        self.last_time.clone()
-    }
-
-    fn set_last_time(&mut self, new_time: Timestamp) {
-        self.last_time = new_time;
-    }
-
-    fn get_internal_clock(&self) -> SysTimeClock {
-        self.clock
-    }
-}
-//#endregion
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::time::{clock::tests::SysTimeClock, Offset};
+
+    //#region SysTimeHLC
+    /// ## System time HLC
+    ///
+    /// HLC relying on [`SystemTime`] as time source.
+    #[derive(Clone, Copy, Default)]
+    pub struct SysTimeHLC {
+        /// ### Last time
+        ///
+        /// Last accepted time as HLC/NTP timestamp.
+        last_time: Timestamp,
+
+        /// ### Clock
+        ///
+        /// Internal clock used for polling time.
+        clock: SysTimeClock,
+    }
+
+    impl SysTimeHLC {
+        pub fn get_offset(&self) -> Offset {
+            self.clock.get_offset()
+        }
+
+        pub fn set_offset(&mut self, offset: Offset) -> Result<(), TimePollError> {
+            self.clock.set_offset(offset)
+        }
+    }
+
+    impl HybridLogicalClock<SysTimeClock> for SysTimeHLC {
+        fn get_last_time(&self) -> Timestamp {
+            self.last_time.clone()
+        }
+
+        fn set_last_time(&mut self, new_time: Timestamp) {
+            self.last_time = new_time;
+        }
+
+        fn get_internal_clock(&self) -> SysTimeClock {
+            self.clock
+        }
+    }
+    //#endregion
 
     #[test]
     fn timestamp_generation_works() {

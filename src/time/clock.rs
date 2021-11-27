@@ -7,8 +7,6 @@ use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
 use std::time::{Duration, SystemTimeError};
 use wasm_bindgen::prelude::*;
-#[cfg(test)]
-use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Serialize, Deserialize};
 
 /// ## Maximum time offset
@@ -143,34 +141,6 @@ pub trait Clock {
     }
 }
 
-//#region System time clock (test clock)
-/// ## System Time Clock
-///
-/// A clock relying on [`SysTime`] as time source.
-#[cfg(test)]
-#[derive(Clone, Copy, Default)]
-pub struct SysTimeClock {
-    offset: Offset // bincode: 8 bytes
-}
-
-#[cfg(test)]
-impl Clock for SysTimeClock {
-    fn get_offset(&self) -> Offset {
-        self.offset
-    }
-
-    fn set_offset_unchecked(&mut self, offset: Offset) -> () {
-        self.offset = offset;
-    }
-
-    /// ### Poll time
-    ///
-    /// Polls the timesource using [`SysTime::now`].
-    fn poll_duration() -> Result<Duration, TimePollError> {
-        Ok(SystemTime::now().duration_since(UNIX_EPOCH)?)
-    }
-}
-//#endregion
 
 //#region TimePollError
 #[derive(Debug)]
@@ -208,8 +178,36 @@ impl From<SystemTimeError> for TimePollError {
 //#endregion
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    //#region System time clock
+    /// ## System Time Clock
+    ///
+    /// A clock relying on [`SysTime`] as time source.
+    #[derive(Clone, Copy, Default)]
+    pub struct SysTimeClock {
+        offset: Offset // bincode: 8 bytes
+    }
+
+    impl Clock for SysTimeClock {
+        fn get_offset(&self) -> Offset {
+            self.offset
+        }
+
+        fn set_offset_unchecked(&mut self, offset: Offset) -> () {
+            self.offset = offset;
+        }
+
+        /// ### Poll time
+        ///
+        /// Polls the timesource using [`SysTime::now`].
+        fn poll_duration() -> Result<Duration, TimePollError> {
+            Ok(SystemTime::now().duration_since(UNIX_EPOCH)?)
+        }
+    }
+    //#endregion
 
     #[test]
     fn sys_time_clock_works() {
