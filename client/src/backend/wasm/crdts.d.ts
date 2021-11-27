@@ -25,10 +25,6 @@ export function getBoolRegisterMessage(ts: Timestamp, id: UID, encoded: Uint8Arr
 */
 export function generateId(): string;
 /**
-* @returns {string}
-*/
-export function get_message(): string;
-/**
 * ## Browser HLC
 *
 * Hybrid logical clock based on browser time.
@@ -206,7 +202,6 @@ export interface InitOutput {
   readonly browserhlc_serialize: (a: number, b: number) => void;
   readonly browserhlc_deserialize: (a: number, b: number) => number;
   readonly browserhlc_generateTimestamp: (a: number) => number;
-  readonly get_message: (a: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;

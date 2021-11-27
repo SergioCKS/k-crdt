@@ -202,21 +202,6 @@ const u32CvtShim = new Uint32Array(2);
 const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
 
 const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
-/**
-* @returns {string}
-*/
-export function get_message() {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        wasm.get_message(retptr);
-        var r0 = getInt32Memory0()[retptr / 4 + 0];
-        var r1 = getInt32Memory0()[retptr / 4 + 1];
-        return getStringFromWasm0(r0, r1);
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-        wasm.__wbindgen_free(r0, r1);
-    }
-}
 
 function handleError(f, args) {
     try {

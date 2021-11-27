@@ -12,8 +12,9 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "client")]
 use std::convert::TryInto;
 
-
+#[cfg(feature = "server")]
 pub mod engine;
+
 pub mod gcounter;
 pub mod lwwregister;
 pub mod pncounter;
@@ -21,7 +22,6 @@ pub mod time;
 pub mod uid;
 pub mod vclock;
 pub mod steps;
-
 
 /// ## Create bool register
 ///

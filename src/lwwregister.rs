@@ -7,7 +7,30 @@ use crate::time::timestamp::Timestamp;
 use crate::uid::UID;
 use serde::{Deserialize,Serialize};
 
-//#region Packed register
+//#region Constants
+/// ## Message metadata size
+///
+/// Combined encoded size (in bytes) of all metadata specific to a register message.
+pub const MESSAGE_META_SIZE: usize = 24;
+
+/// ## Register metadata size
+///
+/// Combined encoded size (in bytes) of all metadata included in a register.
+pub const REG_META_SIZE: usize = 8;
+
+/// ## Total metadata size
+///
+/// Total size (in bytes) of all metadata included in a register message.
+pub const META_SIZE: usize = MESSAGE_META_SIZE + REG_META_SIZE;
+
+/// ## Boolean value size
+///
+/// Size (in bytes) of a register value of boolean type.
+pub const BOOL_VAL_SIZE: usize = 1;
+pub const BOOL_REG_SIZE: usize = BOOL_VAL_SIZE + REG_META_SIZE;
+//#endregion
+
+//#region Register message
 /// ## Register Message
 ///
 /// Register with added metadata to be sent as an update message.
@@ -43,18 +66,6 @@ impl<const REG_SIZE: usize> RegisterMessage<REG_SIZE> {
         Self { ts, id, register }
     }
 }
-
-// impl <const REG_SIZE: usize> Serialize for RegisterMessage<REG_SIZE> {
-//     fn serialize<S>(&self, serializer: S) -> Result<Ok, Error> where S: Serializer {
-//         todo!()
-//     }
-// }
-//
-// impl <const REG_SIZE: usize> Deserialize for RegisterMessage<REG_SIZE> {
-//     fn deserialize_in_place<D>(deserializer: D, place: &mut Self) -> Result<(), serde::de::Error> where D: Deserializer<'de> {
-//         todo!()
-//     }
-// }
 //#endregion
 
 /// ## LWWRegister

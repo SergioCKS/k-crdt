@@ -171,16 +171,16 @@ export function generateId() {
     }
 }
 
+const u32CvtShim = new Uint32Array(2);
+
+const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
+
 function _assertClass(instance, klass) {
     if (!(instance instanceof klass)) {
         throw new Error(`expected instance of ${klass.name}`);
     }
     return instance.ptr;
 }
-
-const u32CvtShim = new Uint32Array(2);
-
-const uint64CvtShim = new BigUint64Array(u32CvtShim.buffer);
 
 function handleError(f, args) {
     try {
@@ -212,30 +212,42 @@ export class ServerHLC {
         wasm.__wbg_serverhlc_free(ptr);
     }
     /**
+    * ### New server HLC
+    *
+    * Constructs a server HLC with a default initial state.
     */
     constructor() {
         var ret = wasm.serverhlc_new();
         return ServerHLC.__wrap(ret);
     }
     /**
+    * ### Generate timestamp
+    *
+    * Generate a timestamp polling the local time.
     * @returns {Timestamp}
     */
-    get_timestamp() {
-        var ret = wasm.serverhlc_get_timestamp(this.ptr);
+    generateTimestamp() {
+        var ret = wasm.serverhlc_generateTimestamp(this.ptr);
         return Timestamp.__wrap(ret);
     }
     /**
+    * ### Update with timestamp
+    *
+    * Updates the clock using a message timestamp.
     * @param {Timestamp} ts
     * @returns {Timestamp}
     */
-    update(ts) {
+    updateWithTimestamp(ts) {
         _assertClass(ts, Timestamp);
         var ptr0 = ts.ptr;
         ts.ptr = 0;
-        var ret = wasm.serverhlc_update(this.ptr, ptr0);
+        var ret = wasm.serverhlc_updateWithTimestamp(this.ptr, ptr0);
         return Timestamp.__wrap(ret);
     }
     /**
+    * ### Serialize
+    *
+    * Generate an encoded version of the clock.
     * @returns {Uint8Array}
     */
     serialize() {
@@ -252,6 +264,9 @@ export class ServerHLC {
         }
     }
     /**
+    * ### Deserialize
+    *
+    * Generates a clock from an encoded version.
     * @param {Uint8Array} encoded
     * @returns {ServerHLC}
     */

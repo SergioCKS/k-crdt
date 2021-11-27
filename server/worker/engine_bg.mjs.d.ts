@@ -18,22 +18,37 @@ export function generateId(): string;
 export class ServerHLC {
   free(): void;
 /**
+* ### New server HLC
+*
+* Constructs a server HLC with a default initial state.
 */
   constructor();
 /**
+* ### Generate timestamp
+*
+* Generate a timestamp polling the local time.
 * @returns {Timestamp}
 */
-  get_timestamp(): Timestamp;
+  generateTimestamp(): Timestamp;
 /**
+* ### Update with timestamp
+*
+* Updates the clock using a message timestamp.
 * @param {Timestamp} ts
 * @returns {Timestamp}
 */
-  update(ts: Timestamp): Timestamp;
+  updateWithTimestamp(ts: Timestamp): Timestamp;
 /**
+* ### Serialize
+*
+* Generate an encoded version of the clock.
 * @returns {Uint8Array}
 */
   serialize(): Uint8Array;
 /**
+* ### Deserialize
+*
+* Generates a clock from an encoded version.
 * @param {Uint8Array} encoded
 * @returns {ServerHLC}
 */

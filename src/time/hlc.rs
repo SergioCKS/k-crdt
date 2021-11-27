@@ -400,27 +400,43 @@ pub struct ServerHLC {
 #[cfg(feature = "server")]
 #[wasm_bindgen]
 impl ServerHLC {
+    /// ### New server HLC
+    ///
+    /// Constructs a server HLC with a default initial state.
     #[wasm_bindgen(constructor)]
+    #[inline]
     pub fn new() -> ServerHLC {
         ServerHLC::default()
     }
 
-    pub fn get_timestamp(&mut self) -> Timestamp {
-        self.generate_timestamp().expect_throw("Failed to generate timestamp.")
+    /// ### Generate timestamp
+    ///
+    /// Generate a timestamp polling the local time.
+    #[wasm_bindgen(js_name = generateTimestamp)]
+    pub fn generate_timestamp_js(&mut self) -> Timestamp {
+        self.generate_timestamp().unwrap_throw()
     }
 
-    pub fn update(&mut self, ts: Timestamp) -> Result<Timestamp, JsValue> {
-        Ok(self.update_with_timestamp(ts)?)
+    /// ### Update with timestamp
+    ///
+    /// Updates the clock using a message timestamp.
+    #[wasm_bindgen(js_name = updateWithTimestamp)]
+    pub fn update_with_timestamp_js(&mut self, ts: Timestamp) -> Timestamp {
+        self.update_with_timestamp(ts).unwrap_throw()
     }
 
+    /// ### Serialize
+    ///
+    /// Generate an encoded version of the clock.
     pub fn serialize(&self) -> Vec<u8> {
-        let some = self.clone();
-        bincode::serialize(&some).expect_throw("Failed to serialize HLC.")
+        bincode::serialize(&self).unwrap_throw()
     }
 
+    /// ### Deserialize
+    ///
+    /// Generates a clock from an encoded version.
     pub fn deserialize(encoded: Vec<u8>) -> ServerHLC {
-        let decoded: ServerHLC = bincode::deserialize(&encoded[..]).unwrap_throw();
-        decoded
+        bincode::deserialize::<ServerHLC>(&encoded[..]).unwrap_throw()
     }
 }
 

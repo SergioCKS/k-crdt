@@ -1,18 +1,48 @@
 import { parseUpdateMessage, ServerHLC, UID } from "./engine_bg.mjs";
+/**
+ * ## Sync Agent
+ *
+ * Durable object responsible for storing and syncing a data collection among the involved nodes.
+ */
 export class SyncAgent {
+    //#region Attributes
+    /**
+     * ### Durable object state
+     *
+     * Interface to the durable object storage API.
+     */
     state;
+    /**
+     * ### Sessions
+     *
+     * Object storing websocket connections to client nodes as well as node IDs of clients.
+     */
     sessions;
+    /**
+     * ### HLC
+     *
+     * Hybrid logical clock used to generate timestamps.
+     */
     hlc;
+    //#endregion
     constructor(state, env) {
         env;
         this.state = state;
         this.sessions = {};
         this.hlc = null;
         this.state.blockConcurrencyWhile(async () => {
+            // Restore HLC or create a new one.
             let hlcBuffer = (await this.state.storage.get("hlc"));
             this.hlc = hlcBuffer ? ServerHLC.deserialize(new Uint8Array(hlcBuffer)) : new ServerHLC();
         });
     }
+    /**
+     * ### Broadcast message
+     *
+     * Sends a message to all connected clients purging stale sessions.
+     *
+     * @param message Message to send
+     */
     broadcastMessage(message) {
         for (const cid in this.sessions) {
             try {
@@ -23,19 +53,31 @@ export class SyncAgent {
             }
         }
     }
+    /**
+     * ### Fetch
+     *
+     * Handler for requests relayed from a worker. Only WebSocket requests should be relayed to the
+     * durable object.
+     *
+     * @param request Incoming WebSocket upgrade request
+     * @returns WebSocket upgrade response
+     */
     async fetch(request) {
         // let currentHLC = this.hlc;
         // let currState = this.state;
         let sessions = this.sessions;
+        // Assert request is a WebSocket upgrade request.
         const upgradeHeader = request.headers.get("Upgrade");
         if (!upgradeHeader || upgradeHeader !== "websocket") {
             return new Response("Expected Upgrade: websocket", { status: 426 });
         }
         // Generate a random connection ID.
         const connectionId = new UID().toString();
-        // Establish WebSocket connection.
+        // Create WebSocket objects.
         const webSocketPair = new WebSocketPair();
         const [client, server] = Object.values(webSocketPair);
+        server.accept();
+        //#region Helper functions
         function messageClient(message) {
             server.send(JSON.stringify(message));
         }
@@ -64,10 +106,12 @@ export class SyncAgent {
                 }
             }
         }
-        server.accept();
-        server.addEventListener("message", async ({ data: rawData }) => {
-            if (rawData instanceof ArrayBuffer) {
-                let binData = rawData;
+        //#endregion
+        //#region WebSocket event handlers
+        server.addEventListener("message", async ({ data }) => {
+            if (data instanceof ArrayBuffer) {
+                // Message is binary.
+                let binData = data;
                 const id = parseUpdateMessage(new Uint8Array(binData));
                 server.send(JSON.stringify({
                     msgCode: "test",
@@ -75,8 +119,9 @@ export class SyncAgent {
                 }));
             }
             else {
+                // Message is UTF-8 encoded (string).
                 try {
-                    const msg = JSON.parse(rawData);
+                    const msg = JSON.parse(data);
                     await handleClientMessage(msg);
                 }
                 catch (e) {
@@ -92,6 +137,7 @@ export class SyncAgent {
         server.addEventListener("close", () => {
             delete this.sessions[connectionId];
         });
+        //#endregion
         // Store the connection in memory.
         this.sessions[connectionId] = { ws: server };
         return new Response(null, {
