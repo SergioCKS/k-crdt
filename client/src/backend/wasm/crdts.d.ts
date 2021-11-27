@@ -97,17 +97,10 @@ export class BrowserHLC {
 /**
 * ## HLC Timestamp
 *
-* 64-bit HLC timestamp implemented as a tuple struct over [`u64`].
+* 64-bit HLC/NTP timestamp.
 */
 export class Timestamp {
   free(): void;
-/**
-* ### To String
-*
-* Returns a string representation of the timestamp.
-* @returns {string}
-*/
-  toString(): string;
 }
 /**
 * ## UID
@@ -163,7 +156,6 @@ export interface InitOutput {
   readonly browserhlc_deserialize: (a: number, b: number) => number;
   readonly browserhlc_generateTimestamp: (a: number) => number;
   readonly __wbg_timestamp_free: (a: number) => void;
-  readonly timestamp_toString: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;

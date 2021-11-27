@@ -1,7 +1,7 @@
 //! # Client interface
 //!
 //! Objects intended for usage in client-only environments.
-use crate::{
+use super::{
     time::Timestamp,
     lwwregister::{LWWRegister, RegisterMessage, BOOL_REG_SIZE},
     uid::UID

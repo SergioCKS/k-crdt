@@ -9,8 +9,6 @@ use std::time::{Duration, SystemTimeError};
 use wasm_bindgen::prelude::*;
 #[cfg(test)]
 use std::time::{SystemTime, UNIX_EPOCH};
-#[cfg(feature = "client")]
-use wasm_bindgen::JsCast;
 use serde::{Serialize, Deserialize};
 
 /// ## Maximum time offset
@@ -170,66 +168,6 @@ impl Clock for SysTimeClock {
     /// Polls the timesource using [`SysTime::now`].
     fn poll_duration() -> Result<Duration, TimePollError> {
         Ok(SystemTime::now().duration_since(UNIX_EPOCH)?)
-    }
-}
-//#endregion
-
-//#region Browser clock (Client)
-/// ## Browser clock
-///
-/// A clock relying on browser APIs to poll time.
-///
-/// * The [`Performance` interface](https://developer.mozilla.org/en-US/docs/Web/API/Performance)
-///   is used to poll time. The time resolution is vendor-dependent, but is at least in the millisecond range.
-#[cfg(feature = "client")]
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
-pub struct BrowserClock {
-    offset: Offset // bincode: 8 bytes
-}
-
-#[cfg(feature = "client")]
-impl Clock for BrowserClock {
-    fn get_offset(&self) -> Offset {
-        self.offset
-    }
-
-    fn set_offset_unchecked(&mut self, offset: Offset) -> () {
-        self.offset = offset;
-    }
-
-    fn poll_duration() -> Result<Duration, TimePollError> {
-        if let Ok(value) =
-            js_sys::Reflect::get(&js_sys::global(), &JsValue::from_str("performance"))
-        {
-            let performance = value.unchecked_into::<web_sys::Performance>();
-            let now_micros = ((performance.time_origin() + performance.now()) * 1_000f64) as u64;
-            Ok(Duration::from_micros(now_micros))
-        } else {
-            Err(TimePollError::PerformanceNotAccessible(String::from(
-                "The performance object is not accessible. {}",
-            )))
-        }
-    }
-}
-//#endregion ()
-
-//#region Server clock
-#[cfg(feature = "server")]
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
-pub struct ServerClock;
-
-#[cfg(feature = "server")]
-impl Clock for ServerClock {
-    fn get_offset(&self) -> Offset {
-        Offset::default()
-    }
-
-    fn set_offset_unchecked(&mut self, _: Offset) -> () {
-        ()
-    }
-
-    fn poll_duration() -> Result<Duration, TimePollError> {
-        Ok(Duration::from_millis(js_sys::Date::now() as u64))
     }
 }
 //#endregion

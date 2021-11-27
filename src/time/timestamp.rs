@@ -41,6 +41,7 @@
 //! time part taking precedence over the counter part. Usually, timestamps are associated with a
 //! the node in the system that generated it by providing the node ID. In case of a tie, the node ID
 //! would be used to pick the winner arbitrarily but deterministically.
+use crate::time::clock::TimePollError;
 use humantime::parse_rfc3339;
 use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -49,7 +50,6 @@ use std::ops::{Add, AddAssign, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
 use wasm_bindgen::prelude::*;
-use crate::time::clock::TimePollError;
 
 //#region Constants
 /// ## Maximum number of seconds for duration
@@ -124,21 +124,10 @@ pub const COUNTER_MASK: u64 =
 
 /// ## HLC Timestamp
 ///
-/// 64-bit HLC timestamp implemented as a tuple struct over [`u64`].
+/// 64-bit HLC/NTP timestamp.
 #[wasm_bindgen]
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Serialize, Deserialize)]
-pub struct Timestamp(u64);
-
-#[wasm_bindgen]
-impl Timestamp {
-    /// ### To String
-    ///
-    /// Returns a string representation of the timestamp.
-    #[wasm_bindgen(js_name = toString)]
-    pub fn as_string(&self) -> String {
-        self.to_string()
-    }
-}
+pub struct Timestamp(u64); // bincode: 8 bytes
 
 impl Timestamp {
     /// ### As `u64`

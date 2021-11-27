@@ -1,7 +1,7 @@
 //! # Server interface
 //!
 //! Utilites meant to be used exclusively in client-side environments.
-use crate::{
+use super::{
     lwwregister::{RegisterMessage, META_SIZE, BOOL_VAL_SIZE, BOOL_REG_SIZE},
     time::Timestamp
 };

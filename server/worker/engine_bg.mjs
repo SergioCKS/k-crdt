@@ -214,7 +214,7 @@ export class ServerHLC {
 /**
 * ## HLC Timestamp
 *
-* 64-bit HLC timestamp implemented as a tuple struct over [`u64`].
+* 64-bit HLC/NTP timestamp.
 */
 export class Timestamp {
 
