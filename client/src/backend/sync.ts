@@ -191,6 +191,7 @@ export class SyncConnection {
 				}
 			}
 			const ws = new WebSocket(this._syncUrl);
+			ws.binaryType = "arraybuffer";
 
 			ws.addEventListener("error", (event) => {
 				console.error(event);

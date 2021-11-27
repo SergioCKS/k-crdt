@@ -1,6 +1,6 @@
-//! # CRDT Engine
+//! # Server interface
 //!
-//! An interface designed to manage a collection of CRDTs in a WASM context.
+//! Utilites meant to be used exclusively in client-side environments.
 use crate::{
     lwwregister::{RegisterMessage, META_SIZE, BOOL_VAL_SIZE, BOOL_REG_SIZE},
     time::Timestamp

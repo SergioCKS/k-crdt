@@ -106,6 +106,13 @@ export class SyncAgent {
 			server.send(JSON.stringify(message));
 		}
 
+		/**
+		 * ### Handle client message
+		 *
+		 * Event handler for UTF-8 encoded (string) messages from client nodes.
+		 *
+		 * @param message Incoming message
+		 */
 		async function handleClientMessage(message: ClientMessage): Promise<boolean> {
 			switch (message.msgCode) {
 				case "time-sync": {
@@ -153,14 +160,17 @@ export class SyncAgent {
 				}
 				//#endregion
 
-				server.send(
-					JSON.stringify({
-						msgCode: "test",
-						payload: `Received binary data consisting of ${
-							binData.byteLength
-						} bytes. Last time: ${currentHLC.last_time.toString()}`
-					})
-				);
+				// Broadcast message to connected client nodes.
+				this.broadcastMessage(binData);
+
+				// server.send(
+				// 	JSON.stringify({
+				// 		msgCode: "test",
+				// 		payload: `Received binary data consisting of ${
+				// 			binData.byteLength
+				// 		} bytes. Last time: ${currentHLC.last_time.toString()}`
+				// 	})
+				// );
 			} else {
 				// UTF-8 encoded message (string).
 				try {
