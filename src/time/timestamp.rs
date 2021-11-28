@@ -50,11 +50,6 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wasm_bindgen::prelude::*;
 
 //#region Constants
-/// ## Maximum number of seconds for duration
-///
-/// Maximum number of seconds of a [`Duration`] when converting to a [`Timestamp`].
-pub const DURATION_MAX_SECONDS: u64 = (1 << 32) - 1;
-
 /// ## Fraction to nanosecond factor
 ///
 /// Factor for converting second fractions to nanoseconds.
@@ -230,12 +225,17 @@ impl Timestamp {
 //#region Construction from other types
 impl From<Duration> for Timestamp {
     fn from(duration: Duration) -> Self {
-        let seconds_part = ((duration.as_secs() as u32) as u64) << 32;
+        let seconds = duration.as_secs();
+        let seconds = if seconds > u32::MAX as u64 {
+            u32::MAX as u64
+        } else {
+            seconds
+        };
         let fractions = ((duration.subsec_nanos() as f64) * NS_TO_FRACTIONS) as u64;
         let fractions_part = fractions & FRACTIONS_MASK; // Introduces loss of resolution.
         let counter_part = fractions & COUNTER_MASK;
         let carry = if counter_part == 0 { 0u64 } else { 1u64 << 8 };
-        Self(seconds_part + fractions_part + carry)
+        Self((seconds << 32) + fractions_part + carry)
     }
 }
 
@@ -305,19 +305,10 @@ mod tests {
     use humantime::format_rfc3339;
     use std::cmp::Ordering;
 
-    fn distance(duration1: Duration, duration2: Duration) -> Duration {
-        match duration1.cmp(&duration2) {
-            Ordering::Less => duration2 - duration1,
-            _ => duration1 - duration2,
-        }
-    }
-
     #[test]
     fn getters_work() {
         //#region Anchor values
-        let now_duration = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Duration from unmodified SystemTime::now() should work.");
+        let now_duration = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
         let now_secs = now_duration.as_secs();
         let now_subsec_nanos = now_duration.subsec_nanos();
         //#endregion
@@ -384,35 +375,37 @@ mod tests {
     }
 
     #[test]
-    fn from_duration_works() {
-        let error = Timestamp::from(Duration::new(DURATION_MAX_SECONDS + 1, 0));
-
-        Timestamp::from(Duration::new((1u64 << 32) - 1, 0));
-
-        Timestamp::from(
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("Duration from unmodified SystemTime::now() should work."),
-        );
+    fn saturating_on_seconds_limit_exceeded() {
+        // When the seconds limit is exceeded, a saturating behaviour is expected.
+        let secs_too_large = Timestamp::from(Duration::new(u32::MAX as u64 + 1, 0));
+        let secs_on_limit = Timestamp::from(Duration::new(u32::MAX as u64, 0));
+        assert_eq!(secs_too_large, secs_on_limit);
     }
 
     #[test]
     fn from_system_time_works() {
-        let mut now = SystemTime::now();
-        Timestamp::from(now);
+        let sys_time = SystemTime::now();
+        let duration = sys_time.duration_since(UNIX_EPOCH).unwrap();
+        assert_eq!(Timestamp::from(sys_time), Timestamp::from(duration));
+    }
 
-        let now_duration = now
-            .duration_since(UNIX_EPOCH)
-            .expect("Duration from unmodified SystemTime::now() should work.");
-
-        now -= now_duration + Duration::new(1, 0);
-
-        let err = Timestamp::from(now);
+    #[test]
+    #[should_panic]
+    fn system_time_before_unix_epoch_fails() {
+        let mut sys_time = SystemTime::now();
+        let duration = sys_time.duration_since(UNIX_EPOCH).unwrap() + Duration::new(1, 0);
+        sys_time -= duration;
+        Timestamp::from(sys_time);
     }
 
     #[test]
     fn from_str_works() {
-        Timestamp::from_str("a").expect_err("Should fail with invalid input.");
+        if let Err(TimestampError::RFCParseError) = Timestamp::from_str("a") {
+        } else {
+            panic!(
+                "Timestamp from invalid string should fail with `TimestampError::RFCParseError`"
+            );
+        }
 
         let timestamp = format_rfc3339(SystemTime::now()).to_string();
         Timestamp::from_str(&timestamp)
@@ -427,36 +420,33 @@ mod tests {
         let duration_120_nanos = Duration::new(0, 120);
         let duration_sum = duration_a + duration_b;
 
-        let mut ts_a = Timestamp::from(duration_a);
+        let ts_a = Timestamp::from(duration_a);
         let ts_b = Timestamp::from(duration_b);
-        assert!(ts_a.get_duration() - duration_a < duration_60_nanos);
-        assert!(ts_b.get_duration() - duration_b < duration_60_nanos);
 
-        let ts_sum_1 = ts_a + ts_b;
+        let ts_sum = ts_a + ts_b;
 
-        //#region Results should be correct
-        assert!(ts_sum_1.get_duration() - duration_sum < duration_120_nanos);
-        assert!(ts_a.get_duration() - duration_sum < duration_120_nanos);
-        //#endregion
+        assert!(ts_sum.get_duration() - duration_sum < duration_120_nanos);
     }
 
     #[test]
     fn subtraction_works() {
-        //#region Setup
         let duration_a = Duration::new(5, 500);
         let duration_b = Duration::new(3, 2);
         let duration_60_nanos = Duration::new(0, 60);
         let duration_diff = duration_a - duration_b;
 
-        let ntp_a = Timestamp::from(duration_a);
-        let ntp_b = Timestamp::from(duration_b);
-        assert!(ntp_a.get_duration() - duration_a < duration_60_nanos);
-        assert!(ntp_b.get_duration() - duration_b < duration_60_nanos);
-        //#endregion
+        let ts_a = Timestamp::from(duration_a);
+        let ts_b = Timestamp::from(duration_b);
 
-        let ntp_diff_1 = ntp_a - ntp_b;
+        let ts_diff = ts_a - ts_b;
+        let ts_diff_duration = ts_diff.get_duration();
 
-        assert!(distance(ntp_diff_1.get_duration(), duration_diff) < duration_60_nanos);
+        let distance = match ts_diff_duration.cmp(&duration_diff) {
+            Ordering::Less => duration_diff - ts_diff_duration,
+            _ => ts_diff_duration - duration_diff,
+        };
+
+        assert!(distance < duration_60_nanos);
     }
 
     #[test]
@@ -472,8 +462,8 @@ mod tests {
         let encoded: Vec<u8> =
             bincode::serialize(&timestamp).expect("Timestamp should be serializable.");
         assert!(
-            encoded.len() <= 8,
-            "Encoding of a timestamp should be at most 64 bits."
+            encoded.len() == 8,
+            "Encoding of a timestamp should be exactly 8 bytes."
         );
         let decoded: Timestamp =
             bincode::deserialize(&encoded[..]).expect("Deserialization should work.");
