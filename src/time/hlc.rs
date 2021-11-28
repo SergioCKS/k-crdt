@@ -112,7 +112,9 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     ///
     /// Increases the counter of the timestamp.
     fn increase_counter(&mut self) {
-        self.get_last_time().increase_counter()
+        let mut ts = self.get_last_time();
+        ts.increase_counter();
+        self.set_last_time(ts);
     }
 
     /// ### Generate timestamp
@@ -262,7 +264,6 @@ pub mod tests {
         let mut hlc = SysTimeHLC::default();
 
         let ts1 = hlc.generate_timestamp();
-
         let ts2 = hlc.generate_timestamp();
 
         assert!(ts1 < ts2, "Timestamps should increase monotonically.");
@@ -284,21 +285,20 @@ pub mod tests {
         );
     }
 
-    // #[test]
-    // fn drift_is_limited() {
-    //     let mut hlc = SysTimeHLC::default();
-    //
-    //     let ts1 = hlc.generate_timestamp()
-    //         .expect("Timestamp generation with system time should work.");
-    //
-    //     // By shifting the clock backwards a couple of seconds, the timestamp should lie too far
-    //     // into the future and be rejected.
-    //     hlc.set_offset(Offset::Negative(Duration::new(2, 0))).unwrap();
-    //     if let UpdateWithTimestampError::DriftTooLarge(msg) = hlc.update_with_timestamp(ts1 )
-    //         .expect_err("Timestamps too far into the future should be rejected.") {
-    //         assert!(msg.contains(&MAX_DRIFT.to_string()), "The error message should indicate the maximum allowed drift.");
-    //     } else {
-    //         panic!("Incorrect error type: Expected `UpdateWithTimestampError::DriftTooLarge`.")
-    //     }
-    // }
+    #[test]
+    fn drift_is_limited() {
+        let mut hlc = SysTimeHLC::default();
+
+        let ts1 = hlc.generate_timestamp();
+
+        // By shifting the clock backwards a couple of seconds, the timestamp should lie too far
+        // into the future and be rejected.
+        hlc.set_offset(Offset::from_millis(-2000));
+
+        if let Err(UpdateWithTimestampError::DriftTooLarge) = hlc.update_with_timestamp(ts1) {
+            ()
+        } else {
+            panic!("Incorrect error type: Expected `UpdateWithTimestampError::DriftTooLarge`.")
+        }
+    }
 }
