@@ -5,7 +5,7 @@
 //! last-write-wins strategy.
 use crate::time::timestamp::Timestamp;
 use crate::uid::UID;
-use serde::{Deserialize,Serialize};
+use serde::{Deserialize, Serialize};
 
 //#region Constants
 /// ## Message metadata size
@@ -58,7 +58,7 @@ pub struct RegisterMessage<const REG_SIZE: usize> {
     ///
     /// * Encoding size: SIZE bytes
     #[serde(with = "serde_arrays")]
-    pub register: [u8; REG_SIZE]
+    pub register: [u8; REG_SIZE],
 }
 
 impl<const REG_SIZE: usize> RegisterMessage<REG_SIZE> {
@@ -161,12 +161,12 @@ impl<T: Clone> LWWRegister<T> {
 #[cfg(test)]
 mod lwwregister_tests {
     use super::*;
-    use crate::time::hlc::{SysTimeHLC, HybridLogicalClock};
+    use crate::time::hlc::{tests::SysTimeHLC, HybridLogicalClock};
     use std::convert::TryInto;
 
     #[derive(Serialize, Deserialize)]
     struct TestStruct {
-        encoded: [u8; 9]
+        encoded: [u8; 9],
     }
 
     impl TestStruct {
@@ -178,8 +178,8 @@ mod lwwregister_tests {
     #[test]
     fn merge_works() {
         let mut hlc = SysTimeHLC::default();
-        let ts1 = hlc.generate_timestamp().unwrap();
-        let ts2 = hlc.generate_timestamp().unwrap();
+        let ts1 = hlc.generate_timestamp();
+        let ts2 = hlc.generate_timestamp();
 
         let nid_a = UID::new();
         let nid_b = UID::new();
@@ -227,7 +227,7 @@ mod lwwregister_tests {
         let register = LWWRegister::new(Timestamp::default(), true);
         let enc_register = bincode::serialize(&register).unwrap();
         let cast: [u8; 9] = enc_register.try_into().unwrap();
-        let test_struct  = TestStruct::new(cast);
+        let test_struct = TestStruct::new(cast);
         let enc_test_struct = bincode::serialize(&test_struct).unwrap();
         println!("Encoded test struct: {} bytes", enc_test_struct.len()); // Expected 9 bytes
 

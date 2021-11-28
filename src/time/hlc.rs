@@ -208,7 +208,7 @@ pub enum UpdateWithTimestampError {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::time::{clock::tests::SysTimeClock, Offset};
 
