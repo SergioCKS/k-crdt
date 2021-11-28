@@ -122,7 +122,7 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     /// #### Usage example
     ///
     /// ```rust
-    /// use crdts::time::hlc::{HybridLogicalClock, SysTimeHLC};
+    /// use crdts::time::hlc::{HybridLogicalClock, tests::SysTimeHLC};
     ///
     /// let mut hlc = SysTimeHLC::default();
     ///
@@ -157,7 +157,7 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     /// #### Usage example
     ///
     /// ```rust
-    /// use crdts::time::hlc::{SysTimeHLC,HybridLogicalClock};
+    /// use crdts::time::hlc::{tests::SysTimeHLC, HybridLogicalClock};
     ///
     /// let mut hlc1 = SysTimeHLC::default();
     /// let mut hlc2 = SysTimeHLC::default();
@@ -210,7 +210,10 @@ pub enum UpdateWithTimestampError {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::time::{clock::tests::SysTimeClock, Offset};
+    use crate::time::{
+        clock::{tests::SysTimeClock, Offsetted},
+        Offset,
+    };
 
     //#region SysTimeHLC
     /// ## System time HLC

@@ -8,8 +8,8 @@ pub mod client;
 #[cfg(feature = "server")]
 pub mod server;
 
+pub use self::clock::{Clock, Offset};
 pub use self::timestamp::Timestamp;
-pub use self::clock::{Clock, Offset, TimePollError};
 
 #[cfg(feature = "client")]
 pub use self::client::BrowserClock;

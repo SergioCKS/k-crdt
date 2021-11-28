@@ -3,7 +3,6 @@
 //! An interface for clocks that poll time and output HLC/NTP timestamps.
 use crate::time::timestamp::{Timestamp, FRACTIONS_MASK_U32, MS_TO_FRACTIONS};
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
 use std::ops::Add;
 use std::time::Duration;
 
@@ -181,22 +180,35 @@ pub mod tests {
         let pos_too_large = Offset::from_millis(MAX_OFFSET + 1);
 
         clock.set_offset(neg_offset);
+        assert_eq!(
+            clock.get_offset().as_millis(),
+            -400_000i64,
+            "Offset should be settable."
+        );
         clock.poll_time();
 
         clock.set_offset(pos_offset);
+        assert_eq!(
+            clock.get_offset().as_millis(),
+            400_000i64,
+            "Offset should be settable."
+        );
         clock.poll_time();
 
-        // for offset in vec![neg_too_large, pos_too_large] {
-        //     if let TimePollError::OffsetTooLarge(msg) = clock
-        //         .set_offset(offset)
-        //     {
-        //         assert!(
-        //             msg.contains(&MAX_OFFSET.to_string()),
-        //             "Error message should indicate offset limit."
-        //         );
-        //     } else {
-        //         panic!("Incorrect error type: Expected `TimePollError:OffsetTooLarge`.")
-        //     }
-        // }
+        clock.set_offset(neg_too_large);
+        assert_eq!(
+            clock.get_offset().as_millis(),
+            -MAX_OFFSET,
+            "Saturating behaviour expected."
+        );
+        clock.poll_time();
+
+        clock.set_offset(pos_too_large);
+        assert_eq!(
+            clock.get_offset().as_millis(),
+            MAX_OFFSET,
+            "Saturating behaviour expected."
+        );
+        clock.poll_time();
     }
 }
