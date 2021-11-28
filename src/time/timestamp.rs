@@ -293,8 +293,6 @@ impl Sub<Timestamp> for Timestamp {
 /// Custom error related to timestamps methods.
 #[derive(Debug)]
 pub enum TimestampError {
-    DurationTooLarge,
-    SystemTimeError,
     RFCParseError,
 }
 //#endregion
@@ -416,7 +414,6 @@ mod tests {
     fn addition_works() {
         let duration_a = Duration::new(2, 3);
         let duration_b = Duration::new(3, 2);
-        let duration_60_nanos = Duration::new(0, 60);
         let duration_120_nanos = Duration::new(0, 120);
         let duration_sum = duration_a + duration_b;
 

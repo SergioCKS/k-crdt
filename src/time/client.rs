@@ -1,7 +1,7 @@
 //! # Client time
 //!
 //! Time-related objects meant to be used exclusively in a client node environment.
-use super::{clock::MAX_OFFSET, hlc::HybridLogicalClock, Clock, Offset, Timestamp};
+use super::{hlc::HybridLogicalClock, Clock, Offset, Timestamp};
 use crate::time::clock::Offsetted;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::{prelude::*, JsCast};

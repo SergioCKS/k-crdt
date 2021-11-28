@@ -67,6 +67,10 @@
 //! **Handling update rejections.** When a message timestamp drifts too far ahead into the future,
 //! the message is rejected. The emitting node should be notified of rejections, so that it adjusts
 //! it's clock/offset, and retries the rejected updates.
+use crate::time::{
+    clock::{Offsetted, SysTimeClock},
+    Offset,
+};
 use crate::time::{Clock, Timestamp};
 use std::cmp;
 use std::fmt::Debug;
@@ -124,14 +128,14 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     /// #### Usage example
     ///
     /// ```rust
-    /// use crdts::time::hlc::{HybridLogicalClock, tests::SysTimeHLC};
+    /// use crdts::time::hlc::{HybridLogicalClock, SysTimeHLC};
     ///
     /// let mut hlc = SysTimeHLC::default();
     ///
-    /// let ts1 = hlc.generate_timestamp().unwrap();
-    /// let ts2 = hlc.generate_timestamp().unwrap();
+    /// let ts1 = hlc.generate_timestamp();
+    /// let ts2 = hlc.generate_timestamp();
     ///
-    /// assert!(ts1 < ts2);
+    /// assert!(ts1 < ts2, "Timestamps should increase monotonically.");
     /// ```
     fn generate_timestamp(&mut self) -> Timestamp {
         let now_ts = self.get_internal_clock().poll_time();
@@ -159,17 +163,17 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     /// #### Usage example
     ///
     /// ```rust
-    /// use crdts::time::hlc::{tests::SysTimeHLC, HybridLogicalClock};
+    /// use crdts::time::hlc::{SysTimeHLC, HybridLogicalClock};
     ///
     /// let mut hlc1 = SysTimeHLC::default();
     /// let mut hlc2 = SysTimeHLC::default();
     ///
-    /// let other_ts = hlc2.generate_timestamp().unwrap();
+    /// let other_ts = hlc2.generate_timestamp();
     /// hlc1.update_with_timestamp(other_ts).unwrap();
     ///
-    /// let ts = hlc1.generate_timestamp().unwrap();
+    /// let ts = hlc1.generate_timestamp();
     ///
-    /// assert!(ts > other_ts);
+    /// assert!(ts > other_ts, "Timestamps should be larger after update.");
     /// ```
     fn update_with_timestamp(
         &mut self,
@@ -204,60 +208,56 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     }
 }
 
+//#region SysTimeHLC
+/// ## System time HLC
+///
+/// HLC relying on [`SystemTime`] as time source.
+#[derive(Clone, Copy, Default)]
+pub struct SysTimeHLC {
+    /// ### Last time
+    ///
+    /// Last accepted time as HLC/NTP timestamp.
+    last_time: Timestamp,
+
+    /// ### Clock
+    ///
+    /// Internal clock used for polling time.
+    clock: SysTimeClock,
+}
+
+impl SysTimeHLC {
+    pub fn get_offset(&self) -> Offset {
+        self.clock.get_offset()
+    }
+
+    pub fn set_offset(&mut self, offset: Offset) -> () {
+        self.clock.set_offset(offset)
+    }
+}
+
+impl HybridLogicalClock<SysTimeClock> for SysTimeHLC {
+    fn get_last_time(&self) -> Timestamp {
+        self.last_time
+    }
+
+    fn set_last_time(&mut self, new_time: Timestamp) {
+        self.last_time = new_time;
+    }
+
+    fn get_internal_clock(&self) -> SysTimeClock {
+        self.clock
+    }
+}
+//#endregion
+
 #[derive(Debug)]
 pub enum UpdateWithTimestampError {
     DriftTooLarge,
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
-    use crate::time::{
-        clock::{tests::SysTimeClock, Offsetted},
-        Offset,
-    };
-
-    //#region SysTimeHLC
-    /// ## System time HLC
-    ///
-    /// HLC relying on [`SystemTime`] as time source.
-    #[derive(Clone, Copy, Default)]
-    pub struct SysTimeHLC {
-        /// ### Last time
-        ///
-        /// Last accepted time as HLC/NTP timestamp.
-        last_time: Timestamp,
-
-        /// ### Clock
-        ///
-        /// Internal clock used for polling time.
-        clock: SysTimeClock,
-    }
-
-    impl SysTimeHLC {
-        pub fn get_offset(&self) -> Offset {
-            self.clock.get_offset()
-        }
-
-        pub fn set_offset(&mut self, offset: Offset) -> () {
-            self.clock.set_offset(offset)
-        }
-    }
-
-    impl HybridLogicalClock<SysTimeClock> for SysTimeHLC {
-        fn get_last_time(&self) -> Timestamp {
-            self.last_time
-        }
-
-        fn set_last_time(&mut self, new_time: Timestamp) {
-            self.last_time = new_time;
-        }
-
-        fn get_internal_clock(&self) -> SysTimeClock {
-            self.clock
-        }
-    }
-    //#endregion
 
     #[test]
     fn timestamp_generation_works() {
@@ -275,7 +275,7 @@ pub mod tests {
         let mut hlc2 = SysTimeHLC::default();
 
         let other_ts = hlc2.generate_timestamp();
-        hlc1.update_with_timestamp(other_ts);
+        hlc1.update_with_timestamp(other_ts).unwrap();
 
         let ts = hlc1.generate_timestamp();
 

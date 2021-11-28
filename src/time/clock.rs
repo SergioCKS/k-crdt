@@ -4,7 +4,7 @@
 use crate::time::timestamp::{Timestamp, FRACTIONS_MASK_U32, MS_TO_FRACTIONS};
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// ## Maximum time offset
 ///
@@ -104,6 +104,37 @@ pub trait Clock {
     fn poll_time_ms(&self) -> f64;
 }
 
+//#region System time clock
+/// ## System Time Clock
+///
+/// A clock relying on [`SysTime`] as time source.
+#[derive(Clone, Copy, Default)]
+pub struct SysTimeClock {
+    offset: Offset, // bincode: 8 bytes
+}
+
+impl Clock for SysTimeClock {
+    /// ### Poll time
+    ///
+    /// Polls the timesource using [`SysTime::now`].
+    fn poll_time_ms(&self) -> f64 {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+        let shifted = Duration::from(Offset::from(now) + self.offset);
+        shifted.as_millis() as f64
+    }
+}
+
+impl Offsetted for SysTimeClock {
+    fn get_offset(&self) -> Offset {
+        self.offset
+    }
+
+    fn set_offset_unchecked(&mut self, offset: Offset) -> () {
+        self.offset = offset;
+    }
+}
+//#endregion
+
 /// ## Offsetted (trait)
 ///
 /// A clock that maintains an offset that is applied to times polled from the local source.
@@ -134,40 +165,8 @@ pub trait Offsetted: Clock {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
-    use std::time::{SystemTime, UNIX_EPOCH};
-
-    //#region System time clock
-    /// ## System Time Clock
-    ///
-    /// A clock relying on [`SysTime`] as time source.
-    #[derive(Clone, Copy, Default)]
-    pub struct SysTimeClock {
-        offset: Offset, // bincode: 8 bytes
-    }
-
-    impl Clock for SysTimeClock {
-        /// ### Poll time
-        ///
-        /// Polls the timesource using [`SysTime::now`].
-        fn poll_time_ms(&self) -> f64 {
-            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
-            let shifted = Duration::from(Offset::from(now) + self.offset);
-            shifted.as_millis() as f64
-        }
-    }
-
-    impl Offsetted for SysTimeClock {
-        fn get_offset(&self) -> Offset {
-            self.offset
-        }
-
-        fn set_offset_unchecked(&mut self, offset: Offset) -> () {
-            self.offset = offset;
-        }
-    }
-    //#endregion
 
     #[test]
     fn sys_time_clock_works() {

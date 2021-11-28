@@ -136,8 +136,8 @@ impl<T: Clone> LWWRegister<T> {
     /// use crate::crdts::uid::UID;
     ///
     /// let mut hlc = SysTimeHLC::default();
-    /// let ts1 = hlc.generate_timestamp().unwrap();
-    /// let ts2 = hlc.generate_timestamp().unwrap();
+    /// let ts1 = hlc.generate_timestamp();
+    /// let ts2 = hlc.generate_timestamp();
     ///
     /// let nid_a = UID::new();
     /// let nid_b = UID::new();
@@ -161,19 +161,7 @@ impl<T: Clone> LWWRegister<T> {
 #[cfg(test)]
 mod lwwregister_tests {
     use super::*;
-    use crate::time::hlc::{tests::SysTimeHLC, HybridLogicalClock};
-    use std::convert::TryInto;
-
-    #[derive(Serialize, Deserialize)]
-    struct TestStruct {
-        encoded: [u8; 9],
-    }
-
-    impl TestStruct {
-        fn new(encoded: [u8; 9]) -> Self {
-            Self { encoded }
-        }
-    }
+    use crate::time::hlc::{HybridLogicalClock, SysTimeHLC};
 
     #[test]
     fn merge_works() {
@@ -221,22 +209,4 @@ mod lwwregister_tests {
     //     assert_eq!(register_a.get_timestamp(), clock);
     //     //#endregion
     // }
-
-    #[test]
-    fn some() {
-        let register = LWWRegister::new(Timestamp::default(), true);
-        let enc_register = bincode::serialize(&register).unwrap();
-        let cast: [u8; 9] = enc_register.try_into().unwrap();
-        let test_struct = TestStruct::new(cast);
-        let enc_test_struct = bincode::serialize(&test_struct).unwrap();
-        println!("Encoded test struct: {} bytes", enc_test_struct.len()); // Expected 9 bytes
-
-        // let packed = PackedRegister::new(
-        //     Some(UID::new()), // 16 bytes
-        //     RegisterValueType::Bool, // 4 bytes
-        //     enc_register // 9 bytes
-        // );
-        // let enc_packed = bincode::serialize(&packed).unwrap();
-        // println!("Packed register: {}", enc_packed.len());
-    }
 }
