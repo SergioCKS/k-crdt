@@ -41,13 +41,12 @@
 //! time part taking precedence over the counter part. Usually, timestamps are associated with a
 //! the node in the system that generated it by providing the node ID. In case of a tie, the node ID
 //! would be used to pick the winner arbitrarily but deterministically.
-use crate::time::clock::TimePollError;
 use humantime::parse_rfc3339;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub};
 use std::str::FromStr;
-use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use wasm_bindgen::prelude::*;
 
 //#region Constants
@@ -297,28 +296,6 @@ pub enum TimestampError {
     DurationTooLarge,
     SystemTimeError,
     RFCParseError,
-}
-
-impl Display for TimestampError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            Self::DurationTooLarge => write!(f, "Duration too large"),
-            Self::SystemTimeError => write!(f, "System time error"),
-            Self::RFCParseError => write!(f, "RFCParse error"),
-        }
-    }
-}
-
-impl From<SystemTimeError> for TimestampError {
-    fn from(_: SystemTimeError) -> Self {
-        TimestampError::SystemTimeError
-    }
-}
-
-impl From<TimestampError> for TimePollError {
-    fn from(_: TimestampError) -> Self {
-        TimePollError::TimestampParseError
-    }
 }
 //#endregion
 

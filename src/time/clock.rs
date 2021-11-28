@@ -3,10 +3,9 @@
 //! An interface for clocks that poll time and output HLC/NTP timestamps.
 use crate::time::timestamp::{Timestamp, FRACTIONS_MASK_U32, MS_TO_FRACTIONS};
 use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 use std::ops::Add;
-use std::time::{Duration, SystemTimeError};
-use wasm_bindgen::prelude::*;
+use std::time::Duration;
 
 /// ## Maximum time offset
 ///
@@ -115,29 +114,6 @@ pub enum TimePollError {
     TimestampParseError,
     OffsetTooLarge,
     WindowNotAccessible,
-}
-
-impl Display for TimePollError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            Self::SystemTimeError => write!(f, "System time error"),
-            Self::TimestampParseError => write!(f, "Timestamp parse error"),
-            Self::OffsetTooLarge => write!(f, "Offset too large"),
-            Self::WindowNotAccessible => write!(f, "Window not accessible"),
-        }
-    }
-}
-
-impl From<TimePollError> for JsValue {
-    fn from(err: TimePollError) -> Self {
-        JsValue::from(err.to_string())
-    }
-}
-
-impl From<SystemTimeError> for TimePollError {
-    fn from(_: SystemTimeError) -> Self {
-        Self::SystemTimeError
-    }
 }
 //#endregion
 

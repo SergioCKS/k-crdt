@@ -49,7 +49,6 @@ use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
-
 /// ## Alphabet
 ///
 /// Ordered mapping of the allowed characters used in UIDs.
@@ -69,10 +68,7 @@ pub const ALPHABET: [char; 64] = [
 #[inline]
 pub fn num_to_alphabet_char(n: u8) -> Result<char, UIDParseError> {
     if n > 63 {
-        Err(UIDParseError::CharacterNotAllowed(format!(
-            "The given number({}) does not correspond to a valid character in the alphabet. The allowed range is 0-63.",
-            n
-        )))
+        Err(UIDParseError::CharacterNotAllowed)
     } else {
         Ok(ALPHABET[n as usize])
     }
@@ -88,10 +84,7 @@ pub fn num_to_alphabet_char(n: u8) -> Result<char, UIDParseError> {
 fn alphabet_char_to_num(c: char) -> Result<u8, UIDParseError> {
     match ALPHABET.iter().position(|char| *char == c) {
         Some(value) => Ok(value as u8),
-        None => Err(UIDParseError::CharacterNotAllowed(format!(
-            "The character '{}' is not part of the allowed alphabet. The allowed alphabet is `A-Za-z0-9_-`.",
-            c
-        ))),
+        None => Err(UIDParseError::CharacterNotAllowed),
     }
 }
 
@@ -120,7 +113,7 @@ impl UID {
             (self.0 >> 24) as u8,
             (self.0 >> 16) as u8,
             (self.0 >> 8) as u8,
-            self.0 as u8
+            self.0 as u8,
         ]
     }
 }
@@ -129,11 +122,13 @@ impl UID {
 #[wasm_bindgen]
 impl UID {
     #[wasm_bindgen(js_name = getCopy)]
-    pub fn get_copy(&self) -> Self { self.clone() }
+    pub fn get_copy(&self) -> Self {
+        self.clone()
+    }
 
     #[wasm_bindgen(js_name = fromString)]
-    pub fn from_string(nid_str: String) -> Result<UID, JsValue> {
-        Ok(nid_str.parse::<Self>()?)
+    pub fn from_string(nid_str: String) -> UID {
+        nid_str.parse::<Self>().unwrap_throw()
     }
 }
 
@@ -209,21 +204,14 @@ impl FromStr for UID {
         //#region Check number of characters.
         let num_chars = s.chars().count();
         if num_chars != 22 {
-            return Err(UIDParseError::IncorrectLength(format!(
-                "The number of characters ({}) is incorrect. A UID must have 22 characters.",
-                num_chars
-            )));
+            return Err(UIDParseError::IncorrectLength);
         }
         //#endregion
 
         //#region Check last character is valid.
         let last_char = s.chars().last().unwrap();
         if !['-', '0', '1', '2'].contains(&last_char) {
-            return Err(
-                UIDParseError::CharacterNotAllowed(format!(
-                    "The last character is only allowed to be one of '-', '0', '1', '2'. Instead '{}' was given.",
-                    last_char
-                )));
+            return Err(UIDParseError::CharacterNotAllowed);
         }
         //#endregion
 
@@ -265,32 +253,11 @@ impl FromStr for UID {
 }
 //#endregion
 
-//#region Parse UID error
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum UIDParseError {
-    CharacterNotAllowed(String),
-    IncorrectLength(String),
+    CharacterNotAllowed,
+    IncorrectLength,
 }
-
-impl Display for UIDParseError {
-    /// ### Display UID parse error
-    ///
-    /// Format the UID parse error for display.
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            Self::CharacterNotAllowed(ref msg) | Self::IncorrectLength(ref msg) => {
-                write!(f, "{}", msg)
-            }
-        }
-    }
-}
-
-impl From<UIDParseError> for JsValue {
-    fn from(err: UIDParseError) -> Self {
-        JsValue::from(err.to_string())
-    }
-}
-//#endregion
 
 #[cfg(test)]
 mod uid_tests {
@@ -312,7 +279,11 @@ mod uid_tests {
         let uid = UID::new();
         println!("Generated ID: {:?}. String representation: {}", uid, uid);
 
-        assert_eq!(uid.to_string().len(), 22, "Generated ID should have the appropriate length.");
+        assert_eq!(
+            uid.to_string().len(),
+            22,
+            "Generated ID should have the appropriate length."
+        );
         assert!(
             uid.to_string().chars().all(|c| ALPHABET.contains(&c)),
             "The characters of the generated ID are from the allowed alphabet."
@@ -332,38 +303,36 @@ mod uid_tests {
         //#endregion
 
         //#region Invalid character.
-        if let UIDParseError::CharacterNotAllowed(msg) =  UID::from_str("V1StGXR8_Z5jdH*6B-myT-")
-            .expect_err("UID from string with invalid character should fail") {
-            assert!(msg.contains("*"), "Error message should display the wrong character.");
-        } else {
-            panic!("Incorrect error type. Expected `UIDParseError::CharacterNotAllowed`.");
+        match UID::from_str("V1StGXR8_Z5jdH*6B-myT-")
+            .expect_err("UID from string with invalid character should fail")
+        {
+            UIDParseError::CharacterNotAllowed => (),
+            _ => panic!("Incorrect error type. Expected `UIDParseError::CharacterNotAllowed`."),
         }
         //#endregion
 
         //#region Short input.
-        if let UIDParseError::IncorrectLength(msg) = UID::from_str("V1StGXR8_Z5jdHi60")
-            .expect_err("UID from short input should fail.") {
-            assert!(msg.contains("17"), "Error message should display the incorrect length.");
-        } else {
-            panic!("Incorrect error type. Expected `UIDParseError::IncorrectLength`.");
+        match UID::from_str("V1StGXR8_Z5jdHi60").expect_err("UID from short input should fail.") {
+            UIDParseError::IncorrectLength => (),
+            _ => panic!("Incorrect error type. Expected `UIDParseError::IncorrectLength`."),
         }
         //#endregion
 
         //#region Long input.
-        if let UIDParseError::IncorrectLength(msg) = UID::from_str("V1StGXR8_Z5jdHi6B-myTasdfasd0")
-            .expect_err("UID from long input should fail.") {
-            assert!(msg.contains("29"), "Error message should display the incorrect length.");
-        } else {
-            panic!("Incorrect error type. Expected `UIDParseError::IncorrectLength`.");
+        match UID::from_str("V1StGXR8_Z5jdHi6B-myTasdfasd0")
+            .expect_err("UID from long input should fail.")
+        {
+            UIDParseError::IncorrectLength => (),
+            _ => panic!("Incorrect error type. Expected `UIDParseError::IncorrectLength`."),
         }
         //#endregion
 
         //#region Fails if last character is invalid.
-        if let UIDParseError::CharacterNotAllowed(msg) =  UID::from_str("V1StGXR8_Z5jdHi6B-myTA")
-            .expect_err("UID from input with invalid last character should fail") {
-            assert!(msg.contains("A"), "Error message should display the invalid character.");
-        } else {
-            panic!("Incorrect error type. Expected `UIDParseError::CharacterNotAllowed`.");
+        match UID::from_str("V1StGXR8_Z5jdHi6B-myTA")
+            .expect_err("UID from input with invalid last character should fail")
+        {
+            UIDParseError::CharacterNotAllowed => (),
+            _ => panic!("Incorrect error type. Expected `UIDParseError::CharacterNotAllowed`."),
         }
         //#endregion
     }
@@ -371,8 +340,8 @@ mod uid_tests {
     #[test]
     fn serializes_and_deserializes_correctly() {
         let uid = UID::new();
-        let serialized: Vec<u8> = bincode::serialize(&uid)
-            .expect("Serialization from new ID should work.");
+        let serialized: Vec<u8> =
+            bincode::serialize(&uid).expect("Serialization from new ID should work.");
 
         println!("UID: {:?}, Serialized: {:?}", uid, serialized);
 
@@ -381,8 +350,8 @@ mod uid_tests {
             "The serialized version of a UID shouldn't take more than 128 bits."
         );
 
-        let deserialized: UID = bincode::deserialize(&serialized[..])
-            .expect("Deserialization should work.");
+        let deserialized: UID =
+            bincode::deserialize(&serialized[..]).expect("Deserialization should work.");
 
         assert_eq!(
             uid, deserialized,

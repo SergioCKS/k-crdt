@@ -69,9 +69,8 @@
 //! it's clock/offset, and retries the rejected updates.
 use crate::time::{Clock, Timestamp};
 use std::cmp;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
 use std::time::Duration;
-use wasm_bindgen::prelude::*;
 
 /// ## Maximum drift
 ///
@@ -203,26 +202,10 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     }
 }
 
-//#region UpdateWithTimestampError
 #[derive(Debug)]
 pub enum UpdateWithTimestampError {
     DriftTooLarge,
 }
-
-impl Display for UpdateWithTimestampError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            Self::DriftTooLarge => write!(f, "Drift too large."),
-        }
-    }
-}
-
-impl From<UpdateWithTimestampError> for JsValue {
-    fn from(error: UpdateWithTimestampError) -> Self {
-        JsValue::from(error.to_string())
-    }
-}
-//#endregion
 
 #[cfg(test)]
 mod tests {
