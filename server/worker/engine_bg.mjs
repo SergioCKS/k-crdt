@@ -54,26 +54,6 @@ function getInt32Memory0() {
     }
     return cachegetInt32Memory0;
 }
-
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-    return instance.ptr;
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
-}
-
-let WASM_VECTOR_LEN = 0;
-
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1);
-    getUint8Memory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 /**
 * @returns {string}
 */
@@ -90,6 +70,14 @@ export function get_message() {
     }
 }
 
+let WASM_VECTOR_LEN = 0;
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1);
+    getUint8Memory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
 /**
 * @param {Uint8Array} update_msg
 * @returns {Timestamp}
@@ -99,6 +87,17 @@ export function parseUpdateMessage(update_msg) {
     var len0 = WASM_VECTOR_LEN;
     var ret = wasm.parseUpdateMessage(ptr0, len0);
     return Timestamp.__wrap(ret);
+}
+
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
+}
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 
 function handleError(f, args) {
