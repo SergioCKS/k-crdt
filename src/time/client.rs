@@ -2,6 +2,7 @@
 //!
 //! Time-related objects meant to be used exclusively in a client node environment.
 use super::{clock::MAX_OFFSET, hlc::HybridLogicalClock, Clock, Offset, Timestamp};
+use crate::time::clock::Offsetted;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -15,24 +16,6 @@ use wasm_bindgen::{prelude::*, JsCast};
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct BrowserClock {
     offset: Offset, // bincode: 8 bytes
-}
-
-impl BrowserClock {
-    fn get_offset(&self) -> Offset {
-        self.offset
-    }
-
-    /// ### Set offset
-    ///
-    /// Update the offset of the clock. If the offset is larger than [`MAX_OFFSET`] it is truncated.
-    fn set_offset(&mut self, offset: Offset) -> () {
-        let offset = if offset.as_millis().abs() > MAX_OFFSET {
-            Offset::from_millis(offset.as_millis().signum() * MAX_OFFSET)
-        } else {
-            offset
-        };
-        self.offset = offset;
-    }
 }
 
 impl Clock for BrowserClock {
@@ -51,6 +34,16 @@ impl Clock for BrowserClock {
         // time since UNIX epoch is also available in `performance.time_origin()`. The times are
         // provided in milliseconds as floats.
         performance.time_origin() + performance.now() + (self.offset.as_millis() as f64)
+    }
+}
+
+impl Offsetted for BrowserClock {
+    fn get_offset(&self) -> Offset {
+        self.offset
+    }
+
+    fn set_offset_unchecked(&mut self, offset: Offset) -> () {
+        self.offset = offset;
     }
 }
 //#endregion

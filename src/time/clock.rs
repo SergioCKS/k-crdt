@@ -82,11 +82,9 @@ impl Add<Offset> for Offset {
 }
 //#endregion
 
-/// ## Clock (Trait)
+/// ## Clock (trait)
 ///
 /// A clock is capable of polling a time source and generating an HLC/NTP timestamp.
-///
-/// It should keep track of a time offset that is to be taken into consideration when polling the source.
 pub trait Clock {
     /// ### Time polling function
     ///
@@ -107,15 +105,34 @@ pub trait Clock {
     fn poll_time_ms(&self) -> f64;
 }
 
-//#region TimePollError
-#[derive(Debug)]
-pub enum TimePollError {
-    SystemTimeError,
-    TimestampParseError,
-    OffsetTooLarge,
-    WindowNotAccessible,
+/// ## Offsetted (trait)
+///
+/// A clock that maintains an offset that is applied to times polled from the local source.
+pub trait Offsetted: Clock {
+    /// ### Get offset
+    ///
+    /// Retrieves the current offset of the clock.
+    fn get_offset(&self) -> Offset;
+
+    /// ### Set offset (unchecked)
+    ///
+    /// Directly updates the offset of the clock without checking the allowed limit.
+    fn set_offset_unchecked(&mut self, offset: Offset) -> ();
+
+    /// ### Set offset
+    ///
+    /// Updates the offset of the clock.
+    /// If the limit is exceeded, the limit is used instead (saturating behaviour).
+    fn set_offset(&mut self, offset: Offset) -> () {
+        let offset = if offset.as_millis().abs() > MAX_OFFSET {
+            Offset::from_millis(offset.as_millis().signum() * MAX_OFFSET)
+        } else {
+            offset
+        };
+
+        self.set_offset_unchecked(offset);
+    }
 }
-//#endregion
 
 #[cfg(test)]
 pub mod tests {
@@ -131,16 +148,6 @@ pub mod tests {
         offset: Offset, // bincode: 8 bytes
     }
 
-    impl SysTimeClock {
-        pub fn get_offset(&self) -> Offset {
-            self.offset
-        }
-
-        pub fn set_offset(&mut self, offset: Offset) -> () {
-            self.offset = offset;
-        }
-    }
-
     impl Clock for SysTimeClock {
         /// ### Poll time
         ///
@@ -149,6 +156,16 @@ pub mod tests {
             let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
             let shifted = Duration::from(Offset::from(now) + self.offset);
             shifted.as_millis() as f64
+        }
+    }
+
+    impl Offsetted for SysTimeClock {
+        fn get_offset(&self) -> Offset {
+            self.offset
+        }
+
+        fn set_offset_unchecked(&mut self, offset: Offset) -> () {
+            self.offset = offset;
         }
     }
     //#endregion
