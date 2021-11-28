@@ -1,8 +1,8 @@
 //! # Client time
 //!
 //! Time-related objects meant to be used exclusively in a client node environment.
-use super::{hlc::HybridLogicalClock, Clock, Offset, Timestamp};
-use crate::time::clock::Offsetted;
+use super::{hlc::{HybridLogicalClock, Offsetted}, Clock, Offset, Timestamp};
+use crate::time::clock::Offsetted as COffsetted;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::{prelude::*, JsCast};
 
@@ -37,7 +37,7 @@ impl Clock for BrowserClock {
     }
 }
 
-impl Offsetted for BrowserClock {
+impl COffsetted for BrowserClock {
     fn get_offset(&self) -> Offset {
         self.offset
     }
@@ -122,12 +122,12 @@ impl BrowserHLC {
     }
 }
 
-impl BrowserHLC {
-    pub fn get_offset(&self) -> Offset {
+impl Offsetted<BrowserClock> for BrowserHLC {
+    fn get_offset(&self) -> Offset {
         self.clock.get_offset()
     }
 
-    pub fn set_offset(&mut self, offset: Offset) -> () {
+    fn set_offset_unchecked(&mut self, offset: Offset) -> () {
         self.clock.set_offset(offset)
     }
 }

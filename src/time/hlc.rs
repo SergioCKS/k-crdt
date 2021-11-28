@@ -68,7 +68,7 @@
 //! the message is rejected. The emitting node should be notified of rejections, so that it adjusts
 //! it's clock/offset, and retries the rejected updates.
 use crate::time::{
-    clock::{Offsetted, SysTimeClock},
+    clock::{Offsetted as COffsetted, SysTimeClock, MAX_OFFSET},
     Offset,
 };
 use crate::time::{Clock, Timestamp};
@@ -208,6 +208,22 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     }
 }
 
+pub trait Offsetted<T: Clock>: HybridLogicalClock<T> {
+    fn get_offset(&self) -> Offset;
+
+    fn set_offset_unchecked(&mut self, offset: Offset) -> ();
+
+    fn set_offset(&mut self, offset: Offset) -> () {
+        let offset = if offset.as_millis().abs() > MAX_OFFSET {
+            Offset::from_millis(offset.as_millis().signum() * MAX_OFFSET)
+        } else {
+            offset
+        };
+
+        self.set_offset_unchecked(offset);
+    }
+}
+
 //#region SysTimeHLC
 /// ## System time HLC
 ///
@@ -225,12 +241,12 @@ pub struct SysTimeHLC {
     clock: SysTimeClock,
 }
 
-impl SysTimeHLC {
-    pub fn get_offset(&self) -> Offset {
+impl Offsetted<SysTimeClock> for SysTimeHLC {
+    fn get_offset(&self) -> Offset {
         self.clock.get_offset()
     }
 
-    pub fn set_offset(&mut self, offset: Offset) -> () {
+    fn set_offset_unchecked(&mut self, offset: Offset) -> () {
         self.clock.set_offset(offset)
     }
 }
@@ -255,50 +271,63 @@ pub enum UpdateWithTimestampError {
     DriftTooLarge,
 }
 
+pub fn hlc_generate_timestamp_works<U: Clock, T: HybridLogicalClock<U>>(mut hlc: T) {
+    let ts1 = hlc.generate_timestamp();
+    let ts2 = hlc.generate_timestamp();
+
+    assert!(ts1 < ts2, "Timestamps should increase monotonically.");
+}
+
+pub fn hlc_update_with_timestamp_works<U: Clock, T: HybridLogicalClock<U>>(
+    mut hlc1: T,
+    mut hlc2: T,
+) {
+    let other_ts = hlc2.generate_timestamp();
+    hlc1.update_with_timestamp(other_ts).unwrap();
+
+    let ts = hlc1.generate_timestamp();
+
+    assert!(
+        ts > other_ts,
+        "Timestamps generated after update should be larger."
+    );
+}
+
+pub fn hlc_drift_is_limited<U: Clock, T: Offsetted<U>>(mut hlc: T) {
+    let ts = hlc.generate_timestamp();
+
+    // By shifting the clock backwards a couple of seconds, the timestamp should lie too far
+    // into the future and be rejected.
+    hlc.set_offset(Offset::from_millis(-2000));
+
+    if let Err(UpdateWithTimestampError::DriftTooLarge) = hlc.update_with_timestamp(ts) {
+        ()
+    } else {
+        panic!("Incorrect error type: Expected `UpdateWithTimestampError::DriftTooLarge`.")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn timestamp_generation_works() {
-        let mut hlc = SysTimeHLC::default();
-
-        let ts1 = hlc.generate_timestamp();
-        let ts2 = hlc.generate_timestamp();
-
-        assert!(ts1 < ts2, "Timestamps should increase monotonically.");
+        let hlc = SysTimeHLC::default();
+        hlc_generate_timestamp_works(hlc);
     }
 
     #[test]
     fn update_with_timestamp_works() {
-        let mut hlc1 = SysTimeHLC::default();
-        let mut hlc2 = SysTimeHLC::default();
+        let hlc1 = SysTimeHLC::default();
+        let hlc2 = SysTimeHLC::default();
 
-        let other_ts = hlc2.generate_timestamp();
-        hlc1.update_with_timestamp(other_ts).unwrap();
-
-        let ts = hlc1.generate_timestamp();
-
-        assert!(
-            ts > other_ts,
-            "Timestamps generated after update should be larger."
-        );
+        hlc_update_with_timestamp_works(hlc1, hlc2);
     }
 
     #[test]
     fn drift_is_limited() {
-        let mut hlc = SysTimeHLC::default();
-
-        let ts1 = hlc.generate_timestamp();
-
-        // By shifting the clock backwards a couple of seconds, the timestamp should lie too far
-        // into the future and be rejected.
-        hlc.set_offset(Offset::from_millis(-2000));
-
-        if let Err(UpdateWithTimestampError::DriftTooLarge) = hlc.update_with_timestamp(ts1) {
-            ()
-        } else {
-            panic!("Incorrect error type: Expected `UpdateWithTimestampError::DriftTooLarge`.")
-        }
+        let hlc = SysTimeHLC::default();
+        hlc_drift_is_limited(hlc);
     }
 }
