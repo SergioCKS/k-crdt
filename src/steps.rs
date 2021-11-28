@@ -1,11 +1,11 @@
+use anyhow::{anyhow, Result};
 use std::{
-    process::Command,
+    convert::TryInto,
+    fs::{self, File},
     io::{Read, Write},
     path::{Path, PathBuf},
-    fs::{self, File},
-    convert::TryInto
+    process::Command,
 };
-use anyhow::{anyhow, Result};
 
 //#region Constants
 const CLIENT_OUT_DIR: &str = "client/src/backend/wasm";
@@ -102,8 +102,7 @@ export default new WebAssembly.Instance(_wasm, importsObject).exports;
 "#,
         bg_name
     );
-    let export_wasm_path = PathBuf::from(MOD_DIR)
-        .join("export_wasm.mjs");
+    let export_wasm_path = PathBuf::from(MOD_DIR).join("export_wasm.mjs");
 
     // write our content out to files
     let mut file = File::create(export_wasm_path)?;
@@ -113,8 +112,7 @@ export default new WebAssembly.Instance(_wasm, importsObject).exports;
 }
 
 pub fn server_replace_generated_import_with_custom_impl() -> Result<()> {
-    let bindgen_glue_path = PathBuf::from(MOD_DIR)
-        .join(format!("{}_bg.mjs", OUT_NAME));
+    let bindgen_glue_path = PathBuf::from(MOD_DIR).join(format!("{}_bg.mjs", OUT_NAME));
     let old_bindgen_glue = read_file_to_string(&bindgen_glue_path)?;
     let old_import = format!("import * as wasm from './{}_bg.wasm'", OUT_NAME);
     let fixed_bindgen_glue =
@@ -148,11 +146,27 @@ pub fn copy_types() -> Result<()> {
 
     for (src, dst) in [
         (&messages_src, client_messages_dst),
-        (&messages_src, server_messages_dst)
+        (&messages_src, server_messages_dst),
     ] {
         if src.exists() {
             fs::copy(src, dst)?;
         }
     }
     Ok(())
+}
+
+pub fn test_wasm() -> Result<()> {
+    let result = Command::new("wasm-pack")
+        .arg("test")
+        .arg("--headless")
+        .arg("--chrome")
+        .arg("--firefox")
+        .args(&["--features", "client, server"])
+        .spawn()?
+        .wait()?;
+
+    match result.success() {
+        true => Ok(()),
+        false => Err(anyhow!("wasm-pack exited with status {}", result)),
+    }
 }
