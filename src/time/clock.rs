@@ -84,7 +84,7 @@ impl Add<Offset> for Offset {
 /// ## Clock (trait)
 ///
 /// A clock is capable of polling a time source and generating an HLC/NTP timestamp.
-pub trait Clock {
+pub trait Clock: Default {
     /// ### Time polling function
     ///
     /// A function that generates timestamps based on a time source taking the clock offset into
@@ -164,50 +164,59 @@ pub trait Offsetted: Clock {
     }
 }
 
+pub fn test_clock<T: Clock>() {
+    let mut clock = T::default();
+    clock.poll_time();
+}
+
+pub fn test_offsetted<T: Offsetted>() {
+    let mut clock = T::default();
+
+    let neg_offset = Offset::from_millis(-400_000);
+    let pos_offset = Offset::from_millis(400_000);
+    let neg_too_large = Offset::from_millis(-(MAX_OFFSET + 1));
+    let pos_too_large = Offset::from_millis(MAX_OFFSET + 1);
+
+    clock.set_offset(neg_offset);
+    assert_eq!(
+        clock.get_offset().as_millis(),
+        -400_000i64,
+        "Offset should be settable."
+    );
+    clock.poll_time();
+
+    clock.set_offset(pos_offset);
+    assert_eq!(
+        clock.get_offset().as_millis(),
+        400_000i64,
+        "Offset should be settable."
+    );
+    clock.poll_time();
+
+    clock.set_offset(neg_too_large);
+    assert_eq!(
+        clock.get_offset().as_millis(),
+        -MAX_OFFSET,
+        "Saturating behaviour expected."
+    );
+    clock.poll_time();
+
+    clock.set_offset(pos_too_large);
+    assert_eq!(
+        clock.get_offset().as_millis(),
+        MAX_OFFSET,
+        "Saturating behaviour expected."
+    );
+    clock.poll_time();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn sys_time_clock_works() {
-        let mut clock = SysTimeClock::default();
-        clock.poll_time();
-
-        let neg_offset = Offset::from_millis(-400_000);
-        let pos_offset = Offset::from_millis(400_000);
-        let neg_too_large = Offset::from_millis(-(MAX_OFFSET + 1));
-        let pos_too_large = Offset::from_millis(MAX_OFFSET + 1);
-
-        clock.set_offset(neg_offset);
-        assert_eq!(
-            clock.get_offset().as_millis(),
-            -400_000i64,
-            "Offset should be settable."
-        );
-        clock.poll_time();
-
-        clock.set_offset(pos_offset);
-        assert_eq!(
-            clock.get_offset().as_millis(),
-            400_000i64,
-            "Offset should be settable."
-        );
-        clock.poll_time();
-
-        clock.set_offset(neg_too_large);
-        assert_eq!(
-            clock.get_offset().as_millis(),
-            -MAX_OFFSET,
-            "Saturating behaviour expected."
-        );
-        clock.poll_time();
-
-        clock.set_offset(pos_too_large);
-        assert_eq!(
-            clock.get_offset().as_millis(),
-            MAX_OFFSET,
-            "Saturating behaviour expected."
-        );
-        clock.poll_time();
+        test_clock::<SysTimeClock>();
+        test_offsetted::<SysTimeClock>();
     }
 }
