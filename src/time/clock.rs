@@ -1,13 +1,12 @@
 //! # Clock
 //!
 //! An interface for clocks that poll time and output HLC/NTP timestamps.
-use crate::time::timestamp::Timestamp;
-use std::convert::TryFrom;
+use crate::time::timestamp::{Timestamp, FRACTIONS_MASK_U32, MS_TO_FRACTIONS};
+use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::Add;
 use std::time::{Duration, SystemTimeError};
 use wasm_bindgen::prelude::*;
-use serde::{Serialize, Deserialize};
 
 /// ## Maximum time offset
 ///
@@ -25,17 +24,23 @@ impl Offset {
     /// ### Zero offset
     ///
     /// Constructs an [`Offset`] with no duration.
-    pub fn zero() -> Self { Self(0) }
+    pub fn zero() -> Self {
+        Self(0)
+    }
 
     /// ### Create offset from milliseconds
     ///
     /// Constructs an [`Offset`] given the number of milliseconds (positive or negative).
-    pub fn from_millis(offset_millis: i64) -> Self { Self(offset_millis) }
+    pub fn from_millis(offset_millis: i64) -> Self {
+        Self(offset_millis)
+    }
 
     /// ### As milliseconds
     ///
     /// Returns the offset as number of milliseconds (positive or negative).
-    pub fn as_millis(&self) -> i64 { self.0 }
+    pub fn as_millis(&self) -> i64 {
+        self.0
+    }
 }
 
 impl From<Offset> for Duration {
@@ -84,63 +89,20 @@ impl Add<Offset> for Offset {
 ///
 /// It should keep track of a time offset that is to be taken into consideration when polling the source.
 pub trait Clock {
-    /// ### Get offset
-    ///
-    /// Retrieve the offset of the clock.
-    fn get_offset(&self) -> Offset;
-
-    /// ### Set offset (unchecked)
-    ///
-    /// Sets the offset of the clock directly, without verifying if it is within the allowed limits.
-    ///
-    /// * `offset` - New offset
-    fn set_offset_unchecked(&mut self, offset: Offset) -> ();
-
-    /// ### Poll duration
-    ///
-    /// Returns a duration based on a time source.
-    fn poll_duration() -> Result<Duration, TimePollError>;
-
-    /// ### Set offset
-    ///
-    /// Update the offset of the clock.
-    ///
-    /// * `offset` - New offset.
-    fn set_offset(&mut self, offset: Offset) -> Result<(), TimePollError> {
-        //Check offset is within limits.
-        if offset.as_millis().abs() > MAX_OFFSET {
-            Err(TimePollError::OffsetTooLarge(format!(
-                "The offset provided exceeds the permitted limit. Maximum allowed offset (in seconds): {}.",
-                MAX_OFFSET
-            )))
-        } else {
-            // Update the clock offset
-            self.set_offset_unchecked(offset);
-            Ok(())
-        }
-    }
-
-
     /// ### Time polling function
     ///
     /// A function that generates timestamps based on a time source taking the clock offset into
     /// consideration.
-    fn poll_time(&self) -> Result<Timestamp, TimePollError> {
-        let offset = self.get_offset();
-
-        // Poll time from system.
-        let now_duration = Self::poll_duration()?;
-
-        // Apply offset.
-        // println!("now_millis: {}, offset_millis: {}", now_millis, offset_millis);
-        let millis = ((now_duration.as_millis() as i64) + offset.as_millis()) as u64;
-        let shifted_duration = Duration::from_millis(millis);
-
-        // Generate timestamp
-        Ok(Timestamp::try_from(shifted_duration)?)
+    fn poll_time(&self) -> Timestamp {
+        let time_ms = self.poll_time_ms();
+        let seconds = time_ms / 1_000f64;
+        let fraction_ms = time_ms - (seconds.floor() * 1_000f64);
+        let fractions = ((fraction_ms * MS_TO_FRACTIONS) as u32) & FRACTIONS_MASK_U32;
+        Timestamp::new(seconds as u32, fractions, 0)
     }
-}
 
+    fn poll_time_ms(&self) -> f64;
+}
 
 //#region TimePollError
 #[derive(Debug)]
@@ -172,7 +134,10 @@ impl From<TimePollError> for JsValue {
 
 impl From<SystemTimeError> for TimePollError {
     fn from(sys_time_error: SystemTimeError) -> Self {
-        Self::SystemTimeError(format!("Could not poll time from system. {}", sys_time_error.to_string()))
+        Self::SystemTimeError(format!(
+            "Could not poll time from system. {}",
+            sys_time_error.to_string()
+        ))
     }
 }
 //#endregion
@@ -188,23 +153,27 @@ pub mod tests {
     /// A clock relying on [`SysTime`] as time source.
     #[derive(Clone, Copy, Default)]
     pub struct SysTimeClock {
-        offset: Offset // bincode: 8 bytes
+        offset: Offset, // bincode: 8 bytes
     }
 
-    impl Clock for SysTimeClock {
-        fn get_offset(&self) -> Offset {
+    impl SysTimeClock {
+        pub fn get_offset(&self) -> Offset {
             self.offset
         }
 
-        fn set_offset_unchecked(&mut self, offset: Offset) -> () {
+        pub fn set_offset(&mut self, offset: Offset) -> () {
             self.offset = offset;
         }
+    }
 
+    impl Clock for SysTimeClock {
         /// ### Poll time
         ///
         /// Polls the timesource using [`SysTime::now`].
-        fn poll_duration() -> Result<Duration, TimePollError> {
-            Ok(SystemTime::now().duration_since(UNIX_EPOCH)?)
+        fn poll_time_ms(&self) -> f64 {
+            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+            let shifted = Duration::from(Offset::from(now) + self.offset);
+            shifted.as_millis() as f64
         }
     }
     //#endregion
@@ -212,26 +181,30 @@ pub mod tests {
     #[test]
     fn sys_time_clock_works() {
         let mut clock = SysTimeClock::default();
-        clock.poll_time().expect("System time polling without offset should work.");
+        clock.poll_time();
 
         let neg_offset = Offset::from_millis(-400_000);
         let pos_offset = Offset::from_millis(400_000);
         let neg_too_large = Offset::from_millis(-(MAX_OFFSET + 1));
         let pos_too_large = Offset::from_millis(MAX_OFFSET + 1);
 
-        clock.set_offset(neg_offset).unwrap();
-        clock.poll_time().expect("System time polling with negative offset should work.");
+        clock.set_offset(neg_offset);
+        clock.poll_time();
 
-        clock.set_offset(pos_offset).unwrap();
-        clock.poll_time().expect("System time polling with positive offset should work.");
+        clock.set_offset(pos_offset);
+        clock.poll_time();
 
-        for offset in vec![neg_too_large, pos_too_large] {
-            if let TimePollError::OffsetTooLarge(msg) = clock.set_offset(offset)
-                .expect_err("Time polling with offset too large should fail.") {
-                assert!(msg.contains(&MAX_OFFSET.to_string()), "Error message should indicate offset limit.");
-            } else {
-                panic!("Incorrect error type: Expected `TimePollError:OffsetTooLarge`.")
-            }
-        }
+        // for offset in vec![neg_too_large, pos_too_large] {
+        //     if let TimePollError::OffsetTooLarge(msg) = clock
+        //         .set_offset(offset)
+        //     {
+        //         assert!(
+        //             msg.contains(&MAX_OFFSET.to_string()),
+        //             "Error message should indicate offset limit."
+        //         );
+        //     } else {
+        //         panic!("Incorrect error type: Expected `TimePollError:OffsetTooLarge`.")
+        //     }
+        // }
     }
 }

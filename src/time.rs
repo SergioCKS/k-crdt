@@ -15,6 +15,3 @@ pub use self::clock::{Clock, Offset, TimePollError};
 pub use self::client::BrowserClock;
 #[cfg(feature = "server")]
 pub use self::server::ServerClock;
-#[cfg(test)]
-pub use self::clock::SysTimeClock;
-

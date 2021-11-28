@@ -17,6 +17,7 @@ export function browserhlc_serialize(a: number, b: number): void;
 export function browserhlc_deserialize(a: number, b: number): number;
 export function browserhlc_generateTimestamp(a: number): number;
 export function __wbg_timestamp_free(a: number): void;
+export function timestamp_toString(a: number, b: number): void;
 export function __wbindgen_malloc(a: number): number;
 export function __wbindgen_realloc(a: number, b: number, c: number): number;
 export function __wbindgen_add_to_stack_pointer(a: number): number;

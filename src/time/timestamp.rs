@@ -73,6 +73,11 @@ pub const FRACTIONS_TO_NS: f64 = 1_000_000_000f64 / ((1u64 << 32) as f64);
 /// Useful for transforming durations to timestamps.
 pub const NS_TO_FRACTIONS: f64 = ((1u64 << 32) as f64) / 1_000_000_000f64;
 
+/// ## Millisecond to fraction factor
+///
+/// Factor for converting milliseconds to fractions.
+pub const MS_TO_FRACTIONS: f64 = ((1u64 << 32) as f64) / 1_000f64;
+
 /// ## Time part mask
 ///
 /// 64-bit mask that selects the time part of the timestamp.
@@ -109,6 +114,17 @@ pub const SECONDS_MASK: u64 =
 pub const FRACTIONS_MASK: u64 =
     0b00000000_00000000_00000000_00000000_11111111_11111111_11111111_00000000;
 
+/// ## Fractions part mask (u32)
+///
+/// 32-bit mask that selects the second fractions part of the timestamp.
+///
+/// ### Structure
+/// ```text
+/// 11111111111111111111111100000000
+/// |------- 24 bits ------||8 bits|
+/// ```
+pub const FRACTIONS_MASK_U32: u32 = 0b11111111_11111111_11111111_00000000;
+
 /// ## Counter part mask
 ///
 /// 64-bit mask that selects the counter part of the timestamp.
@@ -129,7 +145,23 @@ pub const COUNTER_MASK: u64 =
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Serialize, Deserialize)]
 pub struct Timestamp(u64); // bincode: 8 bytes
 
+#[wasm_bindgen]
 impl Timestamp {
+    /// ### To String
+    ///
+    /// Returns a string representation of the timestamp.
+    #[wasm_bindgen(js_name = toString)]
+    pub fn as_string(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl Timestamp {
+    #[inline]
+    pub fn new(seconds: u32, fractions: u32, count: u8) -> Self {
+        Self(((seconds as u64) << 32) + ((fractions as u64) & FRACTIONS_MASK) + count as u64)
+    }
+
     /// ### As `u64`
     ///
     /// Returns the timestamp as a 64-bit unsigned integer.
@@ -414,15 +446,17 @@ mod tests {
     #[test]
     fn getters_work() {
         //#region Anchor values
-        let now_duration = SystemTime::now().duration_since(UNIX_EPOCH)
+        let now_duration = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
             .expect("Duration from unmodified SystemTime::now() should work.");
         let now_secs = now_duration.as_secs();
         let now_subsec_nanos = now_duration.subsec_nanos();
         //#endregion
 
         //#region Timestamp objects
-        let ts = Timestamp::try_from(now_duration)
-            .expect("Timestamps from unmodified SystemTime::now() duration since UNIX epoch should work.");
+        let ts = Timestamp::try_from(now_duration).expect(
+            "Timestamps from unmodified SystemTime::now() duration since UNIX epoch should work.",
+        );
 
         let ts_u64 = ts.as_u64();
         let ts_time = ts.get_time();
@@ -435,30 +469,67 @@ mod tests {
 
         //#region Tests
         // Getters are consistent with internal representation.
-        assert_eq!(ts_time, ts_u64 & TIME_MASK, "Time getter should return the most significant 58 bits.");
-        assert_eq!(ts_seconds, ((ts_u64 & SECONDS_MASK) >> 32) as u32, "Seconds getter should return the most significant 32 bits.");
-        assert_eq!(ts_fractions, (ts_u64 & FRACTIONS_MASK) as u32, "Fractions getter should return bits 33 to 58.");
-        assert_eq!(ts_counter, (ts_u64 & COUNTER_MASK) as u8, "Counter getter should return the least significant 8 bits.");
+        assert_eq!(
+            ts_time,
+            ts_u64 & TIME_MASK,
+            "Time getter should return the most significant 58 bits."
+        );
+        assert_eq!(
+            ts_seconds,
+            ((ts_u64 & SECONDS_MASK) >> 32) as u32,
+            "Seconds getter should return the most significant 32 bits."
+        );
+        assert_eq!(
+            ts_fractions,
+            (ts_u64 & FRACTIONS_MASK) as u32,
+            "Fractions getter should return bits 33 to 58."
+        );
+        assert_eq!(
+            ts_counter,
+            (ts_u64 & COUNTER_MASK) as u8,
+            "Counter getter should return the least significant 8 bits."
+        );
 
         // Values of getters are correct.
-        assert_eq!(ts_seconds as u64, now_secs, "Seconds getter should return the same number of seconds as the original.");
+        assert_eq!(
+            ts_seconds as u64, now_secs,
+            "Seconds getter should return the same number of seconds as the original."
+        );
         // Second fractions are rounded up, so nanoseconds should always be at least as large as original.
-        assert!(ts_nanoseconds >= now_subsec_nanos, "Nanosecond getter should return at least as many nanoseconds as the original.");
-        assert!(ts_nanoseconds - now_subsec_nanos < 60, "Timestamp resolution should be smaller than 60 nanoseconds.");
+        assert!(
+            ts_nanoseconds >= now_subsec_nanos,
+            "Nanosecond getter should return at least as many nanoseconds as the original."
+        );
+        assert!(
+            ts_nanoseconds - now_subsec_nanos < 60,
+            "Timestamp resolution should be smaller than 60 nanoseconds."
+        );
         // Same should hold in duration format.
-        assert!(ts_duration > now_duration, "Duration getter should be at least as large as the original.");
-        assert!(ts_duration - now_duration < Duration::new(0, 60), "Timestamp resolution should be smaller than 60 nanoseconds.");
+        assert!(
+            ts_duration > now_duration,
+            "Duration getter should be at least as large as the original."
+        );
+        assert!(
+            ts_duration - now_duration < Duration::new(0, 60),
+            "Timestamp resolution should be smaller than 60 nanoseconds."
+        );
         //#endregion
     }
 
     #[test]
     fn from_duration_works() {
-        let error= Timestamp::try_from(Duration::new(DURATION_MAX_SECONDS + 1, 0))
+        let error = Timestamp::try_from(Duration::new(DURATION_MAX_SECONDS + 1, 0))
             .expect_err("Should fail if second limit is exceeded");
 
         if let TimestampError::DurationTooLarge(msg) = error {
-            assert!(msg.contains(&DURATION_MAX_SECONDS.to_string()), "Error should indicate the maximum duration allowed in seconds.");
-            assert!(msg.contains(&(DURATION_MAX_SECONDS + 1).to_string()), "Error should indicate the given duration in seconds.");
+            assert!(
+                msg.contains(&DURATION_MAX_SECONDS.to_string()),
+                "Error should indicate the maximum duration allowed in seconds."
+            );
+            assert!(
+                msg.contains(&(DURATION_MAX_SECONDS + 1).to_string()),
+                "Error should indicate the given duration in seconds."
+            );
         } else {
             panic!("Incorrect error type: Expected `TimestampError::DurationTooLarge`.");
         }
@@ -466,29 +537,33 @@ mod tests {
         Timestamp::try_from(Duration::new((1u64 << 32) - 1, 0))
             .expect("Should work on the edge of second limit");
 
-        Timestamp::try_from(SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Duration from unmodified SystemTime::now() should work.")
-        ).expect("Timestamp from `SystemTime::now()` duration since UNIX Epoch should work.");
+        Timestamp::try_from(
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("Duration from unmodified SystemTime::now() should work."),
+        )
+        .expect("Timestamp from `SystemTime::now()` duration since UNIX Epoch should work.");
     }
 
     #[test]
     fn from_system_time_works() {
         let mut now = SystemTime::now();
-        Timestamp::try_from(now)
-            .expect("Timestamp from unmodified SystemTime::now() should work.");
+        Timestamp::try_from(now).expect("Timestamp from unmodified SystemTime::now() should work.");
 
         let now_duration = now
             .duration_since(UNIX_EPOCH)
             .expect("Duration from unmodified SystemTime::now() should work.");
 
-        now -= now_duration + Duration::new(1,0);
+        now -= now_duration + Duration::new(1, 0);
 
         let err = Timestamp::try_from(now)
             .expect_err("Timestamp from system time earlier than UNIX_EPOCH should fail.");
 
         if let TimestampError::SystemTimeError(msg) = err {
-            assert!(msg.contains("UNIX"), "Error message should suggest problems related to UNIX epoch.");
+            assert!(
+                msg.contains("UNIX"),
+                "Error message should suggest problems related to UNIX epoch."
+            );
         } else {
             panic!("Incorrect error type: Expected `TimestampError::SystemTimeError`.");
         }
@@ -568,8 +643,10 @@ mod tests {
 
     #[test]
     fn comparison_works() {
-        let ts1 = Timestamp::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).unwrap();
-        let ts2 = Timestamp::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).unwrap();
+        let ts1 =
+            Timestamp::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).unwrap();
+        let ts2 =
+            Timestamp::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).unwrap();
         assert!(ts1 <= ts2, "Comparison of timestamps should work.");
     }
 
@@ -577,14 +654,14 @@ mod tests {
     fn serialization_deserialization_works() {
         let timestamp =
             Timestamp::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).unwrap();
-        let encoded: Vec<u8> = bincode::serialize(&timestamp)
-            .expect("Timestamp should be serializable.");
+        let encoded: Vec<u8> =
+            bincode::serialize(&timestamp).expect("Timestamp should be serializable.");
         assert!(
             encoded.len() <= 8,
             "Encoding of a timestamp should be at most 64 bits."
         );
-        let decoded: Timestamp = bincode::deserialize(&encoded[..])
-            .expect("Deserialization should work.");
+        let decoded: Timestamp =
+            bincode::deserialize(&encoded[..]).expect("Deserialization should work.");
         assert_eq!(
             timestamp, decoded,
             "Encoding and decoding a timestamp should not change the value of a timestamp."

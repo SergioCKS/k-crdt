@@ -107,7 +107,8 @@ export async function handleClientMessage(
 			return true;
 		}
 		case "test": {
-			syncConnection.messageServer({ msgCode: "test" });
+			// syncConnection.messageServer({ msgCode: "test" });
+			console.log(wasm.generateTimestamp().toString(), wasm.getOffset().toString());
 			return true;
 		}
 		case "update-time-offset": {

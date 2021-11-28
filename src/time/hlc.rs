@@ -67,7 +67,7 @@
 //! **Handling update rejections.** When a message timestamp drifts too far ahead into the future,
 //! the message is rejected. The emitting node should be notified of rejections, so that it adjusts
 //! it's clock/offset, and retries the rejected updates.
-use crate::time::{Timestamp, Clock, TimePollError};
+use crate::time::{Clock, Timestamp};
 use std::cmp;
 use std::fmt::{Debug, Display, Formatter};
 use std::time::Duration;
@@ -132,8 +132,8 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     ///
     /// assert!(ts1 < ts2);
     /// ```
-    fn generate_timestamp(&mut self) -> Result<Timestamp, TimePollError> {
-        let now_ts = self.get_internal_clock().poll_time()?;
+    fn generate_timestamp(&mut self) -> Timestamp {
+        let now_ts = self.get_internal_clock().poll_time();
 
         let now_time = now_ts.get_time();
         let last_time = self.get_last_time().get_time();
@@ -144,7 +144,7 @@ pub trait HybridLogicalClock<T: Clock>: Default {
             // Going back in time: Increase counter.
             self.increase_counter();
         }
-        Ok(self.get_last_time())
+        self.get_last_time()
     }
 
     /// ### Update clock with external timestamp and offset
@@ -170,9 +170,12 @@ pub trait HybridLogicalClock<T: Clock>: Default {
     ///
     /// assert!(ts > other_ts);
     /// ```
-    fn update_with_timestamp(&mut self, other_ts: Timestamp) -> Result<Timestamp, UpdateWithTimestampError> {
+    fn update_with_timestamp(
+        &mut self,
+        other_ts: Timestamp,
+    ) -> Result<Timestamp, UpdateWithTimestampError> {
         let last_ts = self.get_last_time();
-        let now_ts = self.get_internal_clock().poll_time()?;
+        let now_ts = self.get_internal_clock().poll_time();
 
         let now_duration = now_ts.get_duration();
         let other_duration = other_ts.get_duration();
@@ -180,10 +183,7 @@ pub trait HybridLogicalClock<T: Clock>: Default {
         if other_duration > now_duration
             && other_duration - now_duration > Duration::new(0, MAX_DRIFT)
         {
-            Err(UpdateWithTimestampError::DriftTooLarge(format!(
-                "Time in message drifts too much into the future. The message was rejected. Maximum drift allowed (in ms): {}.",
-                MAX_DRIFT
-            )))
+            Err(UpdateWithTimestampError::DriftTooLarge)
         } else {
             let max_ts = cmp::max(last_ts, cmp::max(now_ts, other_ts));
             if max_ts == last_ts {
@@ -206,21 +206,14 @@ pub trait HybridLogicalClock<T: Clock>: Default {
 //#region UpdateWithTimestampError
 #[derive(Debug)]
 pub enum UpdateWithTimestampError {
-    TimePollError(String),
-    DriftTooLarge(String),
+    DriftTooLarge,
 }
 
 impl Display for UpdateWithTimestampError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Self::TimePollError(ref msg) | Self::DriftTooLarge(ref msg) => write!(f, "{}", msg),
+            Self::DriftTooLarge => write!(f, "Drift too large."),
         }
-    }
-}
-
-impl From<TimePollError> for UpdateWithTimestampError {
-    fn from(err: TimePollError) -> Self {
-        Self::TimePollError(err.to_string())
     }
 }
 
@@ -258,14 +251,14 @@ mod tests {
             self.clock.get_offset()
         }
 
-        pub fn set_offset(&mut self, offset: Offset) -> Result<(), TimePollError> {
+        pub fn set_offset(&mut self, offset: Offset) -> () {
             self.clock.set_offset(offset)
         }
     }
 
     impl HybridLogicalClock<SysTimeClock> for SysTimeHLC {
         fn get_last_time(&self) -> Timestamp {
-            self.last_time.clone()
+            self.last_time
         }
 
         fn set_last_time(&mut self, new_time: Timestamp) {
@@ -282,11 +275,9 @@ mod tests {
     fn timestamp_generation_works() {
         let mut hlc = SysTimeHLC::default();
 
-        let ts1 = hlc.generate_timestamp()
-            .expect("Timestamp generation with system time should work.");
+        let ts1 = hlc.generate_timestamp();
 
-        let ts2 = hlc.generate_timestamp()
-            .expect("Timestamp generation with system time should work.");
+        let ts2 = hlc.generate_timestamp();
 
         assert!(ts1 < ts2, "Timestamps should increase monotonically.");
     }
@@ -296,14 +287,10 @@ mod tests {
         let mut hlc1 = SysTimeHLC::default();
         let mut hlc2 = SysTimeHLC::default();
 
-        let other_ts = hlc2.generate_timestamp()
-            .expect("Timestamp generation with system time should work.");
+        let other_ts = hlc2.generate_timestamp();
+        hlc1.update_with_timestamp(other_ts);
 
-        hlc1.update_with_timestamp(other_ts)
-            .expect("Update with timestamp should work.");
-
-        let ts = hlc1.generate_timestamp()
-            .expect("Timestamp generation with system time should work.");
+        let ts = hlc1.generate_timestamp();
 
         assert!(
             ts > other_ts,

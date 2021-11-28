@@ -1,7 +1,6 @@
-use super::{Offset, Clock, TimePollError, Timestamp, hlc::HybridLogicalClock};
-use serde::{Serialize, Deserialize};
-use wasm_bindgen::{JsCast, prelude::*};
-use std::time::Duration;
+use super::{clock::MAX_OFFSET, hlc::HybridLogicalClock, Clock, Offset, Timestamp};
+use serde::{Deserialize, Serialize};
+use wasm_bindgen::{prelude::*, JsCast};
 
 //#region Clock
 /// ## Browser clock
@@ -12,30 +11,43 @@ use std::time::Duration;
 ///   is used to poll time. The time resolution is vendor-dependent, but is at least in the millisecond range.
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct BrowserClock {
-    offset: Offset // bincode: 8 bytes
+    offset: Offset, // bincode: 8 bytes
 }
 
-impl Clock for BrowserClock {
+impl BrowserClock {
     fn get_offset(&self) -> Offset {
         self.offset
     }
 
-    fn set_offset_unchecked(&mut self, offset: Offset) -> () {
+    /// ### Set offset
+    ///
+    /// Update the offset of the clock. If the offset is larger than [`MAX_OFFSET`] it is truncated.
+    fn set_offset(&mut self, offset: Offset) -> () {
+        let offset = if offset.as_millis().abs() > MAX_OFFSET {
+            Offset::from_millis(offset.as_millis().signum() * MAX_OFFSET)
+        } else {
+            offset
+        };
         self.offset = offset;
     }
+}
 
-    fn poll_duration() -> Result<Duration, TimePollError> {
-        if let Ok(value) =
-        js_sys::Reflect::get(&js_sys::global(), &JsValue::from_str("performance"))
-        {
-            let performance = value.unchecked_into::<web_sys::Performance>();
-            let now_micros = ((performance.time_origin() + performance.now()) * 1_000f64) as u64;
-            Ok(Duration::from_micros(now_micros))
-        } else {
-            Err(TimePollError::PerformanceNotAccessible(String::from(
-                "The performance object is not accessible. {}",
-            )))
-        }
+impl Clock for BrowserClock {
+    /// ## Poll time
+    ///
+    /// Polls time from the performance API in browser.
+    fn poll_time_ms(&self) -> f64 {
+        // `web_sys` doesn't provide a handle to the performance object from a worker context,
+        // as a workaround, we access the performance API from the global context via js_sys.
+        let performance =
+            js_sys::Reflect::get(&js_sys::global(), &JsValue::from_str("performance"))
+                .unwrap_throw()
+                .unchecked_into::<web_sys::Performance>();
+
+        // `performance.now()` gives the time elapsed since the process was spawned, but the spawn
+        // time since UNIX epoch is also available in `performance.time_origin()`. The times are
+        // provided in milliseconds as floats.
+        performance.time_origin() + performance.now() + (self.offset.as_millis() as f64)
     }
 }
 //#endregion
@@ -46,16 +58,17 @@ impl Clock for BrowserClock {
 /// Hybrid logical clock based on browser time.
 #[wasm_bindgen]
 #[derive(Clone, Copy, Default, Serialize, Deserialize)]
-pub struct BrowserHLC { // bincode: 16 bytes
-/// ### Last time
-///
-/// Last accepted time as HLC/NTP timestamp.
-last_time: Timestamp, // bincode: 8 bytes
+pub struct BrowserHLC {
+    // bincode: 16 bytes
+    /// ### Last time
+    ///
+    /// Last accepted time as HLC/NTP timestamp.
+    last_time: Timestamp, // bincode: 8 bytes
 
     /// ### Clock
     ///
     /// Internal clock used for polling time.
-    clock: BrowserClock // bincode: 8 bytes
+    clock: BrowserClock, // bincode: 8 bytes
 }
 
 #[wasm_bindgen]
@@ -86,8 +99,8 @@ impl BrowserHLC {
     ///
     /// * `offset` - Offset in milliseconds
     #[wasm_bindgen(js_name = setOffset)]
-    pub fn set_offset_millis(&mut self, offset: i64) -> Result<(), JsValue> {
-        Ok(self.clock.set_offset(Offset::from_millis(offset))?)
+    pub fn set_offset_millis(&mut self, offset: i64) -> () {
+        self.clock.set_offset(Offset::from_millis(offset))
     }
 
     /// ### Serialize HLC
@@ -101,16 +114,15 @@ impl BrowserHLC {
     ///
     /// Constructs an HLC from an encoded version.
     pub fn deserialize(encoded: Vec<u8>) -> BrowserHLC {
-        let decoded: BrowserHLC = bincode::deserialize(&encoded[..]).expect_throw("Failed to deserialize HLC.");
-        decoded
+        bincode::deserialize::<BrowserHLC>(&encoded[..]).unwrap_throw()
     }
 
     /// ### Generate timestamp (JS)
     ///
     /// Generates a timestamp polling the browser time source.
     #[wasm_bindgen(js_name = generateTimestamp)]
-    pub fn generate_timestamp_js(&mut self) -> Result<Timestamp, JsValue> {
-        Ok(self.generate_timestamp()?)
+    pub fn generate_timestamp_js(&mut self) -> Timestamp {
+        self.generate_timestamp()
     }
 }
 
@@ -119,7 +131,7 @@ impl BrowserHLC {
         self.clock.get_offset()
     }
 
-    pub fn set_offset(&mut self, offset: Offset) -> Result<(), TimePollError> {
+    pub fn set_offset(&mut self, offset: Offset) -> () {
         self.clock.set_offset(offset)
     }
 }

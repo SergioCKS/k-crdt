@@ -128,7 +128,7 @@ export class Wasm {
 	 * @returns Generated timestamp
 	 * @throws Any error encountered while polling the browser time or updating the HLC.
 	 */
-	public generateTimeStamp(): Timestamp {
+	public generateTimestamp(): Timestamp {
 		return this.hlc?.generateTimestamp();
 	}
 	//#endregion
@@ -153,10 +153,10 @@ export class Wasm {
 	 * @returns Encoded register
 	 */
 	public createBoolRegister(initialValue: boolean): Uint8Array {
-		return createBoolRegister(this.generateTimeStamp(), initialValue);
+		return createBoolRegister(this.generateTimestamp(), initialValue);
 	}
 
 	public getBoolRegisterMessage(id: UID, encoded: Uint8Array): Uint8Array {
-		return getBoolRegisterMessage(this.generateTimeStamp(), id, encoded);
+		return getBoolRegisterMessage(this.generateTimestamp(), id, encoded);
 	}
 }
