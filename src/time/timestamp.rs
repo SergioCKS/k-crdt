@@ -45,7 +45,7 @@ use crate::time::clock::TimePollError;
 use humantime::parse_rfc3339;
 use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::{Add, AddAssign, Sub};
+use std::ops::{Add, Sub};
 use std::str::FromStr;
 use std::time::{Duration, SystemTime, SystemTimeError, UNIX_EPOCH};
 use wasm_bindgen::prelude::*;
@@ -274,106 +274,19 @@ impl Display for Timestamp {
     }
 }
 
-//#region Addition trait implementations
-impl Add for Timestamp {
+impl Add<Timestamp> for Timestamp {
     type Output = Self;
-
-    #[inline]
-    fn add(self, other: Self) -> Self {
-        Self(self.0 + other.0)
+    fn add(self, rhs: Timestamp) -> Self::Output {
+        Self(self.0 + rhs.0)
     }
 }
 
-impl<'a> Add<Timestamp> for &'a Timestamp {
-    type Output = <Timestamp as Add<Timestamp>>::Output;
-
-    #[inline]
-    fn add(self, other: Timestamp) -> <Timestamp as Add<Timestamp>>::Output {
-        Add::add(*self, other)
-    }
-}
-
-impl Add<&Timestamp> for Timestamp {
-    type Output = <Timestamp as Add<Timestamp>>::Output;
-
-    #[inline]
-    fn add(self, other: &Timestamp) -> <Timestamp as Add<Timestamp>>::Output {
-        Add::add(self, *other)
-    }
-}
-
-impl Add<&Timestamp> for &Timestamp {
-    type Output = <Timestamp as Add<Timestamp>>::Output;
-
-    #[inline]
-    fn add(self, other: &Timestamp) -> <Timestamp as Add<Timestamp>>::Output {
-        Add::add(*self, *other)
-    }
-}
-
-impl Add<u64> for Timestamp {
+impl Sub<Timestamp> for Timestamp {
     type Output = Self;
-
-    #[inline]
-    fn add(self, other: u64) -> Self {
-        Self(self.0 + other)
+    fn sub(self, rhs: Timestamp) -> Self::Output {
+        Self(self.0 - rhs.0)
     }
 }
-
-impl AddAssign<u64> for Timestamp {
-    #[inline]
-    fn add_assign(&mut self, other: u64) {
-        *self = Self(self.0 + other);
-    }
-}
-//#endregion
-
-//#region Subtraction trait implementations
-impl Sub for Timestamp {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, other: Self) -> Self {
-        Self(self.0 - other.0)
-    }
-}
-
-impl<'a> Sub<Timestamp> for &'a Timestamp {
-    type Output = <Timestamp as Sub<Timestamp>>::Output;
-
-    #[inline]
-    fn sub(self, other: Timestamp) -> <Timestamp as Sub<Timestamp>>::Output {
-        Sub::sub(*self, other)
-    }
-}
-
-impl Sub<&Timestamp> for Timestamp {
-    type Output = <Timestamp as Sub<Timestamp>>::Output;
-
-    #[inline]
-    fn sub(self, other: &Timestamp) -> <Timestamp as Sub<Timestamp>>::Output {
-        Sub::sub(self, *other)
-    }
-}
-
-impl Sub<&Timestamp> for &Timestamp {
-    type Output = <Timestamp as Sub<Timestamp>>::Output;
-
-    #[inline]
-    fn sub(self, other: &Timestamp) -> <Timestamp as Sub<Timestamp>>::Output {
-        Sub::sub(*self, *other)
-    }
-}
-
-impl Sub<u64> for Timestamp {
-    type Output = Self;
-
-    #[inline]
-    fn sub(self, other: u64) -> Self {
-        Self(self.0 - other)
-    }
-}
-//#endregion
 
 //#region TimestampError
 /// ## Timestamp error
@@ -542,21 +455,10 @@ mod tests {
         assert!(ts_a.get_duration() - duration_a < duration_60_nanos);
         assert!(ts_b.get_duration() - duration_b < duration_60_nanos);
 
-        //#region Should allow addition from different types
         let ts_sum_1 = ts_a + ts_b;
-        let ts_sum_2 = &ts_a + ts_b;
-        let ts_sum_3 = ts_a + &ts_b;
-        let ts_sum_4 = &ts_a + &ts_b;
-        let ts_sum_5 = ts_a + ts_b.as_u64();
-        ts_a += ts_b.as_u64();
-        //#endregion
 
         //#region Results should be correct
         assert!(ts_sum_1.get_duration() - duration_sum < duration_120_nanos);
-        assert!(ts_sum_2.get_duration() - duration_sum < duration_120_nanos);
-        assert!(ts_sum_3.get_duration() - duration_sum < duration_120_nanos);
-        assert!(ts_sum_4.get_duration() - duration_sum < duration_120_nanos);
-        assert!(ts_sum_5.get_duration() - duration_sum < duration_120_nanos);
         assert!(ts_a.get_duration() - duration_sum < duration_120_nanos);
         //#endregion
     }
@@ -575,21 +477,9 @@ mod tests {
         assert!(ntp_b.get_duration() - duration_b < duration_60_nanos);
         //#endregion
 
-        //#region Should allow subtraction from different types
         let ntp_diff_1 = ntp_a - ntp_b;
-        let ntp_diff_2 = &ntp_a - ntp_b;
-        let ntp_diff_3 = ntp_a - &ntp_b;
-        let ntp_diff_4 = &ntp_a - &ntp_b;
-        let ntp_diff_5 = ntp_a - ntp_b.as_u64();
-        //#endregion
 
-        //#region Results should be correct
         assert!(distance(ntp_diff_1.get_duration(), duration_diff) < duration_60_nanos);
-        assert!(distance(ntp_diff_2.get_duration(), duration_diff) < duration_60_nanos);
-        assert!(distance(ntp_diff_3.get_duration(), duration_diff) < duration_60_nanos);
-        assert!(distance(ntp_diff_4.get_duration(), duration_diff) < duration_60_nanos);
-        assert!(distance(ntp_diff_5.get_duration(), duration_diff) < duration_60_nanos);
-        //#endregion
     }
 
     #[test]
