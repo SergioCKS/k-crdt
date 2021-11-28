@@ -96,32 +96,34 @@ pub trait Clock {
     fn poll_time(&self) -> Timestamp {
         let time_ms = self.poll_time_ms();
         let seconds = time_ms / 1_000f64;
-        let fraction_ms = time_ms - (seconds.floor() * 1_000f64);
-        let fractions = ((fraction_ms * MS_TO_FRACTIONS) as u32) & FRACTIONS_MASK_U32;
+        let subsec_ms = time_ms - (seconds.floor() * 1_000f64);
+        let fractions = ((subsec_ms * MS_TO_FRACTIONS) as u32) & FRACTIONS_MASK_U32;
         Timestamp::new(seconds as u32, fractions, 0)
     }
 
+    /// ### Poll time in milliseconds
+    ///
+    /// Polls the local time source in milliseconds since epoch (possibly with a fraction part).
+    /// Time polling should be reliable, no errors are expected.
     fn poll_time_ms(&self) -> f64;
 }
 
 //#region TimePollError
 #[derive(Debug)]
 pub enum TimePollError {
-    SystemTimeError(String),
-    TimestampParseError(String),
-    OffsetTooLarge(String),
-    WindowNotAccessible(String),
-    PerformanceNotAccessible(String),
+    SystemTimeError,
+    TimestampParseError,
+    OffsetTooLarge,
+    WindowNotAccessible,
 }
 
 impl Display for TimePollError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Self::SystemTimeError(ref msg)
-            | Self::TimestampParseError(ref msg)
-            | Self::OffsetTooLarge(ref msg)
-            | Self::WindowNotAccessible(ref msg)
-            | Self::PerformanceNotAccessible(ref msg) => write!(f, "{}", msg),
+            Self::SystemTimeError => write!(f, "System time error"),
+            Self::TimestampParseError => write!(f, "Timestamp parse error"),
+            Self::OffsetTooLarge => write!(f, "Offset too large"),
+            Self::WindowNotAccessible => write!(f, "Window not accessible"),
         }
     }
 }
@@ -133,11 +135,8 @@ impl From<TimePollError> for JsValue {
 }
 
 impl From<SystemTimeError> for TimePollError {
-    fn from(sys_time_error: SystemTimeError) -> Self {
-        Self::SystemTimeError(format!(
-            "Could not poll time from system. {}",
-            sys_time_error.to_string()
-        ))
+    fn from(_: SystemTimeError) -> Self {
+        Self::SystemTimeError
     }
 }
 //#endregion

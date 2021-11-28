@@ -44,7 +44,6 @@
 use crate::time::clock::TimePollError;
 use humantime::parse_rfc3339;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, AddAssign, Sub};
 use std::str::FromStr;
@@ -69,14 +68,16 @@ pub const FRACTIONS_TO_NS: f64 = 1_000_000_000f64 / ((1u64 << 32) as f64);
 
 /// ## Nanosecond to fraction factor
 ///
-/// Factor for converting nanoseconds to fractions.
+/// Factor for converting nanoseconds to second fractions.
+/// Each nanosecond corresponds to about 4.295 second fractions.
 /// Useful for transforming durations to timestamps.
-pub const NS_TO_FRACTIONS: f64 = ((1u64 << 32) as f64) / 1_000_000_000f64;
+pub const NS_TO_FRACTIONS: f64 = ((1u64 << 32) as f64) / 1_000_000_000f64; // About 4.295
 
 /// ## Millisecond to fraction factor
 ///
-/// Factor for converting milliseconds to fractions.
-pub const MS_TO_FRACTIONS: f64 = ((1u64 << 32) as f64) / 1_000f64;
+/// Factor for converting milliseconds to second fractions.
+/// Each millisecond equals about 4294967.296 fractions.
+pub const MS_TO_FRACTIONS: f64 = ((1u64 << 32) as f64) / 1_000f64; //  4294967.296
 
 /// ## Time part mask
 ///
@@ -228,36 +229,20 @@ impl Timestamp {
 }
 
 //#region Construction from other types
-impl TryFrom<Duration> for Timestamp {
-    type Error = TimestampError;
-
-    fn try_from(duration: Duration) -> Result<Self, Self::Error> {
-        let seconds = duration.as_secs();
-        let nanoseconds = duration.subsec_nanos();
-
-        if seconds > DURATION_MAX_SECONDS {
-            // Number of seconds cannot be encoded with only 32 bits.
-            Err(TimestampError::DurationTooLarge(format!(
-                "The number of seconds in the given duration ({}) is too large to fit in a timestamp. Maximum number of seconds allowed: {}.",
-                seconds,
-                DURATION_MAX_SECONDS
-            )))
-        } else {
-            let seconds_part = seconds << 32;
-            let fractions = (nanoseconds as f64 * NS_TO_FRACTIONS) as u64;
-            let fraction_part = fractions & FRACTIONS_MASK; // Introduces loss of resolution.
-            let counter_part = fractions & COUNTER_MASK;
-            let carry = if counter_part == 0 { 0u64 } else { 1u64 << 8 };
-            Ok(Self(seconds_part + (fraction_part + carry)))
-        }
+impl From<Duration> for Timestamp {
+    fn from(duration: Duration) -> Self {
+        let seconds_part = ((duration.as_secs() as u32) as u64) << 32;
+        let fractions = ((duration.subsec_nanos() as f64) * NS_TO_FRACTIONS) as u64;
+        let fractions_part = fractions & FRACTIONS_MASK; // Introduces loss of resolution.
+        let counter_part = fractions & COUNTER_MASK;
+        let carry = if counter_part == 0 { 0u64 } else { 1u64 << 8 };
+        Self(seconds_part + fractions_part + carry)
     }
 }
 
-impl TryFrom<SystemTime> for Timestamp {
-    type Error = TimestampError;
-
-    fn try_from(sys_time: SystemTime) -> Result<Self, Self::Error> {
-        Self::try_from(sys_time.duration_since(UNIX_EPOCH)?)
+impl From<SystemTime> for Timestamp {
+    fn from(sys_time: SystemTime) -> Self {
+        Self::from(sys_time.duration_since(UNIX_EPOCH).unwrap())
     }
 }
 
@@ -266,11 +251,8 @@ impl FromStr for Timestamp {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match parse_rfc3339(s) {
-            Ok(sys_time) => Timestamp::try_from(sys_time),
-            Err(error) => Err(TimestampError::RFCParseError(format!(
-                "A timestamp could not be parsed from the given string. {}",
-                error
-            ))),
+            Ok(sys_time) => Ok(Timestamp::from(sys_time)),
+            Err(_) => Err(TimestampError::RFCParseError),
         }
     }
 }
@@ -399,33 +381,30 @@ impl Sub<u64> for Timestamp {
 /// Custom error related to timestamps methods.
 #[derive(Debug)]
 pub enum TimestampError {
-    DurationTooLarge(String),
-    SystemTimeError(String),
-    RFCParseError(String),
+    DurationTooLarge,
+    SystemTimeError,
+    RFCParseError,
 }
 
 impl Display for TimestampError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Self::DurationTooLarge(ref msg)
-            | Self::SystemTimeError(ref msg)
-            | Self::RFCParseError(ref msg) => write!(f, "{}", msg),
+            Self::DurationTooLarge => write!(f, "Duration too large"),
+            Self::SystemTimeError => write!(f, "System time error"),
+            Self::RFCParseError => write!(f, "RFCParse error"),
         }
     }
 }
 
 impl From<SystemTimeError> for TimestampError {
-    fn from(error: SystemTimeError) -> Self {
-        TimestampError::SystemTimeError(format!(
-            "A duration since UNIX epoch could not be derived from the given system time. {}",
-            error
-        ))
+    fn from(_: SystemTimeError) -> Self {
+        TimestampError::SystemTimeError
     }
 }
 
 impl From<TimestampError> for TimePollError {
-    fn from(ts_error: TimestampError) -> Self {
-        TimePollError::TimestampParseError(ts_error.to_string())
+    fn from(_: TimestampError) -> Self {
+        TimePollError::TimestampParseError
     }
 }
 //#endregion
@@ -454,9 +433,7 @@ mod tests {
         //#endregion
 
         //#region Timestamp objects
-        let ts = Timestamp::try_from(now_duration).expect(
-            "Timestamps from unmodified SystemTime::now() duration since UNIX epoch should work.",
-        );
+        let ts = Timestamp::from(now_duration);
 
         let ts_u64 = ts.as_u64();
         let ts_time = ts.get_time();
@@ -518,37 +495,21 @@ mod tests {
 
     #[test]
     fn from_duration_works() {
-        let error = Timestamp::try_from(Duration::new(DURATION_MAX_SECONDS + 1, 0))
-            .expect_err("Should fail if second limit is exceeded");
+        let error = Timestamp::from(Duration::new(DURATION_MAX_SECONDS + 1, 0));
 
-        if let TimestampError::DurationTooLarge(msg) = error {
-            assert!(
-                msg.contains(&DURATION_MAX_SECONDS.to_string()),
-                "Error should indicate the maximum duration allowed in seconds."
-            );
-            assert!(
-                msg.contains(&(DURATION_MAX_SECONDS + 1).to_string()),
-                "Error should indicate the given duration in seconds."
-            );
-        } else {
-            panic!("Incorrect error type: Expected `TimestampError::DurationTooLarge`.");
-        }
+        Timestamp::from(Duration::new((1u64 << 32) - 1, 0));
 
-        Timestamp::try_from(Duration::new((1u64 << 32) - 1, 0))
-            .expect("Should work on the edge of second limit");
-
-        Timestamp::try_from(
+        Timestamp::from(
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .expect("Duration from unmodified SystemTime::now() should work."),
-        )
-        .expect("Timestamp from `SystemTime::now()` duration since UNIX Epoch should work.");
+        );
     }
 
     #[test]
     fn from_system_time_works() {
         let mut now = SystemTime::now();
-        Timestamp::try_from(now).expect("Timestamp from unmodified SystemTime::now() should work.");
+        Timestamp::from(now);
 
         let now_duration = now
             .duration_since(UNIX_EPOCH)
@@ -556,17 +517,7 @@ mod tests {
 
         now -= now_duration + Duration::new(1, 0);
 
-        let err = Timestamp::try_from(now)
-            .expect_err("Timestamp from system time earlier than UNIX_EPOCH should fail.");
-
-        if let TimestampError::SystemTimeError(msg) = err {
-            assert!(
-                msg.contains("UNIX"),
-                "Error message should suggest problems related to UNIX epoch."
-            );
-        } else {
-            panic!("Incorrect error type: Expected `TimestampError::SystemTimeError`.");
-        }
+        let err = Timestamp::from(now);
     }
 
     #[test]
@@ -586,8 +537,8 @@ mod tests {
         let duration_120_nanos = Duration::new(0, 120);
         let duration_sum = duration_a + duration_b;
 
-        let mut ts_a = Timestamp::try_from(duration_a).unwrap();
-        let ts_b = Timestamp::try_from(duration_b).unwrap();
+        let mut ts_a = Timestamp::from(duration_a);
+        let ts_b = Timestamp::from(duration_b);
         assert!(ts_a.get_duration() - duration_a < duration_60_nanos);
         assert!(ts_b.get_duration() - duration_b < duration_60_nanos);
 
@@ -618,8 +569,8 @@ mod tests {
         let duration_60_nanos = Duration::new(0, 60);
         let duration_diff = duration_a - duration_b;
 
-        let ntp_a = Timestamp::try_from(duration_a).unwrap();
-        let ntp_b = Timestamp::try_from(duration_b).unwrap();
+        let ntp_a = Timestamp::from(duration_a);
+        let ntp_b = Timestamp::from(duration_b);
         assert!(ntp_a.get_duration() - duration_a < duration_60_nanos);
         assert!(ntp_b.get_duration() - duration_b < duration_60_nanos);
         //#endregion
@@ -643,17 +594,14 @@ mod tests {
 
     #[test]
     fn comparison_works() {
-        let ts1 =
-            Timestamp::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).unwrap();
-        let ts2 =
-            Timestamp::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).unwrap();
+        let ts1 = Timestamp::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
+        let ts2 = Timestamp::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
         assert!(ts1 <= ts2, "Comparison of timestamps should work.");
     }
 
     #[test]
     fn serialization_deserialization_works() {
-        let timestamp =
-            Timestamp::try_from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap()).unwrap();
+        let timestamp = Timestamp::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
         let encoded: Vec<u8> =
             bincode::serialize(&timestamp).expect("Timestamp should be serializable.");
         assert!(

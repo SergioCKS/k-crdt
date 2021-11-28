@@ -108,6 +108,21 @@ function getInt32Memory0() {
     }
     return cachegetInt32Memory0;
 }
+
+const u32CvtShim = new Uint32Array(2);
+
+const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1);
+    getUint8Memory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
 /**
 * ## Generate ID
 *
@@ -132,10 +147,6 @@ function _assertClass(instance, klass) {
         throw new Error(`expected instance of ${klass.name}`);
     }
     return instance.ptr;
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 /**
 * ## Create bool register
@@ -167,12 +178,6 @@ export function createBoolRegister(ts, value) {
     }
 }
 
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1);
-    getUint8Memory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 /**
 * ## Get bool register message
 *
@@ -210,10 +215,6 @@ export function getBoolRegisterMessage(ts, id, encoded) {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }
 }
-
-const u32CvtShim = new Uint32Array(2);
-
-const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
 
 function handleError(f, args) {
     try {

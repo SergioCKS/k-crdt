@@ -152,9 +152,6 @@ export interface InitOutput {
   readonly uid_fromString: (a: number, b: number) => number;
   readonly uid_new: () => number;
   readonly uid_toString: (a: number, b: number) => void;
-  readonly generateId: (a: number) => void;
-  readonly createBoolRegister: (a: number, b: number, c: number) => void;
-  readonly getBoolRegisterMessage: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly __wbg_browserhlc_free: (a: number) => void;
   readonly browserhlc_new: () => number;
   readonly browserhlc_getOffset: (a: number, b: number) => void;
@@ -164,6 +161,9 @@ export interface InitOutput {
   readonly browserhlc_generateTimestamp: (a: number) => number;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_toString: (a: number, b: number) => void;
+  readonly generateId: (a: number) => void;
+  readonly createBoolRegister: (a: number, b: number, c: number) => void;
+  readonly getBoolRegisterMessage: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
