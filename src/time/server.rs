@@ -1,3 +1,7 @@
+//! # Server time interface
+//!
+//! Time-related objects meant to be used exclusively in a server-node environment.
+
 use super::{hlc::HybridLogicalClock, Clock, Timestamp};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
