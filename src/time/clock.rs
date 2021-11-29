@@ -1,7 +1,7 @@
 //! # Clock
 //!
 //! An interface for clocks that poll time and output HLC/NTP timestamps.
-use crate::time::timestamp::{Timestamp, FRACTIONS_MASK_U32, MS_TO_FRACTIONS};
+use crate::time::timestamp::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::ops::Add;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -200,14 +200,14 @@ pub fn test_offsetted<T: Offsetted>() {
     //#region Offset changes polled time.
     let mut clock2 = T::default();
     clock.set_offset(Offset::from_millis(0));
-    clock2.set_offset(Offset::from_millis(500));
+    clock2.set_offset(Offset::from_millis(900));
     let ts1 = clock.poll_time();
     let ts2 = clock2.poll_time();
-    assert!(ts2.get_duration() - ts1.get_duration() >= Duration::from_millis(500));
-    clock2.set_offset(Offset::from_millis(-500));
+    assert!(ts2.get_duration() - ts1.get_duration() >= Duration::from_millis(895));
+    clock2.set_offset(Offset::from_millis(-900));
     let ts1 = clock.poll_time();
     let ts2 = clock2.poll_time();
-    assert!(ts1.get_duration() - ts2.get_duration() >= Duration::from_millis(500));
+    assert!(ts1.get_duration() - ts2.get_duration() >= Duration::from_millis(895));
     //#endregion
 }
 //#endregion
