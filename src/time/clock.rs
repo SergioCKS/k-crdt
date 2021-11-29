@@ -15,7 +15,7 @@ pub const MAX_OFFSET: i64 = 31_556_952;
 /// ## Offset
 ///
 /// Time offset in milliseconds.
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Default, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Offset(i64); // bincode: 8 bytes
 
 impl Offset {
@@ -104,11 +104,39 @@ pub trait Clock: Default {
     fn poll_time_ms(&self) -> f64;
 }
 
+/// ## Offsetted (trait)
+///
+/// A clock that maintains an offset that is applied to times polled from the local source.
+pub trait Offsetted: Clock {
+    /// ### Get offset
+    ///
+    /// Retrieves the current offset of the clock.
+    fn get_offset(&self) -> Offset;
+
+    /// ### Set offset (unchecked)
+    ///
+    /// Directly updates the offset of the clock without checking the allowed limit.
+    fn set_offset_unchecked(&mut self, offset: Offset) -> ();
+
+    /// ### Set offset
+    ///
+    /// Updates the offset of the clock.
+    /// If the limit is exceeded, the limit is used instead (saturating behaviour).
+    fn set_offset(&mut self, offset: Offset) -> () {
+        let offset = if offset.as_millis().abs() > MAX_OFFSET {
+            Offset::from_millis(offset.as_millis().signum() * MAX_OFFSET)
+        } else {
+            offset
+        };
+        self.set_offset_unchecked(offset);
+    }
+}
+
 //#region System time clock
 /// ## System Time Clock
 ///
 /// A clock relying on [`SysTime`] as time source.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Serialize, Deserialize)]
 pub struct SysTimeClock {
     offset: Offset, // bincode: 8 bytes
 }
@@ -135,84 +163,80 @@ impl Offsetted for SysTimeClock {
 }
 //#endregion
 
-/// ## Offsetted (trait)
+/// ## Test clock
 ///
-/// A clock that maintains an offset that is applied to times polled from the local source.
-pub trait Offsetted: Clock {
-    /// ### Get offset
-    ///
-    /// Retrieves the current offset of the clock.
-    fn get_offset(&self) -> Offset;
-
-    /// ### Set offset (unchecked)
-    ///
-    /// Directly updates the offset of the clock without checking the allowed limit.
-    fn set_offset_unchecked(&mut self, offset: Offset) -> ();
-
-    /// ### Set offset
-    ///
-    /// Updates the offset of the clock.
-    /// If the limit is exceeded, the limit is used instead (saturating behaviour).
-    fn set_offset(&mut self, offset: Offset) -> () {
-        let offset = if offset.as_millis().abs() > MAX_OFFSET {
-            Offset::from_millis(offset.as_millis().signum() * MAX_OFFSET)
-        } else {
-            offset
-        };
-
-        self.set_offset_unchecked(offset);
-    }
-}
-
+/// Performs generic tests for a clock type.
 pub fn test_clock<T: Clock>() {
-    let mut clock = T::default();
+    let clock = T::default();
     clock.poll_time();
 }
 
+/// ## Test offsetted
+///
+/// Performs generic tests for an offsetted clock type.
 pub fn test_offsetted<T: Offsetted>() {
+    // Default clock
     let mut clock = T::default();
 
+    //#region Getter/Setters work as expected
     let neg_offset = Offset::from_millis(-400_000);
     let pos_offset = Offset::from_millis(400_000);
     let neg_too_large = Offset::from_millis(-(MAX_OFFSET + 1));
     let pos_too_large = Offset::from_millis(MAX_OFFSET + 1);
 
-    clock.set_offset(neg_offset);
-    assert_eq!(
-        clock.get_offset().as_millis(),
-        -400_000i64,
-        "Offset should be settable."
-    );
-    clock.poll_time();
+    for (offset, ms) in [
+        (neg_offset, -400_000i64),
+        (pos_offset, 400_000i64),
+        (neg_too_large, -MAX_OFFSET),
+        (pos_too_large, MAX_OFFSET),
+    ] {
+        clock.set_offset(offset);
+        assert_eq!(
+            clock.get_offset().as_millis(),
+            ms,
+            "Wrong value after setting and retrieving offset."
+        );
+        clock.poll_time();
+    }
+    //#endregion
 
-    clock.set_offset(pos_offset);
-    assert_eq!(
-        clock.get_offset().as_millis(),
-        400_000i64,
-        "Offset should be settable."
-    );
-    clock.poll_time();
-
-    clock.set_offset(neg_too_large);
-    assert_eq!(
-        clock.get_offset().as_millis(),
-        -MAX_OFFSET,
-        "Saturating behaviour expected."
-    );
-    clock.poll_time();
-
-    clock.set_offset(pos_too_large);
-    assert_eq!(
-        clock.get_offset().as_millis(),
-        MAX_OFFSET,
-        "Saturating behaviour expected."
-    );
-    clock.poll_time();
+    //#region Offset changes polled time.
+    let mut clock2 = T::default();
+    clock.set_offset(Offset::from_millis(0));
+    clock2.set_offset(Offset::from_millis(500));
+    let ts1 = clock.poll_time();
+    let ts2 = clock2.poll_time();
+    assert!(ts2.get_duration() - ts1.get_duration() >= Duration::from_millis(500));
+    clock2.set_offset(Offset::from_millis(-500));
+    let ts1 = clock.poll_time();
+    let ts2 = clock2.poll_time();
+    assert!(ts1.get_duration() - ts2.get_duration() >= Duration::from_millis(500));
+    //#endregion
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn offset_works() {
+        // Offset from duration
+        let offset = Offset::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
+
+        //#region Serialization/deserialization
+        let encoded = bincode::serialize(&offset).unwrap();
+        assert_eq!(
+            encoded.len(),
+            8,
+            "Serialized version of an Offset should be 8 bytes long."
+        );
+        let de_offset: Offset = bincode::deserialize(&encoded[..]).unwrap();
+        assert_eq!(
+            offset, de_offset,
+            "Serialization + deserialization shouldn't change the object."
+        );
+        //#endregion
+    }
 
     #[test]
     fn sys_time_clock_works() {
