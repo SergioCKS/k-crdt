@@ -163,6 +163,7 @@ impl Offsetted for SysTimeClock {
 }
 //#endregion
 
+//#region Generic tests
 /// ## Test clock
 ///
 /// Performs generic tests for a clock type.
@@ -213,6 +214,7 @@ pub fn test_offsetted<T: Offsetted>() {
     assert!(ts1.get_duration() - ts2.get_duration() >= Duration::from_millis(500));
     //#endregion
 }
+//#endregion
 
 #[cfg(test)]
 mod tests {

@@ -41,33 +41,33 @@ fn server_clock_works() {
 //#region BrowserHLC
 #[wasm_bindgen_test]
 fn browser_hlc_generate_timestamp_works() {
-    hlc_generate_timestamp_works(BrowserHLC::default());
+    hlc_generate_timestamp_works::<BrowserClock, BrowserHLC>();
 }
 
 #[wasm_bindgen_test]
 fn browser_hlc_update_with_timestamp_works() {
-    let hlc1 = BrowserHLC::default();
-    let hlc2 = BrowserHLC::default();
-    hlc_update_with_timestamp_works(hlc1, hlc2);
+    hlc_update_with_timestamp_works::<BrowserClock, BrowserHLC>();
 }
 
 #[wasm_bindgen_test]
 fn browser_hlc_drift_is_limited() {
-    let hlc = BrowserHLC::default();
-    hlc_drift_is_limited(hlc);
+    hlc_drift_is_limited::<BrowserClock, BrowserHLC>();
 }
 //#endregion
 
 //#region ServerHLC
 #[wasm_bindgen_test]
 fn server_hlc_generate_timestamp_works() {
-    hlc_generate_timestamp_works(ServerHLC::default());
+    hlc_generate_timestamp_works::<ServerClock, ServerHLC>();
 }
 
 #[wasm_bindgen_test]
 fn server_hlc_update_with_timestamp_works() {
-    let hlc1 = ServerHLC::default();
-    let hlc2 = ServerHLC::default();
-    hlc_update_with_timestamp_works(hlc1, hlc2);
+    hlc_update_with_timestamp_works::<ServerClock, ServerHLC>();
+}
+
+#[wasm_bindgen_test]
+fn server_hlc_drift_is_limited() {
+    hlc_drift_is_limited::<ServerClock, ServerHLC>();
 }
 //#endregion
