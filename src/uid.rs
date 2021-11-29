@@ -81,7 +81,7 @@ pub fn num_to_alphabet_char(n: u8) -> Result<char, UIDParseError> {
 /// * `c` - Character in alphabet
 /// * Throws [`UIDParseError`] if `c` is not in the alphabet.
 #[inline]
-fn alphabet_char_to_num(c: char) -> Result<u8, UIDParseError> {
+pub fn alphabet_char_to_num(c: char) -> Result<u8, UIDParseError> {
     match ALPHABET.iter().position(|char| *char == c) {
         Some(value) => Ok(value as u8),
         None => Err(UIDParseError::CharacterNotAllowed),
@@ -127,7 +127,7 @@ impl UID {
     }
 
     #[wasm_bindgen(js_name = fromString)]
-    pub fn from_string(nid_str: String) -> UID {
+    pub fn from_string_js(nid_str: String) -> UID {
         nid_str.parse::<Self>().unwrap_throw()
     }
 }
@@ -148,6 +148,9 @@ impl UID {
         Self(random::<u128>())
     }
 
+    /// ### UID to string
+    ///
+    /// Returns the string representation of the UID.
     #[wasm_bindgen(js_name = toString)]
     pub fn as_string(&self) -> String {
         self.to_string()
