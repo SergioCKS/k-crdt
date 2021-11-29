@@ -90,11 +90,7 @@ pub trait Clock: Default {
     /// A function that generates timestamps based on a time source taking the clock offset into
     /// consideration.
     fn poll_time(&self) -> Timestamp {
-        let time_ms = self.poll_time_ms();
-        let seconds = time_ms / 1_000f64;
-        let subsec_ms = time_ms - (seconds.floor() * 1_000f64);
-        let fractions = ((subsec_ms * MS_TO_FRACTIONS) as u32) & FRACTIONS_MASK_U32;
-        Timestamp::new(seconds as u32, fractions, 0)
+        Timestamp::from_ms(self.poll_time_ms())
     }
 
     /// ### Poll time in milliseconds

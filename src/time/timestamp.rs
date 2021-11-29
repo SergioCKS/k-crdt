@@ -157,6 +157,17 @@ impl Timestamp {
         Self(((seconds as u64) << 32) + ((fractions as u64) & FRACTIONS_MASK) + count as u64)
     }
 
+    /// ### From milliseconds
+    ///
+    /// Construct a timestamp from the number of milliseconds since UNIX epoch.
+    #[inline]
+    pub fn from_ms(time_ms: f64) -> Self {
+        let seconds = time_ms / 1_000f64;
+        let subsec_ms = time_ms - (seconds.floor() * 1_000f64);
+        let fractions = ((subsec_ms * MS_TO_FRACTIONS) as u32) & FRACTIONS_MASK_U32;
+        Timestamp::new(seconds as u32, fractions, 0)
+    }
+
     /// ### As `u64`
     ///
     /// Returns the timestamp as a 64-bit unsigned integer.
