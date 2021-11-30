@@ -1,5 +1,5 @@
 import { ClientMessage, ServerMessage } from "./messages.mjs";
-import { parseUpdateMessage, ServerHLC, UID } from "./engine_bg.mjs";
+import { ServerHLC, UID } from "./engine_bg.mjs";
 
 interface Env {
 	SYNC_AGENT: any;
@@ -84,7 +84,7 @@ export class SyncAgent {
 	 * @returns WebSocket upgrade response
 	 */
 	async fetch(request: Request): Promise<Response> {
-		let currentHLC = this.hlc;
+		// let currentHLC = this.hlc;
 		// let currState = this.state;
 		let sessions = this.sessions;
 
@@ -113,7 +113,7 @@ export class SyncAgent {
 		 *
 		 * @param message Incoming message
 		 */
-		async function handleClientMessage(message: ClientMessage): Promise<boolean> {
+		function handleClientMessage(message: ClientMessage): boolean {
 			switch (message.msgCode) {
 				case "time-sync": {
 					const timeSyncPayload = message.payload;
@@ -143,25 +143,36 @@ export class SyncAgent {
 			}
 		}
 
+		/**
+		 * ## Handle binary client message
+		 *
+		 * Handles an incoming client-originated binary message.
+		 *
+		 * @param message - Binary message
+		 */
+		function handleBinaryClientMessage(message: Uint8Array): boolean {
+			message;
+			return true;
+		}
+
 		//#region WebSocket event handlers
 		server.addEventListener("message", async ({ data }) => {
 			if (data instanceof ArrayBuffer) {
-				// Binary message.
-				let binData = data as ArrayBuffer;
+				handleBinaryClientMessage(new Uint8Array(data));
 
 				//#region Update HLC
-				if (!currentHLC) return;
-				const ts = parseUpdateMessage(new Uint8Array(binData));
-				try {
-					currentHLC.updateWithTimestamp(ts);
-				} catch {
-					server.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
-					return;
-				}
+				// if (!currentHLC) return;
+				// const ts = parseUpdateMessage(new Uint8Array(binData));
+				// try {
+				// 	currentHLC.updateWithTimestamp(ts);
+				// } catch {
+				// 	server.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
+				// 	return;
+				// }
 				//#endregion
 
 				// Broadcast message to connected client nodes.
-				this.broadcastMessage(binData);
+				// this.broadcastMessage(binData);
 
 				// server.send(
 				// 	JSON.stringify({
@@ -172,10 +183,9 @@ export class SyncAgent {
 				// 	})
 				// );
 			} else {
-				// UTF-8 encoded message (string).
 				try {
-					const msg = JSON.parse(data) as ClientMessage;
-					await handleClientMessage(msg);
+					const message = JSON.parse(data) as ClientMessage;
+					await handleClientMessage(message);
 				} catch (e) {
 					if (e instanceof SyntaxError) {
 						console.error("JSON couldn't be parsed");

@@ -1,4 +1,4 @@
-import { parseUpdateMessage, ServerHLC, UID } from "./engine_bg.mjs";
+import { ServerHLC, UID } from "./engine_bg.mjs";
 /**
  * ## Sync Agent
  *
@@ -63,7 +63,7 @@ export class SyncAgent {
      * @returns WebSocket upgrade response
      */
     async fetch(request) {
-        let currentHLC = this.hlc;
+        // let currentHLC = this.hlc;
         // let currState = this.state;
         let sessions = this.sessions;
         // Assert request is a WebSocket upgrade request.
@@ -87,7 +87,7 @@ export class SyncAgent {
          *
          * @param message Incoming message
          */
-        async function handleClientMessage(message) {
+        function handleClientMessage(message) {
             switch (message.msgCode) {
                 case "time-sync": {
                     const timeSyncPayload = message.payload;
@@ -113,25 +113,33 @@ export class SyncAgent {
                 }
             }
         }
+        /**
+         * ## Handle binary client message
+         *
+         * Handles an incoming client-originated binary message.
+         *
+         * @param message - Binary message
+         */
+        function handleBinaryClientMessage(message) {
+            message;
+            return true;
+        }
         //#region WebSocket event handlers
         server.addEventListener("message", async ({ data }) => {
             if (data instanceof ArrayBuffer) {
-                // Binary message.
-                let binData = data;
+                handleBinaryClientMessage(new Uint8Array(data));
                 //#region Update HLC
-                if (!currentHLC)
-                    return;
-                const ts = parseUpdateMessage(new Uint8Array(binData));
-                try {
-                    currentHLC.updateWithTimestamp(ts);
-                }
-                catch {
-                    server.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
-                    return;
-                }
+                // if (!currentHLC) return;
+                // const ts = parseUpdateMessage(new Uint8Array(binData));
+                // try {
+                // 	currentHLC.updateWithTimestamp(ts);
+                // } catch {
+                // 	server.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
+                // 	return;
+                // }
                 //#endregion
                 // Broadcast message to connected client nodes.
-                this.broadcastMessage(binData);
+                // this.broadcastMessage(binData);
                 // server.send(
                 // 	JSON.stringify({
                 // 		msgCode: "test",
@@ -142,10 +150,9 @@ export class SyncAgent {
                 // );
             }
             else {
-                // UTF-8 encoded message (string).
                 try {
-                    const msg = JSON.parse(data);
-                    await handleClientMessage(msg);
+                    const message = JSON.parse(data);
+                    await handleClientMessage(message);
                 }
                 catch (e) {
                     if (e instanceof SyntaxError) {

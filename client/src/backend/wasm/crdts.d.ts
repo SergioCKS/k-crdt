@@ -22,23 +22,6 @@ export function generateId(): string;
 */
 export function createBoolRegister(ts: Timestamp, value: boolean): Uint8Array;
 /**
-* ## Get bool register message
-*
-* Constructs a message containing a bool register to be sent to a server node.
-*
-* * `ts` - Timestamp marking the moment of emission of the message
-* * `id` - Unique ID of the register
-* * `encoded` - Encoded version of the register
-* * Throws a JS exception if:
-*   * The the encoded register has the wrong number of bytes.
-*   * The message could not be serialized.
-* @param {Timestamp} ts
-* @param {UID} id
-* @param {Uint8Array} encoded
-* @returns {Uint8Array}
-*/
-export function getBoolRegisterMessage(ts: Timestamp, id: UID, encoded: Uint8Array): Uint8Array;
-/**
 * ## Browser HLC
 *
 * Hybrid logical clock based on browser time.
@@ -93,6 +76,14 @@ export class BrowserHLC {
 * @returns {Timestamp}
 */
   generateTimestamp(): Timestamp;
+/**
+* ### Update with timestamp
+*
+* Updates the clock using a message timestamp.
+* @param {Timestamp} ts
+* @returns {Timestamp}
+*/
+  updateWithTimestamp(ts: Timestamp): Timestamp;
 }
 /**
 * ## HLC Timestamp
@@ -138,6 +129,9 @@ export class UID {
 */
   constructor();
 /**
+* ### UID to string
+*
+* Returns the string representation of the UID.
 * @returns {string}
 */
   toString(): string;
@@ -152,11 +146,8 @@ export interface InitOutput {
   readonly uid_fromString: (a: number, b: number) => number;
   readonly uid_new: () => number;
   readonly uid_toString: (a: number, b: number) => void;
-  readonly __wbg_timestamp_free: (a: number) => void;
-  readonly timestamp_toString: (a: number, b: number) => void;
   readonly generateId: (a: number) => void;
   readonly createBoolRegister: (a: number, b: number, c: number) => void;
-  readonly getBoolRegisterMessage: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly __wbg_browserhlc_free: (a: number) => void;
   readonly browserhlc_new: () => number;
   readonly browserhlc_getOffset: (a: number, b: number) => void;
@@ -164,6 +155,9 @@ export interface InitOutput {
   readonly browserhlc_serialize: (a: number, b: number) => void;
   readonly browserhlc_deserialize: (a: number, b: number) => number;
   readonly browserhlc_generateTimestamp: (a: number) => number;
+  readonly browserhlc_updateWithTimestamp: (a: number, b: number) => number;
+  readonly __wbg_timestamp_free: (a: number) => void;
+  readonly timestamp_toString: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;

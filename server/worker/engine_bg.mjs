@@ -54,6 +54,26 @@ function getInt32Memory0() {
     }
     return cachegetInt32Memory0;
 }
+
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
+}
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+let WASM_VECTOR_LEN = 0;
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1);
+    getUint8Memory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
 /**
 * @returns {string}
 */
@@ -68,36 +88,6 @@ export function get_message() {
         wasm.__wbindgen_add_to_stack_pointer(16);
         wasm.__wbindgen_free(r0, r1);
     }
-}
-
-let WASM_VECTOR_LEN = 0;
-
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1);
-    getUint8Memory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
-/**
-* @param {Uint8Array} update_msg
-* @returns {Timestamp}
-*/
-export function parseUpdateMessage(update_msg) {
-    var ptr0 = passArray8ToWasm0(update_msg, wasm.__wbindgen_malloc);
-    var len0 = WASM_VECTOR_LEN;
-    var ret = wasm.parseUpdateMessage(ptr0, len0);
-    return Timestamp.__wrap(ret);
-}
-
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-    return instance.ptr;
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 
 function handleError(f, args) {
@@ -295,6 +285,9 @@ export class UID {
         return UID.__wrap(ret);
     }
     /**
+    * ### UID to string
+    *
+    * Returns the string representation of the UID.
     * @returns {string}
     */
     toString() {

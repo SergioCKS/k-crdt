@@ -94,8 +94,7 @@ function getTimeSyncData(t0: number, t1: number, t2: number, t3: number): TimeSy
  *
  * Handles an incoming server-originated message.
  *
- * @param msgCode - Message code
- * @param payload - Message payload
+ * @param message - Message
  */
 function handleServerMessage(message: ServerMessage): boolean {
 	switch (message.msgCode) {
@@ -120,14 +119,14 @@ function handleServerMessage(message: ServerMessage): boolean {
 }
 
 /**
- * ## Handle server binary message
+ * ## Handle binary server message
  *
- * Handles an incoming server-originated message in binary format.
+ * Handles an incoming server-originated binary message.
  *
- * @param data - Message data as byte array
+ * @param message - Binary message
  */
-async function handleServerBinaryMessage(data: Uint8Array): Promise<boolean> {
-	console.log("Binary data received from server.", data);
+function handleBinaryServerMessage(message: Uint8Array): boolean {
+	console.log(message);
 	return true;
 }
 
@@ -200,19 +199,19 @@ export class SyncConnection {
 				reject(event);
 			});
 
-			ws.addEventListener("message", async ({ data: rawData }) => {
-				try {
-					if (rawData instanceof ArrayBuffer) {
-						await handleServerBinaryMessage(new Uint8Array(rawData));
-					} else {
-						const msg = JSON.parse(rawData) as ServerMessage;
-						handleServerMessage(msg);
-					}
-				} catch (error) {
-					if (error instanceof SyntaxError) {
-						console.error("Error while handling server event. JSON couldn't be parsed");
-					} else {
-						console.error("Error while handling server event.", error);
+			ws.addEventListener("message", async ({ data }) => {
+				if (data instanceof ArrayBuffer) {
+					handleBinaryServerMessage(new Uint8Array(data));
+				} else {
+					try {
+						const message = JSON.parse(data) as ServerMessage;
+						handleServerMessage(message);
+					} catch (error) {
+						if (error instanceof SyntaxError) {
+							console.error("Error while handling server event. JSON couldn't be parsed");
+						} else {
+							console.error("Error while handling server event.", error);
+						}
 					}
 				}
 			});

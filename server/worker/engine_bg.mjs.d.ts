@@ -5,11 +5,6 @@
 */
 export function get_message(): string;
 /**
-* @param {Uint8Array} update_msg
-* @returns {Timestamp}
-*/
-export function parseUpdateMessage(update_msg: Uint8Array): Timestamp;
-/**
 */
 export class ServerHLC {
   free(): void;
@@ -88,6 +83,9 @@ export class UID {
 */
   constructor();
 /**
+* ### UID to string
+*
+* Returns the string representation of the UID.
 * @returns {string}
 */
   toString(): string;

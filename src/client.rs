@@ -1,13 +1,8 @@
 //! # Client interface
 //!
 //! Objects intended for usage in client-only environments.
-use super::{
-    time::Timestamp,
-    lwwregister::{LWWRegister, RegisterMessage, BOOL_REG_SIZE},
-    uid::UID
-};
+use super::{lwwregister::LWWRegister, time::Timestamp, uid::UID};
 use wasm_bindgen::prelude::*;
-use std::convert::TryInto;
 
 /// ## Generate ID
 ///
@@ -29,21 +24,4 @@ pub fn generate_id() -> String {
 pub fn create_bool_register(ts: Timestamp, value: bool) -> Vec<u8> {
     let register = LWWRegister::new(ts, value);
     bincode::serialize(&register).unwrap_throw()
-}
-
-/// ## Get bool register message
-///
-/// Constructs a message containing a bool register to be sent to a server node.
-///
-/// * `ts` - Timestamp marking the moment of emission of the message
-/// * `id` - Unique ID of the register
-/// * `encoded` - Encoded version of the register
-/// * Throws a JS exception if:
-///   * The the encoded register has the wrong number of bytes.
-///   * The message could not be serialized.
-#[wasm_bindgen(js_name = getBoolRegisterMessage)]
-pub fn get_bool_register_message(ts: Timestamp, id: UID, encoded: Vec<u8>) -> Vec<u8> {
-    let fixed: [u8; BOOL_REG_SIZE] = encoded.try_into().unwrap_throw();
-    let message = RegisterMessage::new(ts, id, fixed);
-    bincode::serialize(&message).unwrap_throw()
 }

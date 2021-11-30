@@ -3,13 +3,7 @@
  *
  * Interface to objects and methods from WASM linear memory.
  */
-import init, {
-	UID,
-	BrowserHLC,
-	Timestamp,
-	createBoolRegister,
-	getBoolRegisterMessage
-} from "./wasm/crdts";
+import init, { UID, BrowserHLC, Timestamp, createBoolRegister } from "./wasm/crdts";
 
 /**
  * ## WASM
@@ -154,9 +148,5 @@ export class Wasm {
 	 */
 	public createBoolRegister(initialValue: boolean): Uint8Array {
 		return createBoolRegister(this.generateTimestamp(), initialValue);
-	}
-
-	public getBoolRegisterMessage(id: UID, encoded: Uint8Array): Uint8Array {
-		return getBoolRegisterMessage(this.generateTimestamp(), id, encoded);
 	}
 }

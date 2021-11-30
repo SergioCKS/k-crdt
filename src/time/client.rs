@@ -1,7 +1,10 @@
 //! # Client time
 //!
 //! Time-related objects meant to be used exclusively in a client node environment.
-use super::{hlc::{HybridLogicalClock, Offsetted}, Clock, Offset, Timestamp};
+use super::{
+    hlc::{HybridLogicalClock, Offsetted},
+    Clock, Offset, Timestamp,
+};
 use crate::time::clock::Offsetted as COffsetted;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::{prelude::*, JsCast};
@@ -119,6 +122,14 @@ impl BrowserHLC {
     #[wasm_bindgen(js_name = generateTimestamp)]
     pub fn generate_timestamp_js(&mut self) -> Timestamp {
         self.generate_timestamp()
+    }
+
+    /// ### Update with timestamp
+    ///
+    /// Updates the clock using a message timestamp.
+    #[wasm_bindgen(js_name = updateWithTimestamp)]
+    pub fn update_with_timestamp_js(&mut self, ts: Timestamp) -> Timestamp {
+        self.update_with_timestamp(ts).unwrap_throw()
     }
 }
 

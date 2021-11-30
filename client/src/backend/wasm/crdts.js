@@ -167,53 +167,16 @@ export function createBoolRegister(ts, value) {
     }
 }
 
+const u32CvtShim = new Uint32Array(2);
+
+const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
+
 function passArray8ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 1);
     getUint8Memory0().set(arg, ptr / 1);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
-/**
-* ## Get bool register message
-*
-* Constructs a message containing a bool register to be sent to a server node.
-*
-* * `ts` - Timestamp marking the moment of emission of the message
-* * `id` - Unique ID of the register
-* * `encoded` - Encoded version of the register
-* * Throws a JS exception if:
-*   * The the encoded register has the wrong number of bytes.
-*   * The message could not be serialized.
-* @param {Timestamp} ts
-* @param {UID} id
-* @param {Uint8Array} encoded
-* @returns {Uint8Array}
-*/
-export function getBoolRegisterMessage(ts, id, encoded) {
-    try {
-        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        _assertClass(ts, Timestamp);
-        var ptr0 = ts.ptr;
-        ts.ptr = 0;
-        _assertClass(id, UID);
-        var ptr1 = id.ptr;
-        id.ptr = 0;
-        var ptr2 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
-        var len2 = WASM_VECTOR_LEN;
-        wasm.getBoolRegisterMessage(retptr, ptr0, ptr1, ptr2, len2);
-        var r0 = getInt32Memory0()[retptr / 4 + 0];
-        var r1 = getInt32Memory0()[retptr / 4 + 1];
-        var v3 = getArrayU8FromWasm0(r0, r1).slice();
-        wasm.__wbindgen_free(r0, r1 * 1);
-        return v3;
-    } finally {
-        wasm.__wbindgen_add_to_stack_pointer(16);
-    }
-}
-
-const u32CvtShim = new Uint32Array(2);
-
-const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
 
 function handleError(f, args) {
     try {
@@ -336,6 +299,20 @@ export class BrowserHLC {
         var ret = wasm.browserhlc_generateTimestamp(this.ptr);
         return Timestamp.__wrap(ret);
     }
+    /**
+    * ### Update with timestamp
+    *
+    * Updates the clock using a message timestamp.
+    * @param {Timestamp} ts
+    * @returns {Timestamp}
+    */
+    updateWithTimestamp(ts) {
+        _assertClass(ts, Timestamp);
+        var ptr0 = ts.ptr;
+        ts.ptr = 0;
+        var ret = wasm.browserhlc_updateWithTimestamp(this.ptr, ptr0);
+        return Timestamp.__wrap(ret);
+    }
 }
 /**
 * ## HLC Timestamp
@@ -439,6 +416,9 @@ export class UID {
         return UID.__wrap(ret);
     }
     /**
+    * ### UID to string
+    *
+    * Returns the string representation of the UID.
     * @returns {string}
     */
     toString() {

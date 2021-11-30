@@ -141,8 +141,7 @@ export async function handleClientMessage(
 			const value = message.payload.value;
 			// 2. Create register and retrieve values.
 			const encoded = wasm.createBoolRegister(value);
-			const uid = wasm.generateId();
-			const id = uid.toString();
+			const id = wasm.generateId().toString();
 			const type = "bool";
 			// 3. Broadcast the newly created register to the front-end clients.
 			broadcastMessage({ msgCode: "new-register", payload: { id, value, type } });
@@ -154,8 +153,8 @@ export async function handleClientMessage(
 				return true;
 			}
 			// 5. Broadcast the event to other nodes.
-			const updateMessage = wasm.getBoolRegisterMessage(uid, encoded);
-			syncConnection.sendMessage(updateMessage);
+			// TODO: Build binary update message.
+			// syncConnection.sendMessage(updateMessage);
 			return true;
 		}
 		case "restore-registers": {
