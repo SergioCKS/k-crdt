@@ -10,6 +10,7 @@ import { Wasm } from "../wasm";
 import { LocalDb, RecordType } from "../db";
 import { SyncConnection } from "../sync";
 import type { AppMessage, WorkerMessage } from "$types/messages";
+import { buildClientBinaryMessage, parseClientBinaryMessage } from "$types/messages";
 
 /**
  * ## Worker Scope
@@ -139,12 +140,16 @@ export async function handleClientMessage(
 		case "create-bool-register": {
 			// 1. Get register initial value from message.
 			const value = message.payload.value;
+
 			// 2. Create register and retrieve values.
 			const encoded = wasm.createBoolRegister(value);
-			const id = wasm.generateId().toString();
+			const uid = wasm.generateId();
+			const id = uid.toString();
 			const type = "bool";
+
 			// 3. Broadcast the newly created register to the front-end clients.
 			broadcastMessage({ msgCode: "new-register", payload: { id, value, type } });
+
 			// 4. Persist encoded version in local database.
 			try {
 				await localDb.put_crdt({ id, value, encoded, type });
@@ -152,9 +157,17 @@ export async function handleClientMessage(
 				console.error(e);
 				return true;
 			}
+
 			// 5. Broadcast the event to other nodes.
-			// TODO: Build binary update message.
-			// syncConnection.sendMessage(updateMessage);
+			const binMessage = buildClientBinaryMessage({
+				msgCode: "bool-register",
+				components: {
+					ts: wasm.generateTimestamp().serialize(),
+					id: uid.serialize(),
+					register: encoded
+				}
+			});
+			syncConnection.sendMessage(binMessage);
 			return true;
 		}
 		case "restore-registers": {
@@ -178,6 +191,22 @@ export async function handleClientMessage(
 			} catch (e) {
 				console.error(e);
 			}
+			return true;
+		}
+		case "update-bool-register": {
+			const { ts } = message.payload;
+
+			//#region Update HLC
+			const message_ts = wasm.deserializeTimestamp(ts);
+			try {
+				wasm.updateWithTimestamp(message_ts);
+			} catch {
+				console.error("Failed to update HLC.");
+				return true;
+			}
+			//#endregion
+
+			console.log(wasm.generateTimestamp().toString());
 			return true;
 		}
 	}

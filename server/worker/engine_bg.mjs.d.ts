@@ -62,6 +62,23 @@ export class Timestamp {
 * @returns {string}
 */
   toString(): string;
+/**
+* ### Serialize
+*
+* Returns an encoded version of a timestamp.
+*
+* * Size: 8 bytes
+* @returns {Uint8Array}
+*/
+  serialize(): Uint8Array;
+/**
+* ### Deserialize
+*
+* Constructs a [`Timestamp`] object from an encoded version.
+* @param {Uint8Array} encoded
+* @returns {Timestamp}
+*/
+  static deserialize(encoded: Uint8Array): Timestamp;
 }
 /**
 * ## UID
@@ -83,10 +100,30 @@ export class UID {
 */
   constructor();
 /**
+* @param {string} nid_str
+* @returns {UID}
+*/
+  static fromString(nid_str: string): UID;
+/**
 * ### UID to string
 *
 * Returns the string representation of the UID.
 * @returns {string}
 */
   toString(): string;
+/**
+* ### Serialize
+*
+* Returns an encoded version of the UID.
+* @returns {Uint8Array}
+*/
+  serialize(): Uint8Array;
+/**
+* ### Deserialize
+*
+* Constructs a UID object from an encoded version.
+* @param {Uint8Array} encoded
+* @returns {UID}
+*/
+  static deserialize(encoded: Uint8Array): UID;
 }

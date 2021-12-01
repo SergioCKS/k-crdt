@@ -125,11 +125,6 @@ impl UID {
     pub fn get_copy(&self) -> Self {
         self.clone()
     }
-
-    #[wasm_bindgen(js_name = fromString)]
-    pub fn from_string_js(nid_str: String) -> UID {
-        nid_str.parse::<Self>().unwrap_throw()
-    }
 }
 
 #[wasm_bindgen]
@@ -148,12 +143,31 @@ impl UID {
         Self(random::<u128>())
     }
 
+    #[wasm_bindgen(js_name = fromString)]
+    pub fn from_string_js(nid_str: String) -> UID {
+        UID::from_str(&nid_str).unwrap_throw()
+    }
+
     /// ### UID to string
     ///
     /// Returns the string representation of the UID.
     #[wasm_bindgen(js_name = toString)]
     pub fn as_string(&self) -> String {
         self.to_string()
+    }
+
+    /// ### Serialize
+    ///
+    /// Returns an encoded version of the UID.
+    pub fn serialize(&self) -> Vec<u8> {
+        bincode::serialize(self).unwrap_throw()
+    }
+
+    /// ### Deserialize
+    ///
+    /// Constructs a UID object from an encoded version.
+    pub fn deserialize(encoded: Vec<u8>) -> UID {
+        bincode::deserialize::<UID>(&encoded[..]).unwrap_throw()
     }
 }
 
@@ -346,12 +360,7 @@ mod uid_tests {
         let serialized: Vec<u8> =
             bincode::serialize(&uid).expect("Serialization from new ID should work.");
 
-        println!("UID: {:?}, Serialized: {:?}", uid, serialized);
-
-        assert!(
-            serialized.len() <= 16,
-            "The serialized version of a UID shouldn't take more than 128 bits."
-        );
+        assert_eq!(serialized.len(), 16);
 
         let deserialized: UID =
             bincode::deserialize(&serialized[..]).expect("Deserialization should work.");

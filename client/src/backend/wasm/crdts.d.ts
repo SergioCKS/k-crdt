@@ -99,6 +99,23 @@ export class Timestamp {
 * @returns {string}
 */
   toString(): string;
+/**
+* ### Serialize
+*
+* Returns an encoded version of a timestamp.
+*
+* * Size: 8 bytes
+* @returns {Uint8Array}
+*/
+  serialize(): Uint8Array;
+/**
+* ### Deserialize
+*
+* Constructs a [`Timestamp`] object from an encoded version.
+* @param {Uint8Array} encoded
+* @returns {Timestamp}
+*/
+  static deserialize(encoded: Uint8Array): Timestamp;
 }
 /**
 * ## UID
@@ -112,11 +129,6 @@ export class UID {
 */
   getCopy(): UID;
 /**
-* @param {string} nid_str
-* @returns {UID}
-*/
-  static fromString(nid_str: string): UID;
-/**
 * ### Generate new ID
 *
 * Generates a new random unique ID.
@@ -129,12 +141,32 @@ export class UID {
 */
   constructor();
 /**
+* @param {string} nid_str
+* @returns {UID}
+*/
+  static fromString(nid_str: string): UID;
+/**
 * ### UID to string
 *
 * Returns the string representation of the UID.
 * @returns {string}
 */
   toString(): string;
+/**
+* ### Serialize
+*
+* Returns an encoded version of the UID.
+* @returns {Uint8Array}
+*/
+  serialize(): Uint8Array;
+/**
+* ### Deserialize
+*
+* Constructs a UID object from an encoded version.
+* @param {Uint8Array} encoded
+* @returns {UID}
+*/
+  static deserialize(encoded: Uint8Array): UID;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -143,9 +175,11 @@ export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_uid_free: (a: number) => void;
   readonly uid_getCopy: (a: number) => number;
-  readonly uid_fromString: (a: number, b: number) => number;
   readonly uid_new: () => number;
+  readonly uid_fromString: (a: number, b: number) => number;
   readonly uid_toString: (a: number, b: number) => void;
+  readonly uid_serialize: (a: number, b: number) => void;
+  readonly uid_deserialize: (a: number, b: number) => number;
   readonly generateId: (a: number) => void;
   readonly createBoolRegister: (a: number, b: number, c: number) => void;
   readonly __wbg_browserhlc_free: (a: number) => void;
@@ -158,6 +192,8 @@ export interface InitOutput {
   readonly browserhlc_updateWithTimestamp: (a: number, b: number) => number;
   readonly __wbg_timestamp_free: (a: number) => void;
   readonly timestamp_toString: (a: number, b: number) => void;
+  readonly timestamp_serialize: (a: number, b: number) => void;
+  readonly timestamp_deserialize: (a: number, b: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;

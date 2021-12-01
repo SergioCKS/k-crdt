@@ -30,6 +30,12 @@ type AppMessageObj = {
   "no-sync-connection": undefined;
   "restore-registers": undefined;
   "create-bool-register": { value: boolean };
+  "update-bool-register": {
+    nid: Uint8Array;
+    ts: Uint8Array;
+    id: Uint8Array;
+    register: Uint8Array;
+  };
   test: undefined;
 };
 
@@ -70,6 +76,7 @@ type ServerMessageObj = {
 };
 //#endregion
 
+//#region Message types
 /**
  * ## Message types from message object
  *
@@ -88,7 +95,6 @@ type MessageTypes<MessageObj> = {
       };
 };
 
-//#region Exported message types
 /**
  * ## App message (type)
  *
@@ -121,6 +127,7 @@ export type ServerMessage =
   MessageTypes<ServerMessageObj>[keyof ServerMessageObj];
 //#endregion
 
+//#region Others
 /**
  * ## Time sync for `TimeSync` server message
  */
@@ -146,3 +153,257 @@ interface TimeSyncPayload {
    */
   t2?: number;
 }
+//#endregion
+
+//#region Binary message objects
+interface BinaryMessageObj {
+  [key: string]: {
+    discriminant: number;
+    components: { name: string; size: number }[];
+  };
+}
+
+const TS_BYTES = 8 as 8;
+const UID_BYTES = 16 as 16;
+const BOOL_BYTES = 1 as 1;
+
+/**
+ * ## Client binary message object
+ *
+ * Object specifying all client-originated binary objects, including
+ *
+ * * The discriminant value used to identify messages of a specific kind
+ * * The components that make up a message with their corresponding order and size in bytes.
+ *
+ * Discriminant and name types need to be casted as specific values in order to generate more
+ * specific types from the object automatically.
+ */
+const clientBinaryMessageObj = {
+  test: {
+    discriminant: 0 as 0,
+    components: [{ name: "payload" as "payload", size: UID_BYTES }],
+  },
+  "bool-register": {
+    discriminant: 1 as 1,
+    components: [
+      { name: "ts" as "ts", size: TS_BYTES },
+      { name: "id" as "id", size: UID_BYTES },
+      { name: "register" as "register", size: TS_BYTES + BOOL_BYTES },
+    ],
+  },
+};
+type ClientBinaryMessageObj = typeof clientBinaryMessageObj;
+
+/**
+ * ## Server binary message object
+ *
+ * Object specifying all server-originated binary objects, including
+ *
+ * * The discriminant value used to identify messages of a specific kind
+ * * The components that make up a message with their corresponding order and size in bytes.
+ *
+ * Discriminant and name types need to be casted as specific values in order to generate more
+ * specific types from the object automatically.
+ */
+const serverBinaryMessageObj = {
+  "bool-register": {
+    discriminant: 1 as 1,
+    components: [
+      { name: "nid" as "nid", size: UID_BYTES },
+      { name: "ts" as "ts", size: TS_BYTES },
+      { name: "id" as "id", size: UID_BYTES },
+      { name: "register" as "register", size: TS_BYTES + BOOL_BYTES },
+    ],
+  },
+};
+type ServerBinaryMessageObj = typeof serverBinaryMessageObj;
+//#endregion
+
+//#region Binary message types
+/**
+ * ## Binary message types from object
+ *
+ * Given a binary message object this type builds a type bindin each message code to the binary
+ * components included in the message.
+ */
+type BinaryMessageTypes<T extends BinaryMessageObj> = {
+  [key in keyof T]: {
+    msgCode: key;
+    components: {
+      [compKey in T[key]["components"][number]["name"]]: Uint8Array;
+    };
+  };
+};
+
+/**
+ * ## Client binary message
+ *
+ * Type specifying the components of a client-originated binary message based on the message code.
+ * The message code is encoded as a discriminant byte leading the message.
+ */
+export type ClientBinaryMessage =
+  BinaryMessageTypes<ClientBinaryMessageObj>[keyof ClientBinaryMessageObj];
+
+/**
+ * ## Server binary message
+ *
+ * Type specifying the components of a server-originated binary message based on the message code.
+ * The message code is encoded as a discriminant byte leading the message.
+ */
+export type ServerBinaryMessage =
+  BinaryMessageTypes<ServerBinaryMessageObj>[keyof ServerBinaryMessageObj];
+//#endregion
+
+//#region Binary message constructors/accessors
+function buildBinaryMessage(
+  binaryMessageObj: BinaryMessageObj,
+  message: ClientBinaryMessage | ServerBinaryMessage
+): Uint8Array {
+  const messageObj = binaryMessageObj[message.msgCode];
+
+  const layout = messageObj.components.map(c => c.size);
+  const messageSize = layout.reduce((prev, curr) => prev + curr, 1);
+
+  const binMessage = new Uint8Array(messageSize);
+  binMessage.set(new Uint8Array([messageObj.discriminant]), 0);
+
+  let currPosition = 1;
+  messageObj.components.forEach((component, i) => {
+    binMessage.set(
+      message.components[component.name as keyof typeof message["components"]],
+      currPosition
+    );
+    currPosition += layout[i];
+  });
+  return binMessage;
+}
+
+/**
+ * ## Build client binary message
+ *
+ * Constructs a binary message from binary components based on a common specification
+ * (order and size of the components).
+ *
+ * @param message Message with components
+ * @returns Binary Message
+ */
+export function buildClientBinaryMessage(
+  message: ClientBinaryMessage
+): Uint8Array {
+  return buildBinaryMessage(clientBinaryMessageObj, message);
+}
+
+/**
+ * ## Build server binary message
+ *
+ * Constructs a binary message from binary components based on a common specification
+ * (order and size of the components).
+ *
+ * @param message Message with components
+ * @returns Binary Message
+ */
+export function buildServerBinaryMessage(
+  message: ServerBinaryMessage
+): Uint8Array {
+  return buildBinaryMessage(serverBinaryMessageObj, message);
+}
+
+function parseBinaryMessage(
+  binaryMessageObj: BinaryMessageObj,
+  binMessage: Uint8Array
+): { msgCode: string; components: Record<string, Uint8Array> } {
+  const discriminant = binMessage[0];
+
+  const entry = Object.entries(binaryMessageObj).find(
+    ([_, v]) => v.discriminant === discriminant
+  );
+
+  if (!entry)
+    throw `Invalid binary message. Unknown discriminant value ${discriminant}`;
+
+  const [msgCode, val] = entry;
+
+  const expectedSize = val.components
+    .map(c => c.size as number)
+    .reduce((prev, curr) => prev + curr, 1);
+
+  if (binMessage.length !== expectedSize)
+    throw `Invalid binary message. Size ${binMessage.length} doesn't match expected ${expectedSize}`;
+
+  let currPosition = 1;
+  const components: Record<string, Uint8Array> = {};
+  for (const { name, size } of val.components) {
+    components[name] = binMessage.slice(currPosition, currPosition + size);
+    currPosition += size;
+  }
+
+  return { msgCode, components };
+}
+
+/**
+ * ## Parse client binary message
+ *
+ * Extracts the message components from a binary message received from a client node.
+ *
+ * @param binMessage Binary client message
+ * @returns binary components
+ * @throws If the binary message is invalid.
+ */
+export function parseClientBinaryMessage(
+  binMessage: Uint8Array
+): ClientBinaryMessage {
+  return parseBinaryMessage(
+    clientBinaryMessageObj,
+    binMessage
+  ) as ClientBinaryMessage;
+}
+
+/**
+ * ## Parse server binary message
+ *
+ * Extracts the message components from a binary message received from a server node.
+ *
+ * @param binMessage Binary server message
+ * @returns binary components
+ * @throws If the binary message is invalid.
+ */
+export function parseServerBinaryMessage(
+  binMessage: Uint8Array
+): ServerBinaryMessage {
+  return parseBinaryMessage(
+    serverBinaryMessageObj,
+    binMessage
+  ) as ServerBinaryMessage;
+}
+
+// export function parseClientBinaryMessage(
+//   binMessage: Uint8Array
+// ): ClientBinaryMessage {
+//   const discriminant = binMessage[0];
+
+//   const entry = Object.entries(clientBinaryMessageObj).find(
+//     ([_, v]) => v.discriminant === discriminant
+//   );
+
+//   if (!entry)
+//     throw `Invalid binary message. Unknown discriminant value ${discriminant}`;
+
+//   const [msgCode, val] = entry;
+
+//   const expectedSize = val.components
+//     .map(c => c.size as number)
+//     .reduce((prev, curr) => prev + curr, 1);
+
+//   if (binMessage.length !== expectedSize)
+//     throw `Invalid binary message. Size ${binMessage.length} doesn't match expected ${expectedSize}`;
+
+//   let currPosition = 1;
+//   const components: Record<string, Uint8Array> = {};
+//   for (const { name, size } of val.components) {
+//     components[name] = binMessage.slice(currPosition, currPosition + size);
+//     currPosition += size;
+//   }
+
+//   return { msgCode, components } as unknown as ClientBinaryMessage;
+// }
+//#endregion

@@ -140,17 +140,6 @@ pub const COUNTER_MASK: u64 =
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Serialize, Deserialize)]
 pub struct Timestamp(u64); // bincode: 8 bytes
 
-#[wasm_bindgen]
-impl Timestamp {
-    /// ### To String
-    ///
-    /// Returns a string representation of the timestamp.
-    #[wasm_bindgen(js_name = toString)]
-    pub fn as_string(&self) -> String {
-        self.to_string()
-    }
-}
-
 impl Timestamp {
     #[inline]
     pub fn new(seconds: u32, fractions: u32, count: u8) -> Self {
@@ -233,7 +222,33 @@ impl Timestamp {
     }
 }
 
-//#region Construction from other types
+#[wasm_bindgen]
+impl Timestamp {
+    /// ### To String
+    ///
+    /// Returns a string representation of the timestamp.
+    #[wasm_bindgen(js_name = toString)]
+    pub fn as_string(&self) -> String {
+        self.to_string()
+    }
+
+    /// ### Serialize
+    ///
+    /// Returns an encoded version of a timestamp.
+    ///
+    /// * Size: 8 bytes
+    pub fn serialize(&self) -> Vec<u8> {
+        bincode::serialize(self).unwrap_throw()
+    }
+
+    /// ### Deserialize
+    ///
+    /// Constructs a [`Timestamp`] object from an encoded version.
+    pub fn deserialize(encoded: Vec<u8>) -> Timestamp {
+        bincode::deserialize::<Timestamp>(&encoded[..]).unwrap_throw()
+    }
+}
+
 impl From<Duration> for Timestamp {
     fn from(duration: Duration) -> Self {
         let seconds = duration.as_secs();
@@ -266,7 +281,6 @@ impl FromStr for Timestamp {
         }
     }
 }
-//#endregion
 
 impl Display for Timestamp {
     /// ### Display NTP timestamp

@@ -12,7 +12,13 @@
  * @module
  */
 
-import type { AppMessage, ClientMessage, ServerMessage } from "$types/messages";
+import type {
+	AppMessage,
+	ClientMessage,
+	ServerBinaryMessage,
+	ServerMessage
+} from "$types/messages";
+import { parseServerBinaryMessage } from "$types/messages";
 
 /**
  * ## Worker scope
@@ -125,9 +131,16 @@ function handleServerMessage(message: ServerMessage): boolean {
  *
  * @param message - Binary message
  */
-function handleBinaryServerMessage(message: Uint8Array): boolean {
-	console.log(message);
-	return true;
+function handleBinaryServerMessage(message: ServerBinaryMessage): boolean {
+	switch (message.msgCode) {
+		case "bool-register": {
+			messageWorker({
+				msgCode: "update-bool-register",
+				payload: message.components
+			});
+			return true;
+		}
+	}
 }
 
 /**
@@ -201,7 +214,7 @@ export class SyncConnection {
 
 			ws.addEventListener("message", async ({ data }) => {
 				if (data instanceof ArrayBuffer) {
-					handleBinaryServerMessage(new Uint8Array(data));
+					handleBinaryServerMessage(parseServerBinaryMessage(new Uint8Array(data)));
 				} else {
 					try {
 						const message = JSON.parse(data) as ServerMessage;

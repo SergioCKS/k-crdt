@@ -125,6 +125,18 @@ export class Wasm {
 	public generateTimestamp(): Timestamp {
 		return this.hlc?.generateTimestamp();
 	}
+
+	/**
+	 * ### Update with timestamp
+	 *
+	 * Updates the HLC with a message timestamp.
+	 *
+	 * @param ts Message timestamp
+	 * @throws If the message timestamp drifts too much into the future.
+	 */
+	public updateWithTimestamp(ts: Timestamp): void {
+		this.hlc?.updateWithTimestamp(ts);
+	}
 	//#endregion
 
 	/**
@@ -148,5 +160,13 @@ export class Wasm {
 	 */
 	public createBoolRegister(initialValue: boolean): Uint8Array {
 		return createBoolRegister(this.generateTimestamp(), initialValue);
+	}
+
+	public deserializeTimestamp(encoded: Uint8Array): Timestamp {
+		return Timestamp.deserialize(encoded);
+	}
+
+	public deserializeUid(encoded: Uint8Array): UID {
+		return UID.deserialize(encoded);
 	}
 }

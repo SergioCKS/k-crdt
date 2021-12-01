@@ -47,6 +47,63 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
+let WASM_VECTOR_LEN = 0;
+
+const lTextEncoder = typeof TextEncoder === 'undefined' ? (0, module.require)('util').TextEncoder : TextEncoder;
+
+let cachedTextEncoder = new lTextEncoder('utf-8');
+
+const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
+    ? function (arg, view) {
+    return cachedTextEncoder.encodeInto(arg, view);
+}
+    : function (arg, view) {
+    const buf = cachedTextEncoder.encode(arg);
+    view.set(buf);
+    return {
+        read: arg.length,
+        written: buf.length
+    };
+});
+
+function passStringToWasm0(arg, malloc, realloc) {
+
+    if (realloc === undefined) {
+        const buf = cachedTextEncoder.encode(arg);
+        const ptr = malloc(buf.length);
+        getUint8Memory0().subarray(ptr, ptr + buf.length).set(buf);
+        WASM_VECTOR_LEN = buf.length;
+        return ptr;
+    }
+
+    let len = arg.length;
+    let ptr = malloc(len);
+
+    const mem = getUint8Memory0();
+
+    let offset = 0;
+
+    for (; offset < len; offset++) {
+        const code = arg.charCodeAt(offset);
+        if (code > 0x7F) break;
+        mem[ptr + offset] = code;
+    }
+
+    if (offset !== len) {
+        if (offset !== 0) {
+            arg = arg.slice(offset);
+        }
+        ptr = realloc(ptr, len, len = offset + arg.length * 3);
+        const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
+        const ret = encodeString(arg, view);
+
+        offset += ret.written;
+    }
+
+    WASM_VECTOR_LEN = offset;
+    return ptr;
+}
+
 let cachegetInt32Memory0 = null;
 function getInt32Memory0() {
     if (cachegetInt32Memory0 === null || cachegetInt32Memory0.buffer !== wasm.memory.buffer) {
@@ -55,18 +112,9 @@ function getInt32Memory0() {
     return cachegetInt32Memory0;
 }
 
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-    return instance.ptr;
-}
-
 function getArrayU8FromWasm0(ptr, len) {
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
-
-let WASM_VECTOR_LEN = 0;
 
 function passArray8ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 1);
@@ -88,6 +136,13 @@ export function get_message() {
         wasm.__wbindgen_add_to_stack_pointer(16);
         wasm.__wbindgen_free(r0, r1);
     }
+}
+
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
 }
 
 function handleError(f, args) {
@@ -243,6 +298,40 @@ export class Timestamp {
             wasm.__wbindgen_free(r0, r1);
         }
     }
+    /**
+    * ### Serialize
+    *
+    * Returns an encoded version of a timestamp.
+    *
+    * * Size: 8 bytes
+    * @returns {Uint8Array}
+    */
+    serialize() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.timestamp_serialize(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            var v0 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_free(r0, r1 * 1);
+            return v0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * ### Deserialize
+    *
+    * Constructs a [`Timestamp`] object from an encoded version.
+    * @param {Uint8Array} encoded
+    * @returns {Timestamp}
+    */
+    static deserialize(encoded) {
+        var ptr0 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.timestamp_deserialize(ptr0, len0);
+        return Timestamp.__wrap(ret);
+    }
 }
 /**
 * ## UID
@@ -285,6 +374,16 @@ export class UID {
         return UID.__wrap(ret);
     }
     /**
+    * @param {string} nid_str
+    * @returns {UID}
+    */
+    static fromString(nid_str) {
+        var ptr0 = passStringToWasm0(nid_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.uid_fromString(ptr0, len0);
+        return UID.__wrap(ret);
+    }
+    /**
     * ### UID to string
     *
     * Returns the string representation of the UID.
@@ -301,6 +400,38 @@ export class UID {
             wasm.__wbindgen_add_to_stack_pointer(16);
             wasm.__wbindgen_free(r0, r1);
         }
+    }
+    /**
+    * ### Serialize
+    *
+    * Returns an encoded version of the UID.
+    * @returns {Uint8Array}
+    */
+    serialize() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.uid_serialize(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            var v0 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_free(r0, r1 * 1);
+            return v0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * ### Deserialize
+    *
+    * Constructs a UID object from an encoded version.
+    * @param {Uint8Array} encoded
+    * @returns {UID}
+    */
+    static deserialize(encoded) {
+        var ptr0 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.uid_deserialize(ptr0, len0);
+        return UID.__wrap(ret);
     }
 }
 

@@ -1,5 +1,11 @@
-import { ClientMessage, ServerMessage } from "./messages.mjs";
-import { ServerHLC, UID } from "./engine_bg.mjs";
+import {
+	ClientMessage,
+	ServerMessage,
+	parseClientBinaryMessage,
+	buildServerBinaryMessage,
+	ClientBinaryMessage
+} from "./messages.mjs";
+import { ServerHLC, Timestamp, UID } from "./engine_bg.mjs";
 
 interface Env {
 	SYNC_AGENT: any;
@@ -84,7 +90,7 @@ export class SyncAgent {
 	 * @returns WebSocket upgrade response
 	 */
 	async fetch(request: Request): Promise<Response> {
-		// let currentHLC = this.hlc;
+		let currentHLC = this.hlc;
 		// let currState = this.state;
 		let sessions = this.sessions;
 
@@ -150,26 +156,51 @@ export class SyncAgent {
 		 *
 		 * @param message - Binary message
 		 */
-		function handleBinaryClientMessage(message: Uint8Array): boolean {
-			message;
-			return true;
+		function handleBinaryClientMessage(message: ClientBinaryMessage): boolean {
+			switch (message.msgCode) {
+				case "test": {
+					return true;
+				}
+				case "bool-register": {
+					const { ts, id, register } = message.components;
+
+					// #region Update HLC
+					if (!currentHLC) return true;
+					const message_ts = Timestamp.deserialize(ts);
+					try {
+						currentHLC.updateWithTimestamp(message_ts);
+					} catch {
+						server.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
+						return true;
+					}
+					// #endregion
+
+					const nidStr = sessions[connectionId].nid;
+
+					if (nidStr) {
+						try {
+							const nid = UID.fromString(nidStr).serialize();
+							const binMessage = buildServerBinaryMessage({
+								msgCode: "bool-register",
+								components: { nid, ts, id, register }
+							});
+							server.send(binMessage);
+						} catch (e) {
+							messageClient({
+								msgCode: "test",
+								payload: e
+							});
+						}
+					}
+					return true;
+				}
+			}
 		}
 
 		//#region WebSocket event handlers
 		server.addEventListener("message", async ({ data }) => {
 			if (data instanceof ArrayBuffer) {
-				handleBinaryClientMessage(new Uint8Array(data));
-
-				//#region Update HLC
-				// if (!currentHLC) return;
-				// const ts = parseUpdateMessage(new Uint8Array(binData));
-				// try {
-				// 	currentHLC.updateWithTimestamp(ts);
-				// } catch {
-				// 	server.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
-				// 	return;
-				// }
-				//#endregion
+				handleBinaryClientMessage(parseClientBinaryMessage(new Uint8Array(data)));
 
 				// Broadcast message to connected client nodes.
 				// this.broadcastMessage(binData);

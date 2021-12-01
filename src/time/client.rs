@@ -106,7 +106,7 @@ impl BrowserHLC {
     ///
     /// Returns an updated encoded version of the HLC.
     pub fn serialize(&self) -> Vec<u8> {
-        bincode::serialize(&self).expect_throw("Failed to serialize HLC.")
+        bincode::serialize(&self).unwrap_throw()
     }
 
     /// ### Deserialize HLC

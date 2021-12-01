@@ -108,6 +108,17 @@ function getInt32Memory0() {
     }
     return cachegetInt32Memory0;
 }
+
+function getArrayU8FromWasm0(ptr, len) {
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1);
+    getUint8Memory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
 /**
 * ## Generate ID
 *
@@ -132,10 +143,6 @@ function _assertClass(instance, klass) {
         throw new Error(`expected instance of ${klass.name}`);
     }
     return instance.ptr;
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
 /**
 * ## Create bool register
@@ -170,13 +177,6 @@ export function createBoolRegister(ts, value) {
 const u32CvtShim = new Uint32Array(2);
 
 const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
-
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1);
-    getUint8Memory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 
 function handleError(f, args) {
     try {
@@ -357,6 +357,40 @@ export class Timestamp {
             wasm.__wbindgen_free(r0, r1);
         }
     }
+    /**
+    * ### Serialize
+    *
+    * Returns an encoded version of a timestamp.
+    *
+    * * Size: 8 bytes
+    * @returns {Uint8Array}
+    */
+    serialize() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.timestamp_serialize(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            var v0 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_free(r0, r1 * 1);
+            return v0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * ### Deserialize
+    *
+    * Constructs a [`Timestamp`] object from an encoded version.
+    * @param {Uint8Array} encoded
+    * @returns {Timestamp}
+    */
+    static deserialize(encoded) {
+        var ptr0 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.timestamp_deserialize(ptr0, len0);
+        return Timestamp.__wrap(ret);
+    }
 }
 /**
 * ## UID
@@ -391,16 +425,6 @@ export class UID {
         return UID.__wrap(ret);
     }
     /**
-    * @param {string} nid_str
-    * @returns {UID}
-    */
-    static fromString(nid_str) {
-        var ptr0 = passStringToWasm0(nid_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len0 = WASM_VECTOR_LEN;
-        var ret = wasm.uid_fromString(ptr0, len0);
-        return UID.__wrap(ret);
-    }
-    /**
     * ### Generate new ID
     *
     * Generates a new random unique ID.
@@ -413,6 +437,16 @@ export class UID {
     */
     constructor() {
         var ret = wasm.uid_new();
+        return UID.__wrap(ret);
+    }
+    /**
+    * @param {string} nid_str
+    * @returns {UID}
+    */
+    static fromString(nid_str) {
+        var ptr0 = passStringToWasm0(nid_str, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.uid_fromString(ptr0, len0);
         return UID.__wrap(ret);
     }
     /**
@@ -432,6 +466,38 @@ export class UID {
             wasm.__wbindgen_add_to_stack_pointer(16);
             wasm.__wbindgen_free(r0, r1);
         }
+    }
+    /**
+    * ### Serialize
+    *
+    * Returns an encoded version of the UID.
+    * @returns {Uint8Array}
+    */
+    serialize() {
+        try {
+            const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+            wasm.uid_serialize(retptr, this.ptr);
+            var r0 = getInt32Memory0()[retptr / 4 + 0];
+            var r1 = getInt32Memory0()[retptr / 4 + 1];
+            var v0 = getArrayU8FromWasm0(r0, r1).slice();
+            wasm.__wbindgen_free(r0, r1 * 1);
+            return v0;
+        } finally {
+            wasm.__wbindgen_add_to_stack_pointer(16);
+        }
+    }
+    /**
+    * ### Deserialize
+    *
+    * Constructs a UID object from an encoded version.
+    * @param {Uint8Array} encoded
+    * @returns {UID}
+    */
+    static deserialize(encoded) {
+        var ptr0 = passArray8ToWasm0(encoded, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        var ret = wasm.uid_deserialize(ptr0, len0);
+        return UID.__wrap(ret);
     }
 }
 
