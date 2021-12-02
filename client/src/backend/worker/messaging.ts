@@ -10,7 +10,7 @@ import { Wasm } from "../wasm";
 import { LocalDb, RecordType } from "../db";
 import { SyncConnection } from "../sync";
 import type { AppMessage, WorkerMessage } from "$types/messages";
-import { buildClientBinaryMessage, parseClientBinaryMessage } from "$types/messages";
+import { buildClientBinaryMessage } from "$types/messages";
 
 /**
  * ## Worker Scope

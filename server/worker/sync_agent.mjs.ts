@@ -71,11 +71,103 @@ export class SyncAgent {
 	 * @param message Message to send
 	 */
 	broadcastMessage(message: string | ArrayBuffer) {
-		for (const cid in this.sessions) {
+		for (const cid of Object.keys(this.sessions)) {
 			try {
 				this.sessions[cid].ws.send(message);
 			} catch {
 				delete this.sessions[cid];
+			}
+		}
+	}
+
+	messageClient(ws: WebSocket, message: ServerMessage) {
+		ws.send(JSON.stringify(message));
+	}
+
+	/**
+	 * ### Handle client message
+	 *
+	 * Event handler for UTF-8 encoded (string) messages from client nodes.
+	 *
+	 * @param message Incoming message
+	 */
+	handleClientMessage(connectionId: string, message: ClientMessage): boolean {
+		const session = this.sessions[connectionId];
+		const ws = session?.ws;
+		switch (message.msgCode) {
+			case "time-sync": {
+				const timeSyncPayload = message.payload;
+
+				this.messageClient(ws, {
+					msgCode: "time-sync",
+					payload: {
+						t0: timeSyncPayload.t0,
+						t1: new Date().valueOf()
+					}
+				});
+				return true;
+			}
+			case "node-id": {
+				session.nid = message.payload.value;
+				return true;
+			}
+			case "test": {
+				this.messageClient(ws, {
+					msgCode: "test",
+					payload: "hey"
+				});
+				return true;
+			}
+		}
+	}
+
+	/**
+	 * ## Handle binary client message
+	 *
+	 * Handles an incoming client-originated binary message.
+	 *
+	 * @param message - Binary message
+	 */
+	handleBinaryClientMessage(connectionId: string, message: ClientBinaryMessage): boolean {
+		const session = this.sessions[connectionId];
+		const ws = session?.ws;
+		switch (message.msgCode) {
+			case "test": {
+				return true;
+			}
+			case "bool-register": {
+				const { ts, id, register } = message.components;
+
+				// #region Update HLC
+				if (!this.hlc) return true;
+				const message_ts = Timestamp.deserialize(ts);
+				try {
+					this.hlc.updateWithTimestamp(message_ts);
+				} catch {
+					ws?.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
+					return true;
+				}
+				// #endregion
+
+				const nidStr = session?.nid;
+
+				if (nidStr) {
+					try {
+						const nid = UID.fromString(nidStr).serialize();
+						const binMessage = buildServerBinaryMessage({
+							msgCode: "bool-register",
+							components: { nid, ts, id, register }
+						});
+						this.broadcastMessage(binMessage);
+						// ws?.send(binMessage);
+					} catch (e) {
+						this.messageClient(ws, {
+							msgCode: "test",
+							payload: e
+						});
+					}
+				}
+				return true;
 			}
 		}
 	}
@@ -90,10 +182,6 @@ export class SyncAgent {
 	 * @returns WebSocket upgrade response
 	 */
 	async fetch(request: Request): Promise<Response> {
-		let currentHLC = this.hlc;
-		// let currState = this.state;
-		let sessions = this.sessions;
-
 		// Assert request is a WebSocket upgrade request.
 		const upgradeHeader = request.headers.get("Upgrade");
 		if (!upgradeHeader || upgradeHeader !== "websocket") {
@@ -108,115 +196,17 @@ export class SyncAgent {
 		const [client, server] = Object.values(webSocketPair);
 		server.accept();
 
-		function messageClient(message: ServerMessage) {
-			server.send(JSON.stringify(message));
-		}
-
-		/**
-		 * ### Handle client message
-		 *
-		 * Event handler for UTF-8 encoded (string) messages from client nodes.
-		 *
-		 * @param message Incoming message
-		 */
-		function handleClientMessage(message: ClientMessage): boolean {
-			switch (message.msgCode) {
-				case "time-sync": {
-					const timeSyncPayload = message.payload;
-
-					messageClient({
-						msgCode: "time-sync",
-						payload: {
-							t0: timeSyncPayload.t0,
-							t1: new Date().valueOf()
-						}
-					});
-					return true;
-				}
-				case "node-id": {
-					sessions[connectionId].nid = message.payload.value;
-					return true;
-				}
-				case "test": {
-					messageClient({
-						msgCode: "test",
-						payload: JSON.stringify(
-							Object.keys(sessions).map((k) => k + (sessions[k].nid || "no nid"))
-						)
-					});
-					return true;
-				}
-			}
-		}
-
-		/**
-		 * ## Handle binary client message
-		 *
-		 * Handles an incoming client-originated binary message.
-		 *
-		 * @param message - Binary message
-		 */
-		function handleBinaryClientMessage(message: ClientBinaryMessage): boolean {
-			switch (message.msgCode) {
-				case "test": {
-					return true;
-				}
-				case "bool-register": {
-					const { ts, id, register } = message.components;
-
-					// #region Update HLC
-					if (!currentHLC) return true;
-					const message_ts = Timestamp.deserialize(ts);
-					try {
-						currentHLC.updateWithTimestamp(message_ts);
-					} catch {
-						server.send(JSON.stringify({ msgCode: "test", payload: "Failed to update HLC." }));
-						return true;
-					}
-					// #endregion
-
-					const nidStr = sessions[connectionId].nid;
-
-					if (nidStr) {
-						try {
-							const nid = UID.fromString(nidStr).serialize();
-							const binMessage = buildServerBinaryMessage({
-								msgCode: "bool-register",
-								components: { nid, ts, id, register }
-							});
-							server.send(binMessage);
-						} catch (e) {
-							messageClient({
-								msgCode: "test",
-								payload: e
-							});
-						}
-					}
-					return true;
-				}
-			}
-		}
-
 		//#region WebSocket event handlers
 		server.addEventListener("message", async ({ data }) => {
 			if (data instanceof ArrayBuffer) {
-				handleBinaryClientMessage(parseClientBinaryMessage(new Uint8Array(data)));
-
-				// Broadcast message to connected client nodes.
-				// this.broadcastMessage(binData);
-
-				// server.send(
-				// 	JSON.stringify({
-				// 		msgCode: "test",
-				// 		payload: `Received binary data consisting of ${
-				// 			binData.byteLength
-				// 		} bytes. Last time: ${currentHLC.last_time.toString()}`
-				// 	})
-				// );
+				this.handleBinaryClientMessage(
+					connectionId,
+					parseClientBinaryMessage(new Uint8Array(data))
+				);
 			} else {
 				try {
 					const message = JSON.parse(data) as ClientMessage;
-					await handleClientMessage(message);
+					await this.handleClientMessage(connectionId, message);
 				} catch (e) {
 					if (e instanceof SyntaxError) {
 						console.error("JSON couldn't be parsed");
