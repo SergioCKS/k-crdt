@@ -80,7 +80,7 @@ export class SyncAgent {
                 return true;
             }
             case "node-id": {
-                session.nid = message.payload.value;
+                session.nid = UID.fromString(message.payload.value).serialize();
                 return true;
             }
             case "test": {
@@ -120,10 +120,9 @@ export class SyncAgent {
                     return true;
                 }
                 // #endregion
-                const nidStr = session?.nid;
-                if (nidStr) {
+                const nid = session?.nid;
+                if (nid) {
                     try {
-                        const nid = UID.fromString(nidStr).serialize();
                         const binMessage = buildServerBinaryMessage({
                             msgCode: "bool-register",
                             components: { nid, ts, id, register }

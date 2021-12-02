@@ -18,7 +18,12 @@ interface Env {
  */
 interface Session {
 	ws: WebSocket;
-	nid?: string;
+	/**
+	 * ### Node ID
+	 *
+	 * Unique ID of the connected node as an encoded UID.
+	 */
+	nid?: Uint8Array;
 }
 
 /**
@@ -108,7 +113,7 @@ export class SyncAgent {
 				return true;
 			}
 			case "node-id": {
-				session.nid = message.payload.value;
+				session.nid = UID.fromString(message.payload.value).serialize();
 				return true;
 			}
 			case "test": {
@@ -149,11 +154,10 @@ export class SyncAgent {
 				}
 				// #endregion
 
-				const nidStr = session?.nid;
+				const nid = session?.nid;
 
-				if (nidStr) {
+				if (nid) {
 					try {
-						const nid = UID.fromString(nidStr).serialize();
 						const binMessage = buildServerBinaryMessage({
 							msgCode: "bool-register",
 							components: { nid, ts, id, register }
