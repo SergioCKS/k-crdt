@@ -73,6 +73,7 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	} else {
 		wasm.initializeNodeId();
 		encodedId = wasm.nid.serialize();
+		localDb.putRecord({ id: "NID", type: RecordType.UID, value: encodedId.buffer });
 	}
 	// 5. Restore clock from local database or initialize it in a default state.
 	const encoded = await localDb.getRecord("HLC");
@@ -118,16 +119,13 @@ export async function handleClientMessage(
 
 			wasm.setOffset(BigInt(Math.round(newOffset)));
 
-			try {
-				const encodedClock = wasm.serializeClock();
-				localDb.putRecord({
-					id: "HLC",
-					type: RecordType.HLC,
-					value: encodedClock
-				});
-			} catch (error) {
-				console.error(error);
-			}
+			const encodedClock = wasm.serializeClock();
+			localDb.putRecord({
+				id: "HLC",
+				type: RecordType.HLC,
+				value: encodedClock
+			});
+
 			return true;
 		}
 		case "no-sync-connection": {

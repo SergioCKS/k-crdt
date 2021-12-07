@@ -12,6 +12,7 @@ import { generateId } from "./wasm/crdts";
  * Known record types. Each type corresponds to a specific
  */
 export enum RecordType {
+	UID = "uid",
 	HLC = "hlc",
 	BoolRegister = "bool-register"
 }

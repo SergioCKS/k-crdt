@@ -239,11 +239,12 @@ export class SyncConnection {
 					msgCode: "time-sync",
 					payload: { t0: new Date().valueOf() }
 				});
-				const binMessage = buildClientBinaryMessage({
-					msgCode: "node-id",
-					components: { nid }
-				});
-				this.sendMessage(binMessage);
+				this.sendMessage(
+					buildClientBinaryMessage({
+						msgCode: "node-id",
+						components: { nid }
+					})
+				);
 				resolve();
 			});
 

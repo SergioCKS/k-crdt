@@ -130,15 +130,6 @@ impl UID {
     }
 }
 
-#[cfg(feature = "client")]
-#[wasm_bindgen]
-impl UID {
-    #[wasm_bindgen(js_name = getCopy)]
-    pub fn get_copy(&self) -> Self {
-        self.clone()
-    }
-}
-
 #[wasm_bindgen]
 impl UID {
     /// ### Generate new ID

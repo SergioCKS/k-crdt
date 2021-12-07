@@ -418,13 +418,6 @@ export class UID {
         wasm.__wbg_uid_free(ptr);
     }
     /**
-    * @returns {UID}
-    */
-    getCopy() {
-        var ret = wasm.uid_getCopy(this.ptr);
-        return UID.__wrap(ret);
-    }
-    /**
     * ### Generate new ID
     *
     * Generates a new random unique ID.

@@ -125,10 +125,6 @@ export class Timestamp {
 export class UID {
   free(): void;
 /**
-* @returns {UID}
-*/
-  getCopy(): UID;
-/**
 * ### Generate new ID
 *
 * Generates a new random unique ID.
@@ -174,7 +170,6 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly __wbg_uid_free: (a: number) => void;
-  readonly uid_getCopy: (a: number) => number;
   readonly uid_new: () => number;
   readonly uid_fromString: (a: number, b: number) => number;
   readonly uid_toString: (a: number, b: number) => void;

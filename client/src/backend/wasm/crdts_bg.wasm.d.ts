@@ -2,7 +2,6 @@
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
 export function __wbg_uid_free(a: number): void;
-export function uid_getCopy(a: number): number;
 export function uid_new(): number;
 export function uid_fromString(a: number, b: number): number;
 export function uid_toString(a: number, b: number): void;
