@@ -66,9 +66,17 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	// 2. Initialize WASM
 	await wasm.initialize();
 	// 3. Open DB
-	const nid = await localDb.initialize();
-	// 4. Set node ID in WASM engine.
-	wasm.setNodeId(nid);
+	await localDb.initialize();
+	// 4. Restore node ID from local database or generate a new one.
+	const nidRecord = await localDb.getRecord("NID");
+	let encodedId: Uint8Array;
+	if (nidRecord) {
+		encodedId = new Uint8Array(nidRecord.value);
+		wasm.deserializeNodeId(encodedId);
+	} else {
+		wasm.initializeNodeId();
+		encodedId = wasm.nid.serialize();
+	}
 	// 5. Restore clock from local database or initialize it in a default state.
 	const encoded = await localDb.getRecord("HLC");
 	if (encoded) {
@@ -77,7 +85,7 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 		wasm.initializeClock();
 	}
 	// 6. Initialize connection to sync manager.
-	await syncConnection.initialize(forceRestart, nid);
+	await syncConnection.initialize(forceRestart, encodedId);
 }
 
 /**

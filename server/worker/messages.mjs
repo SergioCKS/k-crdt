@@ -31,9 +31,9 @@ const BOOL_BYTES = 1;
  * specific types from the object automatically.
  */
 const clientBinaryMessageObj = {
-    test: {
+    "node-id": {
         discriminant: 0,
-        components: [{ name: "payload", size: UID_BYTES }],
+        components: [{ name: "nid", size: UID_BYTES }],
     },
     "bool-register": {
         discriminant: 1,

@@ -46,18 +46,23 @@ export class Wasm {
 	}
 
 	/**
-	 * ### Set node ID
+	 * ### Deserialize node ID
 	 *
 	 * Set the node ID for the WASM engine.
 	 *
-	 * @param nodeId - ID of the node in the system.
+	 * @param encoded - ID of the node in the system in binary format.
 	 */
-	public setNodeId(nodeId: string): void {
-		this.nid = UID.fromString(nodeId);
+	public deserializeNodeId(encoded: Uint8Array): void {
+		this.nid = UID.deserialize(encoded);
 	}
 
-	public getNodeId(): UID {
-		return this.nid.getCopy();
+	/**
+	 * ### Initialize node ID
+	 *
+	 * Initializes the node ID as a new random UID.
+	 */
+	public initializeNodeId(): void {
+		this.nid = new UID();
 	}
 	//#endregion
 

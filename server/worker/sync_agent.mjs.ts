@@ -112,10 +112,6 @@ export class SyncAgent {
 				});
 				return true;
 			}
-			case "node-id": {
-				session.nid = UID.fromString(message.payload.value).serialize();
-				return true;
-			}
 			case "test": {
 				this.messageClient(ws, {
 					msgCode: "test",
@@ -137,7 +133,8 @@ export class SyncAgent {
 		const session = this.sessions[connectionId];
 		const ws = session?.ws;
 		switch (message.msgCode) {
-			case "test": {
+			case "node-id": {
+				session.nid = message.components.nid;
 				return true;
 			}
 			case "bool-register": {

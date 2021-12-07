@@ -82,35 +82,72 @@ export class LocalDb {
 	public db: IDBDatabase = undefined;
 
 	/**
+	 * ## Open Database
+	 *
+	 * Opens the CRDT IndexedDB database.
+	 *
+	 * * Async wrapper that resolves on success or failure of the operation.
+	 * * Handles schema changes on version upgrades.
+	 *
+	 * @param dbName - Database name
+	 * @returns IndexDB Database
+	 */
+	private async openDb(dbName: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const dbOpenRequest = worker.indexedDB.open(dbName);
+			dbOpenRequest.onerror = () => {
+				reject("Error while attempting to open the local database.");
+			};
+			dbOpenRequest.onupgradeneeded = (event) => {
+				const request = event.target as IDBOpenDBRequest;
+				const db = request.result;
+
+				if (db.version === 1) {
+					// Uses "in-line" keys, i.e. keys are contained in values.
+					db.createObjectStore("crdts", { keyPath: "id" });
+				}
+			};
+			dbOpenRequest.onsuccess = () => {
+				this.db = dbOpenRequest.result;
+				resolve();
+			};
+		});
+	}
+
+	/**
 	 * ### Initialize local database
 	 *
 	 * Initializes the IndexedDB CRDT database. Must be called before attempting to perform any request to the database.
 	 *
 	 * @returns ID of the Node in the system.
 	 */
-	public async initialize(): Promise<string> {
-		// Check browser support.
-		if (!worker.indexedDB) throw "Your browser doesn't support a stable version of IndexedDB.";
+	public initialize(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			// 1. Check browser support.
+			if (!worker.indexedDB) reject("Your browser doesn't support a stable version of IndexedDB.");
 
-		//#region 1. Get DB name or generate a new one.
-		// The name of the database has the format `KCRDT:{nodeID}`.
-		const dbs = await worker.indexedDB.databases();
-		const dbNames = dbs.map((dbInfo) => dbInfo.name || "");
-		const crdtDbNames = dbNames.filter((dbName) => dbName.split(":")[0] === "KCRDT");
+			// 2. Open database.
+			const dbOpenRequest = worker.indexedDB.open("KCRDT");
+			dbOpenRequest.onerror = () => {
+				reject("Error while attempting to open the local database.");
+			};
+			dbOpenRequest.onupgradeneeded = (event) => {
+				const request = event.target as IDBOpenDBRequest;
+				const db = request.result;
 
-		if (crdtDbNames.length > 1)
-			await Promise.all(crdtDbNames.map((dbName) => LocalDb.deleteDb(dbName)));
-
-		const nodeId = crdtDbNames.length === 1 ? dbNames[0].substring(6) : generateId();
-		//#endregion
-
-		//2. Open database.
-		await this.openDb(`KCRDT:${nodeId}`);
+				if (db.version === 1) {
+					// Uses "in-line" keys, i.e. keys are contained in values.
+					db.createObjectStore("crdts", { keyPath: "id" });
+				}
+			};
+			dbOpenRequest.onsuccess = () => {
+				this.db = dbOpenRequest.result;
+				resolve();
+			};
+		});
 
 		// Setup generic error handler for errors that were not handled locally.
 		this.db.onerror = (event) => console.error("Database error:", event);
-
-		return nodeId;
 	}
 
 	/**
@@ -200,39 +237,6 @@ export class LocalDb {
 				} else {
 					resolve([]);
 				}
-			};
-		});
-	}
-
-	/**
-	 * ## Open Database
-	 *
-	 * Opens the CRDT IndexedDB database.
-	 *
-	 * * Async wrapper that resolves on success or failure of the operation.
-	 * * Handles schema changes on version upgrades.
-	 *
-	 * @param dbName - Database name
-	 * @returns IndexDB Database
-	 */
-	private async openDb(dbName: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const dbOpenRequest = worker.indexedDB.open(dbName);
-			dbOpenRequest.onerror = () => {
-				reject("Error while attempting to open the local database.");
-			};
-			dbOpenRequest.onupgradeneeded = (event) => {
-				const request = event.target as IDBOpenDBRequest;
-				const db = request.result;
-
-				if (db.version === 1) {
-					// Uses "in-line" keys, i.e. keys are contained in values.
-					db.createObjectStore("crdts", { keyPath: "id" });
-				}
-			};
-			dbOpenRequest.onsuccess = () => {
-				this.db = dbOpenRequest.result;
-				resolve();
 			};
 		});
 	}

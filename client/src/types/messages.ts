@@ -58,7 +58,6 @@ type WorkerMessageObj = {
  */
 type ClientMessageObj = {
   "time-sync": { t0: number };
-  "node-id": { value: string };
   test: undefined;
 };
 
@@ -177,9 +176,9 @@ const BOOL_BYTES = 1 as 1;
  * specific types from the object automatically.
  */
 const clientBinaryMessageObj = {
-  test: {
+  "node-id": {
     discriminant: 0 as 0,
-    components: [{ name: "payload" as "payload", size: UID_BYTES }],
+    components: [{ name: "nid" as "nid", size: UID_BYTES }],
   },
   "bool-register": {
     discriminant: 1 as 1,
