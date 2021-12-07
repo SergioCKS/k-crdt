@@ -24,7 +24,6 @@
 	function handleWorkerMessage(message: WorkerMessage): boolean {
 		switch (message.msgCode) {
 			case "initialized": {
-				console.log("initialized");
 				// if (!$initialized) messageWorker({ msgCode: "restore-registers" });
 				$initialized = true;
 				return true;

@@ -31,15 +31,9 @@ export class Wasm {
 	 *
 	 * Initialize Wasm interface.
 	 */
-	public async initialize(): Promise<string> {
+	public async initialize(): Promise<void> {
 		// Initialize Wasm instance. Once initialized, Wasm objects are available.
 		await init();
-		// Starts with a random node ID, which is replaced by a stored one later if found.
-		this.nid = new UID();
-		// Starts with a default clock, which is replaced by a stored one later if found.
-		this.hlc = new BrowserHLC();
-
-		return this.nid.toString();
 	}
 
 	/**
@@ -112,6 +106,15 @@ export class Wasm {
 	 */
 	public deserializeClock(encoded: ArrayBuffer): void {
 		this.hlc = BrowserHLC.deserialize(new Uint8Array(encoded));
+	}
+
+	/**
+	 * ### Initialize clock
+	 *
+	 * Initializes the local clock in a default state.
+	 */
+	public initializeClock(): void {
+		this.hlc = new BrowserHLC();
 	}
 
 	/**

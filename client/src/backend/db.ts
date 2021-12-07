@@ -4,6 +4,7 @@
  * Interface to IndexedDB.
  * @module
  */
+import { generateId } from "./wasm/crdts";
 
 /**
  * ## Type of the record
@@ -87,7 +88,7 @@ export class LocalDb {
 	 *
 	 * @returns ID of the Node in the system.
 	 */
-	public async initialize(nid: string): Promise<string> {
+	public async initialize(): Promise<string> {
 		// Check browser support.
 		if (!worker.indexedDB) throw "Your browser doesn't support a stable version of IndexedDB.";
 
@@ -97,12 +98,10 @@ export class LocalDb {
 		const dbNames = dbs.map((dbInfo) => dbInfo.name || "");
 		const crdtDbNames = dbNames.filter((dbName) => dbName.split(":")[0] === "KCRDT");
 
-		let nodeId = nid;
-		if (crdtDbNames.length == 1) {
-			nodeId = dbNames[0].substring(6);
-		} else if (crdtDbNames.length > 1) {
+		if (crdtDbNames.length > 1)
 			await Promise.all(crdtDbNames.map((dbName) => LocalDb.deleteDb(dbName)));
-		}
+
+		const nodeId = crdtDbNames.length === 1 ? dbNames[0].substring(6) : generateId();
 		//#endregion
 
 		//2. Open database.

@@ -1,15 +1,21 @@
 //! # Unique ID
 //!
-//! Unique IDs used throughout the system.
-//!
-//! An ID consists of 128 uniformly random bits,
-//! which is more than both NanoID (126 random bits) and UUIDv4 (122 random bits).
+//! Globally unique IDs used throughout the system.
 //!
 //! An ID can be represented uniquely as a string of 21 characters over the
 //! alphabet `A-Za-z0-9_-` plus a character over the alphabet `-012`
 //! (22 characters total).
 //!
 //! Example ID in string form: `qI5wz90BL_9SXG79gaCcz1`
+//!
+//! ### Comparison with alternatives
+//!
+//! | ID type                                    | Custom _ | UUIDv4 _ | NanoID             |
+//! | ------------------------------------------ | -------- | -------- | ------------------ |
+//! | Random bits                                | 128      | 122      | 126                |
+//! | Size of binary representation (bytes)      | 16       | 16       | No bin. repr.      |
+//! | Size of string representation (characters) | 22       | 36       | 21                 |
+//! | URL-safe string repr.                      | YES      | NO       | YES                |
 //!
 //! ### Ordering
 //!
@@ -18,6 +24,12 @@
 //!
 //! In binary format (or equivalently as number), the derived (lexicographic)
 //! ordering is consistent with the ordering in string format.
+//!
+//! ### Serialization/Deserialization
+//!
+//! The serialized version of a UID consists of the binary representation of the underlying [`u128`]
+//! as an array of 16 bytes. This way, it can be used and compared with other UIDs in serialized
+//! form directly.  
 //!
 //! ### Usage
 //!
@@ -160,14 +172,14 @@ impl UID {
     ///
     /// Returns an encoded version of the UID.
     pub fn serialize(&self) -> Vec<u8> {
-        bincode::serialize(self).unwrap_throw()
+        self.0.to_be_bytes().into()
     }
 
     /// ### Deserialize
     ///
     /// Constructs a UID object from an encoded version.
     pub fn deserialize(encoded: Vec<u8>) -> UID {
-        bincode::deserialize::<UID>(&encoded[..]).unwrap_throw()
+        UID(u128::from_be_bytes(encoded.try_into().unwrap_throw()))
     }
 }
 
@@ -357,13 +369,15 @@ mod uid_tests {
     #[test]
     fn serializes_and_deserializes_correctly() {
         let uid = UID::new();
-        let serialized: Vec<u8> =
-            bincode::serialize(&uid).expect("Serialization from new ID should work.");
+        let serialized = uid.serialize();
 
-        assert_eq!(serialized.len(), 16);
+        assert_eq!(
+            serialized.len(),
+            16,
+            "The binary representation of a UID should consist exactly of 16 bytes."
+        );
 
-        let deserialized: UID =
-            bincode::deserialize(&serialized[..]).expect("Deserialization should work.");
+        let deserialized: UID = UID::deserialize(serialized.into());
 
         assert_eq!(
             uid, deserialized,

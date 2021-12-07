@@ -64,24 +64,20 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 		syncConnection = new SyncConnection(new URL("wss://rust-wasm.zeda.workers.dev/ws"));
 	}
 	// 2. Initialize WASM
-	let nid = await wasm.initialize();
+	await wasm.initialize();
 	// 3. Open DB
-	nid = await localDb.initialize(nid);
+	const nid = await localDb.initialize();
 	// 4. Set node ID in WASM engine.
 	wasm.setNodeId(nid);
-	// 5. Restore clock from local database.
-	try {
-		const encoded = await localDb.getRecord("HLC");
-		if (encoded) wasm.deserializeClock(encoded.value);
-	} catch (error) {
-		console.error(error);
+	// 5. Restore clock from local database or initialize it in a default state.
+	const encoded = await localDb.getRecord("HLC");
+	if (encoded) {
+		wasm.deserializeClock(encoded.value);
+	} else {
+		wasm.initializeClock();
 	}
 	// 6. Initialize connection to sync manager.
-	try {
-		await syncConnection.initialize(forceRestart, nid);
-	} catch (error) {
-		console.log("Error connecting to server node. Device considered offline.", error);
-	}
+	await syncConnection.initialize(forceRestart, nid);
 }
 
 /**
