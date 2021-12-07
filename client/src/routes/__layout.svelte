@@ -10,26 +10,8 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { initialized, registers } from "../stores/engine";
-	import { offline, serviceWorkerSupported } from "../stores/general";
+	import { offline, serviceWorkerSupported, messageWorker } from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
-
-	/**
-	 * ## Service worker registration
-	 *
-	 * * Set on app mount.
-	 */
-	let workerRegistration: ServiceWorkerRegistration | undefined = undefined;
-
-	/**
-	 * ## Message worker
-	 *
-	 * Send a message to the web worker.
-	 *
-	 * @param message - Message to send.
-	 */
-	function messageWorker(message: AppMessage) {
-		workerRegistration?.active?.postMessage(message);
-	}
 
 	/**
 	 * ## Handle worker message
@@ -73,7 +55,6 @@
 	 * * Checks if the browser supports message workers.
 	 * * Sets up handler for worker messages.
 	 * * Sends an initialization message when the worker becomes active.
-	 *
 	 */
 	onMount(() => {
 		//#region 1. Check if the browser supports service workers.
@@ -96,22 +77,24 @@
 		});
 		//#endregion
 
-		//#region 3. Send initialization message, as soon as the worker becomes active.
 		workerContainer.ready.then((registration) => {
-			workerRegistration = registration;
 			const worker = registration.active;
+			// 3. Establish channel to worker for other components to use.
+			$messageWorker = (message: AppMessage) => {
+				worker.postMessage(message);
+			};
+			// 4. Send initialization message, as soon as the worker becomes active.
 			worker.addEventListener("statechange", () => {
 				if (worker.state === "activated") {
-					messageWorker({ msgCode: "initialize" });
+					$messageWorker({ msgCode: "initialize" });
 				}
 			});
 		});
-		//#endregion
 	});
 </script>
 
-{#if $serviceWorkerSupported}
-	<slot />
-{:else}
+{#if !$serviceWorkerSupported}
 	Your browser does not support service workers.
+{:else}
+	<slot />
 {/if}

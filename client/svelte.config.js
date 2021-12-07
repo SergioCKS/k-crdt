@@ -18,7 +18,8 @@ const config = {
 		vite: {
 			resolve: {
 				alias: {
-					"$types": path.resolve("./src/types")
+					"$types": path.resolve("./src/types"),
+					"$utils": path.resolve("./src/utils")
 				}
 			}
 		}
