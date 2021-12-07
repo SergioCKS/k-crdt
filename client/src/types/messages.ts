@@ -29,7 +29,6 @@ type AppMessageObj = {
   "update-time-offset": { value: number };
   "no-sync-connection": undefined;
   "restore-registers": undefined;
-  "create-bool-register": { value: boolean };
   "update-bool-register": {
     nid: Uint8Array;
     ts: Uint8Array;
@@ -48,7 +47,6 @@ type AppMessageObj = {
 type WorkerMessageObj = {
   initialized: undefined;
   "offline-value": { value: boolean };
-  "new-register": { id: string; value: boolean; type: "bool" };
   "restored-registers": { value: Record<string, unknown> };
 };
 

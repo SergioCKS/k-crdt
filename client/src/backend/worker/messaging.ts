@@ -137,39 +137,41 @@ export async function handleClientMessage(
 			});
 			return true;
 		}
-		case "create-bool-register": {
-			// 1. Get register initial value from message.
-			const value = message.payload.value;
+		//#region create-bool-register
+		// case "create-bool-register": {
+		// 	// 1. Get register initial value from message.
+		// 	const value = message.payload.value;
 
-			// 2. Create register and retrieve values.
-			const encoded = wasm.createBoolRegister(value);
-			const uid = wasm.generateId();
-			const id = uid.toString();
-			const type = "bool";
+		// 	// 2. Create register and retrieve values.
+		// 	const encoded = wasm.createBoolRegister(value);
+		// 	const uid = wasm.generateId();
+		// 	const id = uid.toString();
+		// 	const type = "bool";
 
-			// 3. Broadcast the newly created register to the front-end clients.
-			broadcastMessage({ msgCode: "new-register", payload: { id, value, type } });
+		// 	// 3. Broadcast the newly created register to the front-end clients.
+		// 	broadcastMessage({ msgCode: "new-register", payload: { id, value, type } });
 
-			// 4. Persist encoded version in local database.
-			try {
-				await localDb.put_crdt({ id, value, encoded, type });
-			} catch (e) {
-				console.error(e);
-				return true;
-			}
+		// 	// 4. Persist encoded version in local database.
+		// 	try {
+		// 		await localDb.put_crdt({ id, value, encoded, type });
+		// 	} catch (e) {
+		// 		console.error(e);
+		// 		return true;
+		// 	}
 
-			// 5. Broadcast the event to other nodes.
-			const binMessage = buildClientBinaryMessage({
-				msgCode: "bool-register",
-				components: {
-					ts: wasm.generateTimestamp().serialize(),
-					id: uid.serialize(),
-					register: encoded
-				}
-			});
-			syncConnection.sendMessage(binMessage);
-			return true;
-		}
+		// 	// 5. Broadcast the event to other nodes.
+		// 	const binMessage = buildClientBinaryMessage({
+		// 		msgCode: "bool-register",
+		// 		components: {
+		// 			ts: wasm.generateTimestamp().serialize(),
+		// 			id: uid.serialize(),
+		// 			register: encoded
+		// 		}
+		// 	});
+		// 	syncConnection.sendMessage(binMessage);
+		// 	return true;
+		// }
+		//#endregion
 		case "restore-registers": {
 			try {
 				const crdts = (await localDb.retrieveCrdts()) as {

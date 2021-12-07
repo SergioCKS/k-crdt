@@ -10,7 +10,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { initialized, registers } from "../stores/engine";
-	import { offline } from "../stores/general";
+	import { offline, serviceWorkerSupported } from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
 
 	/**
@@ -18,7 +18,7 @@
 	 *
 	 * * Set on app mount.
 	 */
-	let registration: ServiceWorkerRegistration | undefined = undefined;
+	let workerRegistration: ServiceWorkerRegistration | undefined = undefined;
 
 	/**
 	 * ## Message worker
@@ -28,7 +28,7 @@
 	 * @param message - Message to send.
 	 */
 	function messageWorker(message: AppMessage) {
-		registration?.active?.postMessage(message);
+		workerRegistration?.active?.postMessage(message);
 	}
 
 	/**
@@ -42,7 +42,8 @@
 	function handleWorkerMessage(message: WorkerMessage): boolean {
 		switch (message.msgCode) {
 			case "initialized": {
-				if (!$initialized) messageWorker({ msgCode: "restore-registers" });
+				console.log("initialized");
+				// if (!$initialized) messageWorker({ msgCode: "restore-registers" });
 				$initialized = true;
 				return true;
 			}
@@ -50,11 +51,13 @@
 				$offline = message.payload.value;
 				return true;
 			}
-			case "new-register": {
-				let { id, value, type } = message.payload;
-				$registers[id] = { value, type };
-				return true;
-			}
+			//#region new-register
+			// case "new-register": {
+			// 	let { id, value, type } = message.payload;
+			// 	$registers[id] = { value, type };
+			// 	return true;
+			// }
+			//#endregion
 			case "restored-registers": {
 				$registers = message.payload.value;
 				return true;
@@ -62,31 +65,53 @@
 		}
 	}
 
-	onMount(async () => {
-		// Attach message handler.
-		navigator.serviceWorker.addEventListener("message", ({ data: message }) => {
+	/**
+	 * ## App initialization code
+	 *
+	 * Code run on app initialization regardless of the route being accessed.
+	 *
+	 * * Checks if the browser supports message workers.
+	 * * Sets up handler for worker messages.
+	 * * Sends an initialization message when the worker becomes active.
+	 *
+	 */
+	onMount(() => {
+		//#region 1. Check if the browser supports service workers.
+		if (!("serviceWorker" in navigator)) {
+			$serviceWorkerSupported = false;
+			console.error("Service worker not supported by the browser.");
+			return;
+		}
+		//#endregion
+
+		const workerContainer = navigator.serviceWorker;
+
+		//#region 2. Attach message handler.
+		workerContainer.addEventListener("message", ({ data }) => {
 			try {
-				handleWorkerMessage(message);
+				handleWorkerMessage(data);
 			} catch (error) {
 				console.error("Error while handling worker event.", error);
 			}
 		});
+		//#endregion
 
-		registration = await navigator.serviceWorker.ready;
-
-		//#region Send initialization message when the worker is `active`
-		const worker = registration.active;
-		if (worker?.state === "activated") {
-			messageWorker({ msgCode: "initialize" });
-		} else {
-			worker?.addEventListener("statechange", () => {
+		//#region 3. Send initialization message, as soon as the worker becomes active.
+		workerContainer.ready.then((registration) => {
+			workerRegistration = registration;
+			const worker = registration.active;
+			worker.addEventListener("statechange", () => {
 				if (worker.state === "activated") {
 					messageWorker({ msgCode: "initialize" });
 				}
 			});
-		}
+		});
 		//#endregion
 	});
 </script>
 
-<slot />
+{#if $serviceWorkerSupported}
+	<slot />
+{:else}
+	Your browser does not support service workers.
+{/if}

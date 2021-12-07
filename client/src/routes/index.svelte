@@ -17,22 +17,12 @@
 		swRegistration?.active?.postMessage(message);
 	}
 
-	/**
-	 * ## Create bool register
-	 *
-	 * Send a message to the web worker to create a new register with boolean value.
-	 *
-	 * @param payload - Payload of the message
-	 */
-	function createBoolRegister(initialValue: boolean) {
-		messageWorker({
-			msgCode: "create-bool-register",
-			payload: { value: initialValue }
-		});
-	}
-
 	function test() {
 		messageWorker({ msgCode: "test" });
+	}
+
+	function newRecord() {
+		console.log("TODO: Create new record.");
 	}
 
 	onMount(async () => {
@@ -42,8 +32,9 @@
 
 {#if !$initialized}
 	Initializing ...
+{:else}
+	<button on:click={test}>Test</button>
+	<button on:click={newRecord}>New Record</button>
+	Offline: {$offline}
+	{JSON.stringify($registers)}
 {/if}
-<button on:click={test}>Test</button>
-<button on:click={() => createBoolRegister(false)}>Create boolean register</button>
-Offline: {$offline}
-{JSON.stringify($registers)}
