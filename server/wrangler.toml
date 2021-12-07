@@ -5,6 +5,7 @@ compatibility_date = "2021-11-13"
 account_id = "1bdec0bdd535f0182f72a7a96681a9af"
 zone_id = "04801c4ee4a1ea9340974e6081eb6a4b"
 usage_model = "bundled"
+route = "crdt.zeda.tech/*"
 
 [vars]
 WORKERS_RS_VERSION = "0.0.7"

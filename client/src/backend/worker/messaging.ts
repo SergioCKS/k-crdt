@@ -59,10 +59,7 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	// 1. Renew interface objects
 	wasm = new Wasm();
 	localDb = new LocalDb();
-	if (!syncConnection) {
-		// syncConnection = new SyncConnection(new URL("wss://crdt.zeda.tech/ws"));
-		syncConnection = new SyncConnection(new URL("wss://rust-wasm.zeda.workers.dev/ws"));
-	}
+	if (!syncConnection) syncConnection = new SyncConnection(new URL("wss://crdt.zeda.tech/ws"));
 	// 2. Initialize WASM
 	await wasm.initialize();
 	// 3. Open DB
