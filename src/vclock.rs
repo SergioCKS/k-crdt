@@ -1,5 +1,4 @@
 use crate::gcounter::GCounter;
-use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::cmp::Ordering::{Equal, Greater, Less};
 
@@ -9,7 +8,7 @@ use std::cmp::Ordering::{Equal, Greater, Less};
 ///
 /// * Implemented as a tuple struct over GCounter using the `newtype` pattern.
 /// * Implements the `PartialOrd` trait which allows for comparison of VClock timestamps.
-#[derive(PartialEq, Clone, Debug, Deserialize, Serialize)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct VClock(GCounter);
 
 impl VClock {

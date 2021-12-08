@@ -102,16 +102,18 @@ export class Timestamp {
 /**
 * ### Serialize
 *
-* Returns an encoded version of a timestamp.
-*
-* * Size: 8 bytes
+* Returns the timestamp in binary format as an array of 8 bytes.
 * @returns {Uint8Array}
 */
   serialize(): Uint8Array;
 /**
 * ### Deserialize
 *
-* Constructs a [`Timestamp`] object from an encoded version.
+* Constructs a [`Timestamp`] from an encoded version.
+*
+* #### Errors
+*
+* A JS exception is thrown if the wrong number of bytes are given.
 * @param {Uint8Array} encoded
 * @returns {Timestamp}
 */
@@ -128,15 +130,18 @@ export class UID {
 * ### Generate new ID
 *
 * Generates a new random unique ID.
-*
-* An ID can be represented as a string consisting of 21 random characters over the
-* alphabet `A-Za-z0-9_-` followed by a random character over the alphabet `ABCD`
-* (22 characters total).
-*
-* To generate random data, a `ThreadRNG` is used.
 */
   constructor();
 /**
+* ### UID from string
+*
+* Generates a new UID from a valid string representation.
+*
+* * `nid_str` - String representation of the the UID.
+*
+* #### Errors
+*
+* A JS exception is thrown if the provided string does not correspond to a valid UID.
 * @param {string} nid_str
 * @returns {UID}
 */
@@ -151,7 +156,7 @@ export class UID {
 /**
 * ### Serialize
 *
-* Returns an encoded version of the UID.
+* Returns the UID in binary format as an array of 16 bytes.
 * @returns {Uint8Array}
 */
   serialize(): Uint8Array;
@@ -159,6 +164,10 @@ export class UID {
 * ### Deserialize
 *
 * Constructs a UID object from an encoded version.
+*
+* #### Errors
+* 
+* A JS exception is thrown if a wrong number of bytes are given.
 * @param {Uint8Array} encoded
 * @returns {UID}
 */
@@ -175,8 +184,6 @@ export interface InitOutput {
   readonly uid_toString: (a: number, b: number) => void;
   readonly uid_serialize: (a: number, b: number) => void;
   readonly uid_deserialize: (a: number, b: number) => number;
-  readonly generateId: (a: number) => void;
-  readonly createBoolRegister: (a: number, b: number, c: number) => void;
   readonly __wbg_browserhlc_free: (a: number) => void;
   readonly browserhlc_new: () => number;
   readonly browserhlc_getOffset: (a: number, b: number) => void;
@@ -189,6 +196,8 @@ export interface InitOutput {
   readonly timestamp_toString: (a: number, b: number) => void;
   readonly timestamp_serialize: (a: number, b: number) => void;
   readonly timestamp_deserialize: (a: number, b: number) => number;
+  readonly generateId: (a: number) => void;
+  readonly createBoolRegister: (a: number, b: number, c: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;

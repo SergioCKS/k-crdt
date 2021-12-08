@@ -1,14 +1,13 @@
 //! # GCounter CRDT
 //!
 //! Implementation of a _grow-only-counter_ CRDT.
-use serde::{Deserialize, Serialize};
 use std::cmp::max;
 use std::collections::BTreeMap;
 
 /// ## Grow-Only Counter
 ///
 /// Representation of a grow-only counter CRDT.
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct GCounter {
     /// ### Node counts
     ///

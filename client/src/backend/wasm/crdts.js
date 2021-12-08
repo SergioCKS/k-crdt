@@ -119,6 +119,17 @@ function passArray8ToWasm0(arg, malloc) {
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
+
+const u32CvtShim = new Uint32Array(2);
+
+const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
+
+function _assertClass(instance, klass) {
+    if (!(instance instanceof klass)) {
+        throw new Error(`expected instance of ${klass.name}`);
+    }
+    return instance.ptr;
+}
 /**
 * ## Generate ID
 *
@@ -138,12 +149,6 @@ export function generateId() {
     }
 }
 
-function _assertClass(instance, klass) {
-    if (!(instance instanceof klass)) {
-        throw new Error(`expected instance of ${klass.name}`);
-    }
-    return instance.ptr;
-}
 /**
 * ## Create bool register
 *
@@ -173,10 +178,6 @@ export function createBoolRegister(ts, value) {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }
 }
-
-const u32CvtShim = new Uint32Array(2);
-
-const int64CvtShim = new BigInt64Array(u32CvtShim.buffer);
 
 function handleError(f, args) {
     try {
@@ -360,9 +361,7 @@ export class Timestamp {
     /**
     * ### Serialize
     *
-    * Returns an encoded version of a timestamp.
-    *
-    * * Size: 8 bytes
+    * Returns the timestamp in binary format as an array of 8 bytes.
     * @returns {Uint8Array}
     */
     serialize() {
@@ -381,7 +380,11 @@ export class Timestamp {
     /**
     * ### Deserialize
     *
-    * Constructs a [`Timestamp`] object from an encoded version.
+    * Constructs a [`Timestamp`] from an encoded version.
+    *
+    * #### Errors
+    *
+    * A JS exception is thrown if the wrong number of bytes are given.
     * @param {Uint8Array} encoded
     * @returns {Timestamp}
     */
@@ -421,18 +424,21 @@ export class UID {
     * ### Generate new ID
     *
     * Generates a new random unique ID.
-    *
-    * An ID can be represented as a string consisting of 21 random characters over the
-    * alphabet `A-Za-z0-9_-` followed by a random character over the alphabet `ABCD`
-    * (22 characters total).
-    *
-    * To generate random data, a `ThreadRNG` is used.
     */
     constructor() {
         var ret = wasm.uid_new();
         return UID.__wrap(ret);
     }
     /**
+    * ### UID from string
+    *
+    * Generates a new UID from a valid string representation.
+    *
+    * * `nid_str` - String representation of the the UID.
+    *
+    * #### Errors
+    *
+    * A JS exception is thrown if the provided string does not correspond to a valid UID.
     * @param {string} nid_str
     * @returns {UID}
     */
@@ -463,7 +469,7 @@ export class UID {
     /**
     * ### Serialize
     *
-    * Returns an encoded version of the UID.
+    * Returns the UID in binary format as an array of 16 bytes.
     * @returns {Uint8Array}
     */
     serialize() {
@@ -483,6 +489,10 @@ export class UID {
     * ### Deserialize
     *
     * Constructs a UID object from an encoded version.
+    *
+    * #### Errors
+    *
+    * A JS exception is thrown if a wrong number of bytes are given.
     * @param {Uint8Array} encoded
     * @returns {UID}
     */

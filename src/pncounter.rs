@@ -2,12 +2,11 @@
 ///
 /// Implementation of a _positive/negative counter_ CRDT
 use crate::gcounter::GCounter;
-use serde::{Deserialize, Serialize};
 
 /// ## Positive/Negative Counter
 ///
 /// Representation of a positive/negative counter CRDT.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct PNCounter {
     pub positive: GCounter,
     pub negative: GCounter,
