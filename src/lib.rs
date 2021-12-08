@@ -6,6 +6,7 @@ pub mod client;
 pub mod gcounter;
 pub mod lwwregister;
 pub mod pncounter;
+pub mod serialization;
 #[cfg(feature = "server")]
 pub mod server;
 pub mod steps;

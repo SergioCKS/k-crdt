@@ -41,6 +41,7 @@
 //! time part taking precedence over the counter part. Usually, timestamps are associated with a
 //! the node in the system that generated it by providing the node ID. In case of a tie, the node ID
 //! would be used to pick the winner arbitrarily but deterministically.
+use crate::serialization::{Serialize, Deserialize};
 use humantime::parse_rfc3339;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub};
@@ -234,8 +235,9 @@ impl Timestamp {
     /// ### Serialize
     ///
     /// Returns the timestamp in binary format as an array of 8 bytes.
-    pub fn serialize(&self) -> Vec<u8> {
-        self.0.to_be_bytes().into()
+    #[wasm_bindgen(js_name = serialize)]
+    pub fn serialize_js(&self) -> Vec<u8> {
+        self.serialize()
     }
 
     /// ### Deserialize
@@ -245,8 +247,9 @@ impl Timestamp {
     /// #### Errors
     ///
     /// A JS exception is thrown if the wrong number of bytes are given.
-    pub fn deserialize(encoded: Vec<u8>) -> Timestamp {
-        Timestamp(u64::from_be_bytes(encoded.try_into().unwrap_throw()))
+    #[wasm_bindgen(js_name = deserialize)]
+    pub fn deserialize_js(encoded: Vec<u8>) -> Timestamp {
+        Timestamp::deserialize(encoded)
     }
 }
 
@@ -313,6 +316,17 @@ impl Sub<Timestamp> for Timestamp {
     }
 }
 
+impl Serialize for Timestamp {
+    fn serialize(&self) -> Vec<u8> {
+        self.0.to_be_bytes().into()
+    }
+}
+
+impl Deserialize for Timestamp {
+    fn deserialize(encoded: Vec<u8>) -> Self {
+        Timestamp(u64::from_be_bytes(encoded.try_into().unwrap_throw()))
+    }
+}
 //#region TimestampError
 /// ## Timestamp error
 ///

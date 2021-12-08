@@ -30,7 +30,7 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[wasm_bindgen_test]
 fn uid_works() {
     let id = UID::new();
-    let id_copy = id.get_copy();
+    let id_copy = id.clone();
     assert_eq!(id, id_copy);
     let id_str = String::from("qI5wz90BL_9SXG79gaCcz1");
     let id = UID::from_string_js(id_str.clone());

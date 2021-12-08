@@ -3,11 +3,11 @@
 //! Time-related objects meant to be used exclusively in a server-node environment.
 
 use super::{hlc::HybridLogicalClock, Clock, Timestamp};
-use serde::{Deserialize, Serialize};
+use crate::serialization::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 //#region Clock
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Default)]
 pub struct ServerClock;
 
 impl Clock for ServerClock {
@@ -19,7 +19,7 @@ impl Clock for ServerClock {
 
 //#region HLC
 #[wasm_bindgen]
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Default)]
 pub struct ServerHLC {
     pub last_time: Timestamp,
 }
@@ -54,15 +54,17 @@ impl ServerHLC {
     /// ### Serialize
     ///
     /// Generate an encoded version of the clock.
-    pub fn serialize(&self) -> Vec<u8> {
-        bincode::serialize(&self).unwrap_throw()
+    #[wasm_bindgen(js_name = serialize)]
+    pub fn serialize_js(&self) -> Vec<u8> {
+        self.serialize()
     }
 
     /// ### Deserialize
     ///
     /// Generates a clock from an encoded version.
-    pub fn deserialize(encoded: Vec<u8>) -> ServerHLC {
-        bincode::deserialize::<ServerHLC>(&encoded[..]).unwrap_throw()
+    #[wasm_bindgen(js_name = deserialize)]
+    pub fn deserialize_js(encoded: Vec<u8>) -> ServerHLC {
+        ServerHLC::deserialize(encoded)
     }
 }
 
@@ -77,6 +79,20 @@ impl HybridLogicalClock<ServerClock> for ServerHLC {
 
     fn get_internal_clock(&self) -> ServerClock {
         ServerClock::default()
+    }
+}
+
+impl Serialize for ServerHLC {
+    fn serialize(&self) -> Vec<u8> {
+        self.last_time.serialize()
+    }
+}
+
+impl Deserialize for ServerHLC {
+    fn deserialize(encoded: Vec<u8>) -> Self {
+        ServerHLC {
+            last_time: Timestamp::deserialize(encoded),
+        }
     }
 }
 //#endregion

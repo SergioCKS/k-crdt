@@ -1,10 +1,13 @@
 //! # Clock
 //!
 //! An interface for clocks that poll time and output HLC/NTP timestamps.
-use crate::time::timestamp::Timestamp;
-use serde::{Deserialize, Serialize};
+use crate::{
+    serialization::{Deserialize, Serialize},
+    time::timestamp::Timestamp,
+};
 use std::ops::Add;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use wasm_bindgen::UnwrapThrowExt;
 
 /// ## Maximum time offset
 ///
@@ -15,8 +18,8 @@ pub const MAX_OFFSET: i64 = 31_556_952;
 /// ## Offset
 ///
 /// Time offset in milliseconds.
-#[derive(Clone, Copy, Default, Debug, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Offset(i64); // bincode: 8 bytes
+#[derive(Clone, Copy, Default, Debug, Eq, PartialEq)]
+pub struct Offset(i64); // encoded: 8 bytes
 
 impl Offset {
     /// ### Zero offset
@@ -79,6 +82,18 @@ impl Add<Offset> for Offset {
         Self(self.0.saturating_add(rhs.0))
     }
 }
+
+impl Serialize for Offset {
+    fn serialize(&self) -> Vec<u8> {
+        self.0.to_be_bytes().into()
+    }
+}
+
+impl Deserialize for Offset {
+    fn deserialize(encoded: Vec<u8>) -> Self {
+        Offset(i64::from_be_bytes(encoded.try_into().unwrap_throw()))
+    }
+}
 //#endregion
 
 /// ## Clock (trait)
@@ -132,7 +147,7 @@ pub trait Offsetted: Clock {
 /// ## System Time Clock
 ///
 /// A clock relying on [`SysTime`] as time source.
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Default)]
 pub struct SysTimeClock {
     offset: Offset, // bincode: 8 bytes
 }
@@ -219,21 +234,7 @@ mod tests {
     #[test]
     fn offset_works() {
         // Offset from duration
-        let offset = Offset::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
-
-        //#region Serialization/deserialization
-        let encoded = bincode::serialize(&offset).unwrap();
-        assert_eq!(
-            encoded.len(),
-            8,
-            "Serialized version of an Offset should be 8 bytes long."
-        );
-        let de_offset: Offset = bincode::deserialize(&encoded[..]).unwrap();
-        assert_eq!(
-            offset, de_offset,
-            "Serialization + deserialization shouldn't change the object."
-        );
-        //#endregion
+        Offset::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
     }
 
     #[test]

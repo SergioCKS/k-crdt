@@ -2,6 +2,7 @@
 //!
 //! Objects intended for usage in client-only environments.
 use super::{lwwregister::LWWRegister, time::Timestamp, uid::UID};
+use crate::serialization::Serialize;
 use wasm_bindgen::prelude::*;
 
 /// ## Generate ID
@@ -23,5 +24,5 @@ pub fn generate_id() -> String {
 #[wasm_bindgen(js_name = createBoolRegister)]
 pub fn create_bool_register(ts: Timestamp, value: bool) -> Vec<u8> {
     let register = LWWRegister::new(ts, value);
-    bincode::serialize(&register).unwrap_throw()
+    register.serialize()
 }

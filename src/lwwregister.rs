@@ -3,14 +3,18 @@
 //! The *last-write-wins register (LWWRegister)* CRDT implements a wrapper over a generic type
 //! that stores a timestamp as metadata and allows for conflict-free resolution using a simple
 //! last-write-wins strategy.
-use crate::time::timestamp::Timestamp;
-use crate::uid::UID;
+use wasm_bindgen::UnwrapThrowExt;
+use crate::{
+    time::timestamp::Timestamp,
+    serialization::{Serialize, Deserialize},
+    uid::UID
+};
 
 /// ## LWWRegister
 ///
 /// Data structure representing a last-write-wins register wrapping a generic type.
 #[derive(Clone, Default, Debug)]
-pub struct LWWRegister<T: Clone + Default> {
+pub struct LWWRegister<T: Clone + Default + Serialize + Deserialize> {
     /// ### Timestamp
     ///
     /// HLC timestamp indicating the last update to the register.
@@ -24,7 +28,7 @@ pub struct LWWRegister<T: Clone + Default> {
     value: T,
 }
 
-impl<T: Clone + Default> LWWRegister<T> {
+impl<T: Clone + Default + Serialize + Deserialize> LWWRegister<T> {
     /// ### New LWWRegister
     ///
     /// Creates a new LWWRegister that wraps an arbitrary value.
@@ -78,6 +82,25 @@ impl<T: Clone + Default> LWWRegister<T> {
             self.value = other.get_value();
             self.ts = other.ts;
         }
+    }
+}
+
+impl<T: Clone + Default + Serialize + Deserialize> Serialize for LWWRegister<T> {
+    fn serialize(&self) -> Vec<u8> {
+        let mut result = Vec::new();
+        result.extend(self.ts.serialize().iter());
+        result.extend(self.value.serialize().iter());
+        result
+    }
+}
+
+impl<T: Clone + Default + Serialize + Deserialize> Deserialize for LWWRegister<T> {
+    fn deserialize(encoded: Vec<u8>) -> Self {
+        let (ts, val) = encoded.split_at(8);
+        Self::new(
+            Timestamp::deserialize(ts.try_into().unwrap_throw()),
+            T::deserialize(val.try_into().unwrap_throw())
+        )
     }
 }
 

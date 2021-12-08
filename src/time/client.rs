@@ -5,8 +5,10 @@ use super::{
     hlc::{HybridLogicalClock, Offsetted},
     Clock, Offset, Timestamp,
 };
-use crate::time::clock::Offsetted as COffsetted;
-use serde::{Deserialize, Serialize};
+use crate::{
+    serialization::{Deserialize, Serialize},
+    time::clock::Offsetted as COffsetted,
+};
 use wasm_bindgen::{prelude::*, JsCast};
 
 //#region Clock
@@ -16,9 +18,9 @@ use wasm_bindgen::{prelude::*, JsCast};
 ///
 /// * The [`Performance` interface](https://developer.mozilla.org/en-US/docs/Web/API/Performance)
 ///   is used to poll time. The time resolution is vendor-dependent, but is at least in the millisecond range.
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Default)]
 pub struct BrowserClock {
-    offset: Offset, // bincode: 8 bytes
+    offset: Offset, // encoded: 8 bytes
 }
 
 impl Clock for BrowserClock {
@@ -49,6 +51,20 @@ impl COffsetted for BrowserClock {
         self.offset = offset;
     }
 }
+
+impl Serialize for BrowserClock {
+    fn serialize(&self) -> Vec<u8> {
+        self.offset.serialize()
+    }
+}
+
+impl Deserialize for BrowserClock {
+    fn deserialize(encoded: Vec<u8>) -> Self {
+        BrowserClock {
+            offset: Offset::deserialize(encoded),
+        }
+    }
+}
 //#endregion
 
 //#region HLC
@@ -56,7 +72,7 @@ impl COffsetted for BrowserClock {
 ///
 /// Hybrid logical clock based on browser time.
 #[wasm_bindgen]
-#[derive(Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Default)]
 pub struct BrowserHLC {
     // bincode: 16 bytes
     /// ### Last time
@@ -105,15 +121,17 @@ impl BrowserHLC {
     /// ### Serialize HLC
     ///
     /// Returns an updated encoded version of the HLC.
-    pub fn serialize(&self) -> Vec<u8> {
-        bincode::serialize(&self).unwrap_throw()
+    #[wasm_bindgen(js_name = serialize)]
+    pub fn serialize_js(&self) -> Vec<u8> {
+        self.serialize()
     }
 
     /// ### Deserialize HLC
     ///
     /// Constructs an HLC from an encoded version.
-    pub fn deserialize(encoded: Vec<u8>) -> BrowserHLC {
-        bincode::deserialize::<BrowserHLC>(&encoded[..]).unwrap_throw()
+    #[wasm_bindgen(js_name = deserialize)]
+    pub fn deserialize_js(encoded: Vec<u8>) -> BrowserHLC {
+        BrowserHLC::deserialize(encoded)
     }
 
     /// ### Generate timestamp (JS)
@@ -154,6 +172,25 @@ impl HybridLogicalClock<BrowserClock> for BrowserHLC {
 
     fn get_internal_clock(&self) -> BrowserClock {
         self.clock
+    }
+}
+
+impl Serialize for BrowserHLC {
+    fn serialize(&self) -> Vec<u8> {
+        let mut result: Vec<u8> = Vec::new();
+        result.extend(self.clock.serialize().iter());
+        result.extend(self.last_time.serialize());
+        result
+    }
+}
+
+impl Deserialize for BrowserHLC {
+    fn deserialize(encoded: Vec<u8>) -> Self {
+        let (c, ts) = encoded.split_at(8);
+        BrowserHLC {
+            clock: BrowserClock::deserialize(c.try_into().unwrap_throw()),
+            last_time: Timestamp::deserialize(ts.try_into().unwrap_throw()),
+        }
     }
 }
 //#endregion

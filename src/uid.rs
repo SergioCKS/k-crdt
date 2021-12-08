@@ -55,6 +55,7 @@
 //! let uid = UID::from_str("qI5wz90BL_9SXG79gaCcz1").unwrap();
 //! ```
 //!
+use crate::serialization::{Serialize, Deserialize};
 use rand::random;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
@@ -141,8 +142,9 @@ impl UID {
     /// ### Serialize
     ///
     /// Returns the UID in binary format as an array of 16 bytes.
-    pub fn serialize(&self) -> Vec<u8> {
-        self.0.to_be_bytes().into()
+    #[wasm_bindgen(js_name = serialize)]
+    pub fn serialize_js(&self) -> Vec<u8> {
+        self.serialize()
     }
 
     /// ### Deserialize
@@ -152,8 +154,9 @@ impl UID {
     /// #### Errors
     /// 
     /// A JS exception is thrown if a wrong number of bytes are given.
-    pub fn deserialize(encoded: Vec<u8>) -> UID {
-        UID(u128::from_be_bytes(encoded.try_into().unwrap_throw()))
+    #[wasm_bindgen(js_name = deserialize)]
+    pub fn deserialize_js(encoded: Vec<u8>) -> UID {
+        UID::deserialize(encoded)
     }
 }
 
@@ -260,6 +263,18 @@ impl FromStr for UID {
 pub enum UIDParseError {
     CharacterNotAllowed,
     IncorrectLength,
+}
+
+impl Serialize for UID {
+    fn serialize(&self) -> Vec<u8> {
+        self.0.to_be_bytes().into()
+    }
+}
+
+impl Deserialize for UID {
+    fn deserialize(encoded: Vec<u8>) -> Self {
+        UID(u128::from_be_bytes(encoded.try_into().unwrap_throw()))
+    }
 }
 
 #[cfg(test)]
