@@ -7,7 +7,7 @@ use crate::serialization::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 //#region Clock
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Eq, PartialEq, Debug)]
 pub struct ServerClock;
 
 impl Clock for ServerClock {
@@ -19,7 +19,7 @@ impl Clock for ServerClock {
 
 //#region HLC
 #[wasm_bindgen]
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Eq, PartialEq, Debug)]
 pub struct ServerHLC {
     pub last_time: Timestamp,
 }

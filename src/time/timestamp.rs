@@ -41,7 +41,7 @@
 //! time part taking precedence over the counter part. Usually, timestamps are associated with a
 //! the node in the system that generated it by providing the node ID. In case of a tie, the node ID
 //! would be used to pick the winner arbitrarily but deterministically.
-use crate::serialization::{Serialize, Deserialize};
+use crate::serialization::{Deserialize, Serialize};
 use humantime::parse_rfc3339;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub};
@@ -340,6 +340,7 @@ pub enum TimestampError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::serialization::test_serialization;
     use humantime::format_rfc3339;
     use std::cmp::Ordering;
 
@@ -495,17 +496,6 @@ mod tests {
 
     #[test]
     fn serialization_deserialization_works() {
-        let timestamp = Timestamp::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
-        let encoded = timestamp.serialize();
-        assert_eq!(
-            encoded.len(),
-            8,
-            "Encoding of a timestamp should be exactly 8 bytes."
-        );
-        let decoded = Timestamp::deserialize(encoded);
-        assert_eq!(
-            timestamp, decoded,
-            "Encoding and decoding a timestamp should not change the value of a timestamp."
-        );
+        test_serialization::<Timestamp>();
     }
 }

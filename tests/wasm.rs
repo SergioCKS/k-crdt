@@ -13,14 +13,18 @@
 //! ```shell
 //! cargo run --bin test-wasm
 //! ```
-use crdts::time::{
-    client::{BrowserClock, BrowserHLC},
-    clock::{test_clock, test_offsetted},
-    hlc::{hlc_drift_is_limited, hlc_generate_timestamp_works, hlc_update_with_timestamp_works},
-    server::{ServerClock, ServerHLC},
+use crdts::{
+    serialization::test_serialization,
+    time::{
+        client::{BrowserClock, BrowserHLC},
+        clock::{test_clock, test_offsetted},
+        hlc::{
+            hlc_drift_is_limited, hlc_generate_timestamp_works, hlc_update_with_timestamp_works,
+        },
+        server::{ServerClock, ServerHLC},
+    },
+    uid::UID,
 };
-use crdts::uid::UID;
-use wasm_bindgen_test::wasm_bindgen_test_configure;
 use wasm_bindgen_test::*;
 
 // Configure wasm-pack to run in browser.
@@ -37,12 +41,18 @@ fn uid_works() {
     assert_eq!(id.as_string(), id_str);
 }
 
-// BrowserClock
+//#region BrowserClock
 #[wasm_bindgen_test]
 fn browser_clock_works() {
     test_clock::<BrowserClock>();
     test_offsetted::<BrowserClock>();
 }
+
+#[wasm_bindgen_test]
+fn browser_clock_serialization_deserialization_works() {
+    test_serialization::<BrowserClock>();
+}
+//#endregion
 
 // ServerClock
 #[wasm_bindgen_test]
@@ -65,6 +75,11 @@ fn browser_hlc_update_with_timestamp_works() {
 fn browser_hlc_drift_is_limited() {
     hlc_drift_is_limited::<BrowserClock, BrowserHLC>();
 }
+
+#[wasm_bindgen_test]
+fn browser_hlc_serialization_deserialization_works() {
+    test_serialization::<BrowserHLC>();
+}
 //#endregion
 
 //#region ServerHLC
@@ -81,5 +96,10 @@ fn server_hlc_update_with_timestamp_works() {
 #[wasm_bindgen_test]
 fn server_hlc_drift_is_limited() {
     hlc_drift_is_limited::<ServerClock, ServerHLC>();
+}
+
+#[wasm_bindgen_test]
+fn server_hlc_serialization_deserialization_works() {
+    test_serialization::<ServerHLC>();
 }
 //#endregion

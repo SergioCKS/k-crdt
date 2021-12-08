@@ -18,7 +18,7 @@ use wasm_bindgen::{prelude::*, JsCast};
 ///
 /// * The [`Performance` interface](https://developer.mozilla.org/en-US/docs/Web/API/Performance)
 ///   is used to poll time. The time resolution is vendor-dependent, but is at least in the millisecond range.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Eq, PartialEq, Debug)]
 pub struct BrowserClock {
     offset: Offset, // encoded: 8 bytes
 }
@@ -72,7 +72,7 @@ impl Deserialize for BrowserClock {
 ///
 /// Hybrid logical clock based on browser time.
 #[wasm_bindgen]
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, Eq, PartialEq, Debug)]
 pub struct BrowserHLC {
     // bincode: 16 bytes
     /// ### Last time

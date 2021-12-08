@@ -3,18 +3,18 @@
 //! The *last-write-wins register (LWWRegister)* CRDT implements a wrapper over a generic type
 //! that stores a timestamp as metadata and allows for conflict-free resolution using a simple
 //! last-write-wins strategy.
-use wasm_bindgen::UnwrapThrowExt;
 use crate::{
+    serialization::{Deserialize, Serialize},
     time::timestamp::Timestamp,
-    serialization::{Serialize, Deserialize},
-    uid::UID
+    uid::UID,
 };
+use wasm_bindgen::UnwrapThrowExt;
 
 /// ## LWWRegister
 ///
 /// Data structure representing a last-write-wins register wrapping a generic type.
-#[derive(Clone, Default, Debug)]
-pub struct LWWRegister<T: Clone + Default + Serialize + Deserialize> {
+#[derive(Clone, Default, Debug, Eq, PartialEq)]
+pub struct LWWRegister<T: Clone + Default + Eq + PartialEq + Serialize + Deserialize> {
     /// ### Timestamp
     ///
     /// HLC timestamp indicating the last update to the register.
@@ -28,7 +28,7 @@ pub struct LWWRegister<T: Clone + Default + Serialize + Deserialize> {
     value: T,
 }
 
-impl<T: Clone + Default + Serialize + Deserialize> LWWRegister<T> {
+impl<T: Clone + Default + Serialize + Deserialize + Eq + PartialEq> LWWRegister<T> {
     /// ### New LWWRegister
     ///
     /// Creates a new LWWRegister that wraps an arbitrary value.
@@ -85,7 +85,7 @@ impl<T: Clone + Default + Serialize + Deserialize> LWWRegister<T> {
     }
 }
 
-impl<T: Clone + Default + Serialize + Deserialize> Serialize for LWWRegister<T> {
+impl<T: Clone + Default + Serialize + Deserialize + Eq + PartialEq> Serialize for LWWRegister<T> {
     fn serialize(&self) -> Vec<u8> {
         let mut result = Vec::new();
         result.extend(self.ts.serialize().iter());
@@ -94,15 +94,23 @@ impl<T: Clone + Default + Serialize + Deserialize> Serialize for LWWRegister<T> 
     }
 }
 
-impl<T: Clone + Default + Serialize + Deserialize> Deserialize for LWWRegister<T> {
+impl<T: Clone + Default + Serialize + Deserialize + Eq + PartialEq> Deserialize for LWWRegister<T> {
     fn deserialize(encoded: Vec<u8>) -> Self {
         let (ts, val) = encoded.split_at(8);
         Self::new(
             Timestamp::deserialize(ts.try_into().unwrap_throw()),
-            T::deserialize(val.try_into().unwrap_throw())
+            T::deserialize(val.try_into().unwrap_throw()),
         )
     }
 }
 
 #[cfg(test)]
-mod lwwregister_tests {}
+mod lwwregister_tests {
+    use super::*;
+    use crate::serialization::test_serialization;
+
+    #[test]
+    fn serialization_deserialization_works() {
+        test_serialization::<LWWRegister<bool>>();
+    }
+}

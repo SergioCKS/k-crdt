@@ -55,7 +55,7 @@
 //! let uid = UID::from_str("qI5wz90BL_9SXG79gaCcz1").unwrap();
 //! ```
 //!
-use crate::serialization::{Serialize, Deserialize};
+use crate::serialization::{Deserialize, Serialize};
 use rand::random;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
@@ -152,7 +152,7 @@ impl UID {
     /// Constructs a UID object from an encoded version.
     ///
     /// #### Errors
-    /// 
+    ///
     /// A JS exception is thrown if a wrong number of bytes are given.
     #[wasm_bindgen(js_name = deserialize)]
     pub fn deserialize_js(encoded: Vec<u8>) -> UID {
@@ -280,6 +280,7 @@ impl Deserialize for UID {
 #[cfg(test)]
 mod uid_tests {
     use super::*;
+    use crate::serialization::test_serialization;
 
     #[test]
     fn ordering_is_consistent() {
@@ -357,20 +358,6 @@ mod uid_tests {
 
     #[test]
     fn serializes_and_deserializes_correctly() {
-        let uid = UID::new();
-        let serialized = uid.serialize();
-
-        assert_eq!(
-            serialized.len(),
-            16,
-            "The binary representation of a UID should consist exactly of 16 bytes."
-        );
-
-        let deserialized: UID = UID::deserialize(serialized.into());
-
-        assert_eq!(
-            uid, deserialized,
-            "Serialization and deserialization of a UID shouldn't change its value"
-        );
+        test_serialization::<UID>();
     }
 }
