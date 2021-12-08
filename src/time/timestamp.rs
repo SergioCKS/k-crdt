@@ -42,7 +42,6 @@
 //! the node in the system that generated it by providing the node ID. In case of a tie, the node ID
 //! would be used to pick the winner arbitrarily but deterministically.
 use humantime::parse_rfc3339;
-use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub};
 use std::str::FromStr;
@@ -137,8 +136,8 @@ pub const COUNTER_MASK: u64 =
 ///
 /// 64-bit HLC/NTP timestamp.
 #[wasm_bindgen]
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default, Debug, Serialize, Deserialize)]
-pub struct Timestamp(u64); // bincode: 8 bytes
+#[derive(Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct Timestamp(u64); // encoded: 8 bytes
 
 impl Timestamp {
     #[inline]
@@ -234,18 +233,20 @@ impl Timestamp {
 
     /// ### Serialize
     ///
-    /// Returns an encoded version of a timestamp.
-    ///
-    /// * Size: 8 bytes
+    /// Returns the timestamp in binary format as an array of 8 bytes.
     pub fn serialize(&self) -> Vec<u8> {
-        bincode::serialize(self).unwrap_throw()
+        self.0.to_be_bytes().into()
     }
 
     /// ### Deserialize
     ///
-    /// Constructs a [`Timestamp`] object from an encoded version.
+    /// Constructs a [`Timestamp`] from an encoded version.
+    ///
+    /// #### Errors
+    ///
+    /// A JS exception is thrown if the wrong number of bytes are given.
     pub fn deserialize(encoded: Vec<u8>) -> Timestamp {
-        bincode::deserialize::<Timestamp>(&encoded[..]).unwrap_throw()
+        Timestamp(u64::from_be_bytes(encoded.try_into().unwrap_throw()))
     }
 }
 
@@ -481,14 +482,13 @@ mod tests {
     #[test]
     fn serialization_deserialization_works() {
         let timestamp = Timestamp::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
-        let encoded: Vec<u8> =
-            bincode::serialize(&timestamp).expect("Timestamp should be serializable.");
-        assert!(
-            encoded.len() == 8,
+        let encoded = timestamp.serialize();
+        assert_eq!(
+            encoded.len(),
+            8,
             "Encoding of a timestamp should be exactly 8 bytes."
         );
-        let decoded: Timestamp =
-            bincode::deserialize(&encoded[..]).expect("Deserialization should work.");
+        let decoded = Timestamp::deserialize(encoded);
         assert_eq!(
             timestamp, decoded,
             "Encoding and decoding a timestamp should not change the value of a timestamp."

@@ -27,7 +27,7 @@
 //!
 //! ### Serialization/Deserialization
 //!
-//! The serialized version of a UID consists of the binary representation of the underlying [`u128`]
+//! The serialized version of a UID consists of the binary representation of the underlying `u128`
 //! as an array of 16 bytes. This way, it can be used and compared with other UIDs in serialized
 //! form directly.  
 //!
@@ -56,7 +56,6 @@
 //! ```
 //!
 use rand::random;
-use serde::{Deserialize, Serialize};
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
@@ -104,48 +103,28 @@ pub fn alphabet_char_to_num(c: char) -> Result<u8, UIDParseError> {
 ///
 /// Unique ID represented compactly as [`u128`].
 #[wasm_bindgen]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Debug)]
-pub struct UID(u128); // bincode: 16 bytes
-
-impl UID {
-    pub fn as_byte_string(&self) -> Vec<u8> {
-        vec![
-            (self.0 >> 120) as u8,
-            (self.0 >> 112) as u8,
-            (self.0 >> 104) as u8,
-            (self.0 >> 96) as u8,
-            (self.0 >> 88) as u8,
-            (self.0 >> 80) as u8,
-            (self.0 >> 72) as u8,
-            (self.0 >> 64) as u8,
-            (self.0 >> 56) as u8,
-            (self.0 >> 48) as u8,
-            (self.0 >> 40) as u8,
-            (self.0 >> 32) as u8,
-            (self.0 >> 24) as u8,
-            (self.0 >> 16) as u8,
-            (self.0 >> 8) as u8,
-            self.0 as u8,
-        ]
-    }
-}
+#[derive(Copy, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub struct UID(u128); // encoded: 16 bytes
 
 #[wasm_bindgen]
 impl UID {
     /// ### Generate new ID
     ///
     /// Generates a new random unique ID.
-    ///
-    /// An ID can be represented as a string consisting of 21 random characters over the
-    /// alphabet `A-Za-z0-9_-` followed by a random character over the alphabet `ABCD`
-    /// (22 characters total).
-    ///
-    /// To generate random data, a `ThreadRNG` is used.
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
         Self(random::<u128>())
     }
 
+    /// ### UID from string
+    ///
+    /// Generates a new UID from a valid string representation.
+    ///
+    /// * `nid_str` - String representation of the the UID.
+    ///
+    /// #### Errors
+    ///
+    /// A JS exception is thrown if the provided string does not correspond to a valid UID.
     #[wasm_bindgen(js_name = fromString)]
     pub fn from_string_js(nid_str: String) -> UID {
         UID::from_str(&nid_str).unwrap_throw()
@@ -161,7 +140,7 @@ impl UID {
 
     /// ### Serialize
     ///
-    /// Returns an encoded version of the UID.
+    /// Returns the UID in binary format as an array of 16 bytes.
     pub fn serialize(&self) -> Vec<u8> {
         self.0.to_be_bytes().into()
     }
@@ -169,6 +148,10 @@ impl UID {
     /// ### Deserialize
     ///
     /// Constructs a UID object from an encoded version.
+    ///
+    /// #### Errors
+    /// 
+    /// A JS exception is thrown if a wrong number of bytes are given.
     pub fn deserialize(encoded: Vec<u8>) -> UID {
         UID(u128::from_be_bytes(encoded.try_into().unwrap_throw()))
     }

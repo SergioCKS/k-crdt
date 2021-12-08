@@ -5,17 +5,16 @@
 //! last-write-wins strategy.
 use crate::time::timestamp::Timestamp;
 use crate::uid::UID;
-use serde::{Deserialize, Serialize};
 
 /// ## LWWRegister
 ///
 /// Data structure representing a last-write-wins register wrapping a generic type.
-#[derive(Clone, Default, Debug, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug)]
 pub struct LWWRegister<T: Clone + Default> {
     /// ### Timestamp
     ///
     /// HLC timestamp indicating the last update to the register.
-    ts: Timestamp, // bincode: 8 bytes
+    ts: Timestamp, // encoded: 8 bytes
 
     /// ### Value
     ///
