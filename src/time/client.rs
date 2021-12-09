@@ -11,6 +11,11 @@ use crate::{
 };
 use wasm_bindgen::{prelude::*, JsCast};
 
+//#region Constants
+pub const BROWSER_CLOCK_SIZE: usize = 8;
+pub const BROWSER_HLC_SIZE: usize = 16;
+//#endregion
+
 //#region Clock
 /// ## Browser clock
 ///
@@ -52,19 +57,21 @@ impl COffsetted for BrowserClock {
     }
 }
 
-impl Serialize for BrowserClock {
-    fn serialize(&self) -> Vec<u8> {
+//#region Serialization
+impl Serialize<BROWSER_CLOCK_SIZE> for BrowserClock {
+    fn serialize(&self) -> [u8; BROWSER_CLOCK_SIZE] {
         self.offset.serialize()
     }
 }
 
-impl Deserialize for BrowserClock {
-    fn deserialize(encoded: Vec<u8>) -> Self {
+impl Deserialize<BROWSER_CLOCK_SIZE> for BrowserClock {
+    fn deserialize(encoded: [u8; BROWSER_CLOCK_SIZE]) -> Self {
         BrowserClock {
             offset: Offset::deserialize(encoded),
         }
     }
 }
+//#endregion
 //#endregion
 
 //#region HLC
@@ -123,7 +130,7 @@ impl BrowserHLC {
     /// Returns an updated encoded version of the HLC.
     #[wasm_bindgen(js_name = serialize)]
     pub fn serialize_js(&self) -> Vec<u8> {
-        self.serialize()
+        self.serialize().into()
     }
 
     /// ### Deserialize HLC
@@ -131,7 +138,7 @@ impl BrowserHLC {
     /// Constructs an HLC from an encoded version.
     #[wasm_bindgen(js_name = deserialize)]
     pub fn deserialize_js(encoded: Vec<u8>) -> BrowserHLC {
-        BrowserHLC::deserialize(encoded)
+        BrowserHLC::deserialize(encoded.try_into().unwrap_throw())
     }
 
     /// ### Generate timestamp (JS)
@@ -175,22 +182,40 @@ impl HybridLogicalClock<BrowserClock> for BrowserHLC {
     }
 }
 
-impl Serialize for BrowserHLC {
-    fn serialize(&self) -> Vec<u8> {
-        let mut result: Vec<u8> = Vec::new();
-        result.extend(self.clock.serialize().iter());
-        result.extend(self.last_time.serialize());
-        result
+//#region Serialization
+impl Serialize<BROWSER_HLC_SIZE> for BrowserHLC {
+    fn serialize(&self) -> [u8; BROWSER_HLC_SIZE] {
+        let encoded_clock = self.clock.serialize();
+        let encoded_last_time = self.last_time.serialize();
+        encoded_clock
+            .iter()
+            .chain(&encoded_last_time)
+            .map(|&s| s)
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap_throw()
     }
 }
 
-impl Deserialize for BrowserHLC {
-    fn deserialize(encoded: Vec<u8>) -> Self {
-        let (c, ts) = encoded.split_at(8);
+impl Deserialize<BROWSER_HLC_SIZE> for BrowserHLC {
+    fn deserialize(encoded: [u8; BROWSER_HLC_SIZE]) -> Self {
+        let (cs, ts) = encoded.split_at(8);
         BrowserHLC {
-            clock: BrowserClock::deserialize(c.try_into().unwrap_throw()),
-            last_time: Timestamp::deserialize(ts.try_into().unwrap_throw()),
+            clock: BrowserClock::deserialize((*cs).try_into().unwrap_throw()),
+            last_time: Timestamp::deserialize((*ts).try_into().unwrap_throw()),
         }
     }
 }
 //#endregion
+//#endregion
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::serialization::test_serialization;
+
+    #[test]
+    fn browser_hlc_serialization_deserialization_works() {
+        test_serialization::<BrowserHLC, BROWSER_HLC_SIZE>();
+    }
+}

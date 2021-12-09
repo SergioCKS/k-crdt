@@ -69,12 +69,9 @@
 //! it's clock/offset, and retries the rejected updates.
 use crate::time::{
     clock::{Offsetted as COffsetted, SysTimeClock, MAX_OFFSET},
-    Offset,
+    Clock, Offset, Timestamp,
 };
-use crate::time::{Clock, Timestamp};
-use std::cmp;
-use std::fmt::Debug;
-use std::time::Duration;
+use std::{cmp, fmt::Debug, time::Duration};
 
 /// ## Maximum drift
 ///

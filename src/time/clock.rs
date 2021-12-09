@@ -5,14 +5,18 @@ use crate::{
     serialization::{Deserialize, Serialize},
     time::timestamp::Timestamp,
 };
-use std::ops::Add;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use wasm_bindgen::UnwrapThrowExt;
+use std::{
+    ops::Add,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
+//#region Constants
 /// ## Maximum time offset
 ///
 /// Maximum time offset (in seconds) for shifting time measurements.
 pub const MAX_OFFSET: i64 = 31_556_952;
+pub const OFFSET_SIZE: usize = 8;
+//#endregion
 
 //#region Offset
 /// ## Offset
@@ -53,6 +57,7 @@ impl From<Offset> for Duration {
     }
 }
 
+//#region Addition
 impl From<Duration> for Offset {
     /// ### Offset from duration
     ///
@@ -82,18 +87,21 @@ impl Add<Offset> for Offset {
         Self(self.0.saturating_add(rhs.0))
     }
 }
+//#endregion
 
-impl Serialize for Offset {
-    fn serialize(&self) -> Vec<u8> {
-        self.0.to_be_bytes().into()
+//#region Serialization
+impl Serialize<OFFSET_SIZE> for Offset {
+    fn serialize(&self) -> [u8; OFFSET_SIZE] {
+        self.0.to_be_bytes()
     }
 }
 
-impl Deserialize for Offset {
-    fn deserialize(encoded: Vec<u8>) -> Self {
-        Offset(i64::from_be_bytes(encoded.try_into().unwrap_throw()))
+impl Deserialize<OFFSET_SIZE> for Offset {
+    fn deserialize(encoded: [u8; OFFSET_SIZE]) -> Self {
+        Offset(i64::from_be_bytes(encoded.into()))
     }
 }
+//#endregion
 //#endregion
 
 /// ## Clock (trait)
@@ -230,11 +238,17 @@ pub fn test_offsetted<T: Offsetted>() {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::serialization::test_serialization;
 
     #[test]
     fn offset_works() {
         // Offset from duration
         Offset::from(SystemTime::now().duration_since(UNIX_EPOCH).unwrap());
+    }
+
+    #[test]
+    fn offset_serialization_deserialization_works() {
+        test_serialization::<Offset, OFFSET_SIZE>();
     }
 
     #[test]

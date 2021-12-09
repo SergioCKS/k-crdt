@@ -55,12 +55,13 @@
 //! let uid = UID::from_str("qI5wz90BL_9SXG79gaCcz1").unwrap();
 //! ```
 //!
-use crate::serialization::{Deserialize, Serialize};
+use crate::serialization::{Deserialize, Serialize, UID_SIZE};
 use rand::random;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
+//#region Alphabet
 /// ## Alphabet
 ///
 /// Ordered mapping of the allowed characters used in UIDs.
@@ -99,6 +100,7 @@ pub fn alphabet_char_to_num(c: char) -> Result<u8, UIDParseError> {
         None => Err(UIDParseError::CharacterNotAllowed),
     }
 }
+//#endregion
 
 /// ## UID
 ///
@@ -144,7 +146,7 @@ impl UID {
     /// Returns the UID in binary format as an array of 16 bytes.
     #[wasm_bindgen(js_name = serialize)]
     pub fn serialize_js(&self) -> Vec<u8> {
-        self.serialize()
+        self.serialize().into()
     }
 
     /// ### Deserialize
@@ -156,7 +158,7 @@ impl UID {
     /// A JS exception is thrown if a wrong number of bytes are given.
     #[wasm_bindgen(js_name = deserialize)]
     pub fn deserialize_js(encoded: Vec<u8>) -> UID {
-        UID::deserialize(encoded)
+        UID::deserialize(encoded.try_into().unwrap_throw())
     }
 }
 
@@ -265,17 +267,19 @@ pub enum UIDParseError {
     IncorrectLength,
 }
 
-impl Serialize for UID {
-    fn serialize(&self) -> Vec<u8> {
-        self.0.to_be_bytes().into()
+//#region Serialization
+impl Serialize<UID_SIZE> for UID {
+    fn serialize(&self) -> [u8; UID_SIZE] {
+        self.0.to_be_bytes()
     }
 }
 
-impl Deserialize for UID {
-    fn deserialize(encoded: Vec<u8>) -> Self {
-        UID(u128::from_be_bytes(encoded.try_into().unwrap_throw()))
+impl Deserialize<UID_SIZE> for UID {
+    fn deserialize(encoded: [u8; UID_SIZE]) -> Self {
+        UID(u128::from_be_bytes(encoded))
     }
 }
+//#endregion
 
 #[cfg(test)]
 mod uid_tests {
@@ -358,6 +362,6 @@ mod uid_tests {
 
     #[test]
     fn serializes_and_deserializes_correctly() {
-        test_serialization::<UID>();
+        test_serialization::<UID, UID_SIZE>();
     }
 }

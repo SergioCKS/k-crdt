@@ -24,5 +24,5 @@ pub fn generate_id() -> String {
 #[wasm_bindgen(js_name = createBoolRegister)]
 pub fn create_bool_register(ts: Timestamp, value: bool) -> Vec<u8> {
     let register = LWWRegister::new(ts, value);
-    register.serialize()
+    Serialize::<9>::serialize(&register).into()
 }

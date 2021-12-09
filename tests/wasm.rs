@@ -14,9 +14,9 @@
 //! cargo run --bin test-wasm
 //! ```
 use crdts::{
-    serialization::test_serialization,
+    serialization::{test_serialization, TS_SIZE},
     time::{
-        client::{BrowserClock, BrowserHLC},
+        client::{BrowserClock, BrowserHLC, BROWSER_CLOCK_SIZE, BROWSER_HLC_SIZE},
         clock::{test_clock, test_offsetted},
         hlc::{
             hlc_drift_is_limited, hlc_generate_timestamp_works, hlc_update_with_timestamp_works,
@@ -50,15 +50,9 @@ fn browser_clock_works() {
 
 #[wasm_bindgen_test]
 fn browser_clock_serialization_deserialization_works() {
-    test_serialization::<BrowserClock>();
+    test_serialization::<BrowserClock, BROWSER_CLOCK_SIZE>();
 }
 //#endregion
-
-// ServerClock
-#[wasm_bindgen_test]
-fn server_clock_works() {
-    test_clock::<ServerClock>();
-}
 
 //#region BrowserHLC
 #[wasm_bindgen_test]
@@ -78,9 +72,15 @@ fn browser_hlc_drift_is_limited() {
 
 #[wasm_bindgen_test]
 fn browser_hlc_serialization_deserialization_works() {
-    test_serialization::<BrowserHLC>();
+    test_serialization::<BrowserHLC, BROWSER_HLC_SIZE>();
 }
 //#endregion
+
+// ServerClock
+#[wasm_bindgen_test]
+fn server_clock_works() {
+    test_clock::<ServerClock>();
+}
 
 //#region ServerHLC
 #[wasm_bindgen_test]
@@ -100,6 +100,6 @@ fn server_hlc_drift_is_limited() {
 
 #[wasm_bindgen_test]
 fn server_hlc_serialization_deserialization_works() {
-    test_serialization::<ServerHLC>();
+    test_serialization::<ServerHLC, TS_SIZE>();
 }
 //#endregion

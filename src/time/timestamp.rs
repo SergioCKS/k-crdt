@@ -41,7 +41,7 @@
 //! time part taking precedence over the counter part. Usually, timestamps are associated with a
 //! the node in the system that generated it by providing the node ID. In case of a tie, the node ID
 //! would be used to pick the winner arbitrarily but deterministically.
-use crate::serialization::{Deserialize, Serialize};
+use crate::serialization::{Deserialize, Serialize, TS_SIZE};
 use humantime::parse_rfc3339;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{Add, Sub};
@@ -237,7 +237,7 @@ impl Timestamp {
     /// Returns the timestamp in binary format as an array of 8 bytes.
     #[wasm_bindgen(js_name = serialize)]
     pub fn serialize_js(&self) -> Vec<u8> {
-        self.serialize()
+        self.serialize().into()
     }
 
     /// ### Deserialize
@@ -249,10 +249,11 @@ impl Timestamp {
     /// A JS exception is thrown if the wrong number of bytes are given.
     #[wasm_bindgen(js_name = deserialize)]
     pub fn deserialize_js(encoded: Vec<u8>) -> Timestamp {
-        Timestamp::deserialize(encoded)
+        Timestamp::deserialize(encoded.try_into().unwrap_throw())
     }
 }
 
+//#region System time
 impl From<Duration> for Timestamp {
     fn from(duration: Duration) -> Self {
         let seconds = duration.as_secs();
@@ -274,7 +275,9 @@ impl From<SystemTime> for Timestamp {
         Self::from(sys_time.duration_since(UNIX_EPOCH).unwrap())
     }
 }
+//#endregion
 
+//#region String representation
 impl FromStr for Timestamp {
     type Err = TimestampError;
 
@@ -301,7 +304,9 @@ impl Display for Timestamp {
         )
     }
 }
+//#endregion
 
+//#region Addition
 impl Add<Timestamp> for Timestamp {
     type Output = Self;
     fn add(self, rhs: Timestamp) -> Self::Output {
@@ -315,18 +320,22 @@ impl Sub<Timestamp> for Timestamp {
         Self(self.0 - rhs.0)
     }
 }
+//#endregion
 
-impl Serialize for Timestamp {
-    fn serialize(&self) -> Vec<u8> {
-        self.0.to_be_bytes().into()
+//#region Serialization
+impl Serialize<TS_SIZE> for Timestamp {
+    fn serialize(&self) -> [u8; TS_SIZE] {
+        self.0.to_be_bytes()
     }
 }
 
-impl Deserialize for Timestamp {
-    fn deserialize(encoded: Vec<u8>) -> Self {
-        Timestamp(u64::from_be_bytes(encoded.try_into().unwrap_throw()))
+impl Deserialize<TS_SIZE> for Timestamp {
+    fn deserialize(encoded: [u8; TS_SIZE]) -> Self {
+        Timestamp(u64::from_be_bytes(encoded))
     }
 }
+//#endregion
+
 //#region TimestampError
 /// ## Timestamp error
 ///
@@ -496,6 +505,6 @@ mod tests {
 
     #[test]
     fn serialization_deserialization_works() {
-        test_serialization::<Timestamp>();
+        test_serialization::<Timestamp, TS_SIZE>();
     }
 }

@@ -2,10 +2,10 @@ pub mod clock;
 pub mod hlc;
 pub mod timestamp;
 
-#[cfg(feature = "client")]
+#[cfg(any(feature = "client", test))]
 pub mod client;
 
-#[cfg(feature = "server")]
+#[cfg(any(feature = "server", test))]
 pub mod server;
 
 pub use self::clock::{Clock, Offset};

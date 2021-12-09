@@ -14,7 +14,10 @@ use wasm_bindgen::UnwrapThrowExt;
 ///
 /// Data structure representing a last-write-wins register wrapping a generic type.
 #[derive(Clone, Default, Debug, Eq, PartialEq)]
-pub struct LWWRegister<T: Clone + Default + Eq + PartialEq + Serialize + Deserialize> {
+pub struct LWWRegister<T, const T_BYTES: usize>
+where
+    T: Clone + Default + Eq + PartialEq + Serialize<T_BYTES> + Deserialize<T_BYTES>,
+{
     /// ### Timestamp
     ///
     /// HLC timestamp indicating the last update to the register.
@@ -28,7 +31,10 @@ pub struct LWWRegister<T: Clone + Default + Eq + PartialEq + Serialize + Deseria
     value: T,
 }
 
-impl<T: Clone + Default + Serialize + Deserialize + Eq + PartialEq> LWWRegister<T> {
+impl<T, const T_BYTES: usize> LWWRegister<T, T_BYTES>
+where
+    T: Clone + Default + Eq + PartialEq + Serialize<T_BYTES> + Deserialize<T_BYTES>,
+{
     /// ### New LWWRegister
     ///
     /// Creates a new LWWRegister that wraps an arbitrary value.
@@ -85,32 +91,49 @@ impl<T: Clone + Default + Serialize + Deserialize + Eq + PartialEq> LWWRegister<
     }
 }
 
-impl<T: Clone + Default + Serialize + Deserialize + Eq + PartialEq> Serialize for LWWRegister<T> {
-    fn serialize(&self) -> Vec<u8> {
-        let mut result = Vec::new();
-        result.extend(self.ts.serialize().iter());
-        result.extend(self.value.serialize().iter());
-        result
+//#region Serialization
+// Serialize
+impl<T, const NUM_BYTES: usize, const T_BYTES: usize> Serialize<NUM_BYTES>
+    for LWWRegister<T, T_BYTES>
+where
+    T: Clone + Default + Eq + PartialEq + Serialize<T_BYTES> + Deserialize<T_BYTES>,
+{
+    fn serialize(&self) -> [u8; NUM_BYTES] {
+        let encoded_ts = self.ts.serialize();
+        let encoded_val = self.value.serialize();
+        encoded_ts
+            .iter()
+            .chain(&encoded_val)
+            .map(|&s| s)
+            .collect::<Vec<u8>>()
+            .try_into()
+            .unwrap_throw()
     }
 }
 
-impl<T: Clone + Default + Serialize + Deserialize + Eq + PartialEq> Deserialize for LWWRegister<T> {
-    fn deserialize(encoded: Vec<u8>) -> Self {
+// Deserialize
+impl<T, const NUM_BYTES: usize, const T_BYTES: usize> Deserialize<NUM_BYTES>
+    for LWWRegister<T, T_BYTES>
+where
+    T: Clone + Default + Eq + PartialEq + Serialize<T_BYTES> + Deserialize<T_BYTES>,
+{
+    fn deserialize(encoded: [u8; NUM_BYTES]) -> Self {
         let (ts, val) = encoded.split_at(8);
-        Self::new(
-            Timestamp::deserialize(ts.try_into().unwrap_throw()),
-            T::deserialize(val.try_into().unwrap_throw()),
-        )
+        Self {
+            ts: Timestamp::deserialize(ts.try_into().unwrap_throw()),
+            value: T::deserialize(val.try_into().unwrap_throw()),
+        }
     }
 }
+//#endregion
 
 #[cfg(test)]
 mod lwwregister_tests {
     use super::*;
-    use crate::serialization::test_serialization;
+    use crate::serialization::{test_serialization, BOOL_SIZE};
 
     #[test]
-    fn serialization_deserialization_works() {
-        test_serialization::<LWWRegister<bool>>();
+    fn bool_register_serialization_deserialization_works() {
+        test_serialization::<LWWRegister<bool, BOOL_SIZE>, 9>();
     }
 }

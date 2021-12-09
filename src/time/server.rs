@@ -3,7 +3,7 @@
 //! Time-related objects meant to be used exclusively in a server-node environment.
 
 use super::{hlc::HybridLogicalClock, Clock, Timestamp};
-use crate::serialization::{Deserialize, Serialize};
+use crate::serialization::{Deserialize, Serialize, TS_SIZE};
 use wasm_bindgen::prelude::*;
 
 //#region Clock
@@ -56,7 +56,7 @@ impl ServerHLC {
     /// Generate an encoded version of the clock.
     #[wasm_bindgen(js_name = serialize)]
     pub fn serialize_js(&self) -> Vec<u8> {
-        self.serialize()
+        self.serialize().into()
     }
 
     /// ### Deserialize
@@ -64,7 +64,7 @@ impl ServerHLC {
     /// Generates a clock from an encoded version.
     #[wasm_bindgen(js_name = deserialize)]
     pub fn deserialize_js(encoded: Vec<u8>) -> ServerHLC {
-        ServerHLC::deserialize(encoded)
+        ServerHLC::deserialize(encoded.try_into().unwrap_throw())
     }
 }
 
@@ -82,17 +82,28 @@ impl HybridLogicalClock<ServerClock> for ServerHLC {
     }
 }
 
-impl Serialize for ServerHLC {
-    fn serialize(&self) -> Vec<u8> {
+impl Serialize<TS_SIZE> for ServerHLC {
+    fn serialize(&self) -> [u8; TS_SIZE] {
         self.last_time.serialize()
     }
 }
 
-impl Deserialize for ServerHLC {
-    fn deserialize(encoded: Vec<u8>) -> Self {
+impl Deserialize<TS_SIZE> for ServerHLC {
+    fn deserialize(encoded: [u8; TS_SIZE]) -> Self {
         ServerHLC {
             last_time: Timestamp::deserialize(encoded),
         }
     }
 }
 //#endregion
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::serialization::test_serialization;
+
+    #[test]
+    fn browser_hlc_serialization_deserialization_works() {
+        test_serialization::<ServerHLC, TS_SIZE>();
+    }
+}
