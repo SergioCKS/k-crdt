@@ -35,8 +35,6 @@ export class SyncAgent {
             // Restore HLC or create a new one.
             let hlcBuffer = (await this.state.storage.get("hlc"));
             this.hlc = hlcBuffer ? ServerHLC.deserialize(new Uint8Array(hlcBuffer)) : new ServerHLC();
-            // this.hlc = new ServerHLC();
-            // await this.state.storage.put("hlc", this.hlc.serialize());
         });
     }
     /**

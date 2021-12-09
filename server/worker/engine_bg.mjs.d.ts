@@ -129,7 +129,7 @@ export class UID {
 * Constructs a UID object from an encoded version.
 *
 * #### Errors
-* 
+*
 * A JS exception is thrown if a wrong number of bytes are given.
 * @param {Uint8Array} encoded
 * @returns {UID}
