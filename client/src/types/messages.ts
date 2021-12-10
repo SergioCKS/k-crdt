@@ -28,7 +28,7 @@ type AppMessageObj = {
   initialize: undefined;
   "update-time-offset": { value: number };
   "no-sync-connection": undefined;
-  "restore-registers": undefined;
+  // "restore-registers": undefined;
   "update-bool-register": {
     nid: Uint8Array;
     ts: Uint8Array;

@@ -7,10 +7,10 @@
  * @module
  */
 import { Wasm } from "../wasm";
-import { LocalDb, RecordType } from "../db";
+import { LocalDb } from "../db";
 import { SyncConnection } from "../sync";
 import type { AppMessage, WorkerMessage } from "$types/messages";
-import { buildClientBinaryMessage } from "$types/messages";
+// import { buildClientBinaryMessage } from "$types/messages";
 
 /**
  * ## Worker Scope
@@ -65,7 +65,7 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	// 3. Open DB
 	await localDb.initialize();
 	// 4. Restore node ID from local database or generate a new one.
-	const nidRecord = await localDb.getRecord("NID");
+	const nidRecord = await localDb.getNodeRecord("NID");
 	let encodedId: Uint8Array;
 	if (nidRecord) {
 		encodedId = new Uint8Array(nidRecord.value);
@@ -73,10 +73,10 @@ async function initializeInterfaces(forceRestart = false): Promise<void> {
 	} else {
 		wasm.initializeNodeId();
 		encodedId = wasm.nid.serialize();
-		localDb.putRecord({ id: "NID", type: RecordType.UID, value: encodedId.buffer });
+		localDb.putNodeRecord({ id: "NID", value: encodedId.buffer });
 	}
 	// 5. Restore clock from local database or initialize it in a default state.
-	const encoded = await localDb.getRecord("HLC");
+	const encoded = await localDb.getNodeRecord("HLC");
 	if (encoded) {
 		wasm.deserializeClock(encoded.value);
 	} else {
@@ -120,12 +120,7 @@ export async function handleClientMessage(
 			wasm.setOffset(BigInt(Math.round(newOffset)));
 
 			const encodedClock = wasm.serializeClock();
-			localDb.putRecord({
-				id: "HLC",
-				type: RecordType.HLC,
-				value: encodedClock
-			});
-
+			localDb.putNodeRecord({ id: "HLC", value: encodedClock });
 			return true;
 		}
 		case "no-sync-connection": {
@@ -171,29 +166,29 @@ export async function handleClientMessage(
 		// 	return true;
 		// }
 		//#endregion
-		case "restore-registers": {
-			try {
-				const crdts = (await localDb.retrieveCrdts()) as {
-					id: string;
-					value: boolean;
-					encoded: Uint8Array;
-					type: string;
-				}[];
+		// case "restore-registers": {
+		// 	try {
+		// 		const crdts = (await localDb.retrieveCrdts()) as {
+		// 			id: string;
+		// 			value: boolean;
+		// 			encoded: Uint8Array;
+		// 			type: string;
+		// 		}[];
 
-				const crdts_obj: Record<string, unknown> = {};
-				for (const crdt of crdts) {
-					crdts_obj[crdt.id] = { value: crdt.value, type: crdt.type };
-				}
+		// 		const crdts_obj: Record<string, unknown> = {};
+		// 		for (const crdt of crdts) {
+		// 			crdts_obj[crdt.id] = { value: crdt.value, type: crdt.type };
+		// 		}
 
-				messageClient(client, {
-					msgCode: "restored-registers",
-					payload: { value: crdts_obj }
-				});
-			} catch (e) {
-				console.error(e);
-			}
-			return true;
-		}
+		// 		messageClient(client, {
+		// 			msgCode: "restored-registers",
+		// 			payload: { value: crdts_obj }
+		// 		});
+		// 	} catch (e) {
+		// 		console.error(e);
+		// 	}
+		// 	return true;
+		// }
 		case "update-bool-register": {
 			const { ts } = message.payload;
 

@@ -4,7 +4,52 @@
  * Interface to IndexedDB.
  * @module
  */
-import { generateId } from "./wasm/crdts";
+
+/**
+ * ## Worker Scope
+ *
+ * Typed `self` assuming the script is run on a service worker context.
+ */
+const worker = self as unknown as ServiceWorkerGlobalScope;
+
+//#region Types
+/**
+ * ## Available store
+ *
+ * IndexedDB store available for usage after initialization.
+ */
+type AvailableStore = "node" | "records" | "fields";
+
+/**
+ * ## IDB record
+ *
+ * Base IndexedDB record type.
+ */
+interface IDBRecord {
+	/**
+	 * ### ID
+	 *
+	 * Unique identifier of the record.
+	 *
+	 * * Used as primary key in IndexedDB.
+	 */
+	id: string;
+}
+
+/**
+ * ## Node metadata record
+ */
+export interface NodeRecord extends IDBRecord {
+	id: "NID" | "HLC";
+	/**
+	 * ### Value
+	 *
+	 * Binary encoding of the record.
+	 *
+	 * * The ArrayBuffer is supposed to be interpreted as a byte array (UInt8Array view).
+	 */
+	value: ArrayBuffer;
+}
 
 /**
  * ## Type of the record
@@ -18,20 +63,11 @@ export enum RecordType {
 }
 
 /**
- * ## DB Record
+ * ## Collection record
  *
- * Record stored in IndexedDB.
+ * Collection record.
  */
-export interface DbRecord {
-	/**
-	 * ### ID
-	 *
-	 * Unique identifier of the record.
-	 *
-	 * * Used as primary key in IndexedDB.
-	 */
-	id: string;
-
+export interface CRecord extends IDBRecord {
 	/**
 	 * ### Type
 	 *
@@ -61,11 +97,26 @@ export interface DbRecord {
 }
 
 /**
- * ## Worker Scope
+ * ## Field record.
  *
- * Typed `self` assuming the script is run on a service worker context.
+ * Field IDB record.
  */
-const worker = self as unknown as ServiceWorkerGlobalScope;
+export interface FieldRecord extends IDBRecord {
+	/**
+	 * ### Order
+	 *
+	 * Node-specific order of the field.
+	 */
+	order: number;
+
+	/**
+	 * ### Size
+	 *
+	 * Size (in bytes) of the value block for records implementing the field.
+	 */
+	size: number;
+}
+//#endregion
 
 /**
  * ## Local Database
@@ -81,39 +132,6 @@ export class LocalDb {
 	 * * Accessible after successful opening.
 	 */
 	public db: IDBDatabase = undefined;
-
-	/**
-	 * ## Open Database
-	 *
-	 * Opens the CRDT IndexedDB database.
-	 *
-	 * * Async wrapper that resolves on success or failure of the operation.
-	 * * Handles schema changes on version upgrades.
-	 *
-	 * @param dbName - Database name
-	 * @returns IndexDB Database
-	 */
-	private async openDb(dbName: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const dbOpenRequest = worker.indexedDB.open(dbName);
-			dbOpenRequest.onerror = () => {
-				reject("Error while attempting to open the local database.");
-			};
-			dbOpenRequest.onupgradeneeded = (event) => {
-				const request = event.target as IDBOpenDBRequest;
-				const db = request.result;
-
-				if (db.version === 1) {
-					// Uses "in-line" keys, i.e. keys are contained in values.
-					db.createObjectStore("crdts", { keyPath: "id" });
-				}
-			};
-			dbOpenRequest.onsuccess = () => {
-				this.db = dbOpenRequest.result;
-				resolve();
-			};
-		});
-	}
 
 	/**
 	 * ### Initialize local database
@@ -138,17 +156,18 @@ export class LocalDb {
 
 				if (db.version === 1) {
 					// Uses "in-line" keys, i.e. keys are contained in values.
-					db.createObjectStore("crdts", { keyPath: "id" });
+					db.createObjectStore("node", { keyPath: "id" });
+					db.createObjectStore("records", { keyPath: "id" });
+					db.createObjectStore("fields", { keyPath: "id" });
 				}
 			};
 			dbOpenRequest.onsuccess = () => {
 				this.db = dbOpenRequest.result;
+				// Setup generic error handler for errors that were not handled locally.
+				this.db.onerror = (event) => console.error("Database error:", event);
 				resolve();
 			};
 		});
-
-		// Setup generic error handler for errors that were not handled locally.
-		this.db.onerror = (event) => console.error("Database error:", event);
 	}
 
 	/**
@@ -160,87 +179,125 @@ export class LocalDb {
 		return !!this.db;
 	}
 
+	//#region Generic IDB getter/setter
 	/**
-	 * ### Put DB record
+	 * ### Put IDB record
 	 *
-	 * Adds or updates a database record in the `crdt` store.
+	 * Adds or updates an IndexedDB record.
 	 *
-	 * @param record Database record
+	 * @param store - Name of the IndexedDB store containing the record
+	 * @param record - IndexedDB record
 	 * @returns DB key of the item
 	 * @throws Errors encountered while trying to write to local database
 	 */
-	public putRecord(record: DbRecord): Promise<IDBValidKey> {
+	private putIDBRecord(store: AvailableStore, record: IDBRecord): Promise<IDBValidKey> {
 		return new Promise((resolve, reject) => {
-			const request = this.db.transaction(["crdts"], "readwrite").objectStore("crdts").put(record);
+			const request = this.db.transaction([store], "readwrite").objectStore(store).put(record);
 			request.onerror = () => reject(request.error);
 			request.onsuccess = () => resolve(request.result);
 		});
 	}
 
 	/**
-	 * ### Get DB record
+	 * ### Get IDB record
 	 *
-	 * Retrieves a database record from the `crdt` store.
+	 * Retrieves an IndexedDB record.
+	 *
+	 * @param store - Name of the IndexedDB store containing the record
+	 * @param id - Key of the record
+	 * @returns IndexedDB record or undefined if not found
+	 * @throws Errors encountered while trying to read the local database
+	 */
+	private getIDBRecord(store: AvailableStore, id: string): Promise<IDBRecord | undefined> {
+		return new Promise((resolve, reject) => {
+			const request = this.db.transaction([store], "readonly").objectStore(store).get(id);
+			request.onerror = () => reject(request.error);
+			request.onsuccess = () => resolve(request.result);
+		});
+	}
+	//#endregion
+
+	//#region Record getters
+	/**
+	 * ### Get node record
+	 *
+	 * Retrieves an IndexedDB record from the `node` store.
 	 *
 	 * @param id ID of the record
 	 * @returns Record or undefined if no matching record was found
 	 * @throws Errors encountered while trying to retrieve record from the local database
 	 */
-	public getRecord(id: string): Promise<DbRecord | undefined> {
-		return new Promise((resolve, reject) => {
-			const request = this.db.transaction(["crdts"], "readonly").objectStore("crdts").get(id);
-			request.onerror = () => reject(request.error);
-			request.onsuccess = () => resolve(request.result);
-		});
+	public getNodeRecord(id: string): Promise<NodeRecord | undefined> {
+		return this.getIDBRecord("node", id) as Promise<NodeRecord | undefined>;
 	}
 
 	/**
-	 * ### Put CRDT
+	 * ### Get DB record
 	 *
-	 * Adds or updates a record in the `crdt` store.
+	 * Retrieves an IndexedDB record from the `records` store.
 	 *
-	 * @param crdt Item to store
-	 * @returns DB key of the stored item
+	 * @param id ID of the record
+	 * @returns Record or undefined if no matching record was found
+	 * @throws Errors encountered while trying to retrieve record from the local database
 	 */
-	public async put_crdt(crdt: {
-		id: string;
-		value: any;
-		encoded: Uint8Array;
-		type: string;
-	}): Promise<IDBValidKey> {
-		return new Promise((resolve, reject) => {
-			const transaction = this.db.transaction(["crdts"], "readwrite");
-			const objectStore = transaction.objectStore("crdts");
-			const request = objectStore.put(crdt);
-			const errorMsg = "Error wile attempting to write CRDT to local database.";
-			request.onerror = () => reject(errorMsg);
-			request.onsuccess = () => {
-				if (request.result) {
-					resolve(request.result);
-				} else {
-					reject(errorMsg);
-				}
-			};
-		});
+	public getRecord(id: string): Promise<CRecord | undefined> {
+		return this.getIDBRecord("records", id) as Promise<CRecord | undefined>;
 	}
 
-	public async retrieveCrdts(): Promise<any[]> {
-		return new Promise((resolve, reject) => {
-			const transaction = this.db.transaction(["crdts"], "readonly");
-			const objectStore = transaction.objectStore("crdts");
-			const request = objectStore.getAll();
-			request.onerror = () => {
-				reject("Error while trying to retrieve CRDTs from local database.");
-			};
-			request.onsuccess = () => {
-				if (request.result) {
-					resolve(request.result);
-				} else {
-					resolve([]);
-				}
-			};
-		});
+	/**
+	 * ### Get field record
+	 *
+	 * Retrieves an IndexedDB record from the `fields` store.
+	 *
+	 * @param id ID of the record
+	 * @returns Record or undefined if no matching record was found
+	 * @throws Errors encountered while trying to retrieve record from the local database
+	 */
+	public getFieldRecord(id: string): Promise<FieldRecord | undefined> {
+		return this.getIDBRecord("fields", id) as Promise<FieldRecord | undefined>;
 	}
+	//#endregion
+
+	//#region Record Setters
+	/**
+	 * ### Put Node record
+	 *
+	 * Adds or updates a node metadata record in the `node` IDB store.
+	 *
+	 * @param record - Node record
+	 * @returns - DB key of the item
+	 * @throws Errors encountered while trying to write to local database
+	 */
+	public putNodeRecord(record: NodeRecord): Promise<IDBValidKey> {
+		return this.putIDBRecord("node", record);
+	}
+
+	/**
+	 * ### Put DB record
+	 *
+	 * Adds or updates a collection record in the `records` IDB store.
+	 *
+	 * @param record - Collection record
+	 * @returns - DB key of the item
+	 * @throws Errors encountered while trying to write to local database
+	 */
+	public putRecord(record: CRecord): Promise<IDBValidKey> {
+		return this.putIDBRecord("records", record);
+	}
+
+	/**
+	 * ### Put field record
+	 *
+	 * Adds or updates a field record in the `field` IDB store.
+	 *
+	 * @param record - Field record
+	 * @returns - DB key of the item
+	 * @throws Errors encountered while trying to write to local database
+	 */
+	public putFieldRecord(record: FieldRecord): Promise<IDBValidKey> {
+		return this.putIDBRecord("fields", record);
+	}
+	//#endregion
 
 	/**
 	 * ### Delete Database
