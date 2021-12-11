@@ -251,7 +251,16 @@ export type ServerBinaryMessage =
   BinaryMessageTypes<ServerBinaryMessageObj>[keyof ServerBinaryMessageObj];
 //#endregion
 
-//#region Binary message constructors/accessors
+//#region Binary message construction
+/**
+ * ## Build binary message
+ *
+ * Constructs a binary buffer for a single message.
+ *
+ * @param binaryMessageObj - Object specifying allowed message specifications
+ * @param message - Message to encode
+ * @returns - Encoded message
+ */
 function buildBinaryMessage(
   binaryMessageObj: BinaryMessageObj,
   message: ClientBinaryMessage | ServerBinaryMessage
@@ -276,6 +285,36 @@ function buildBinaryMessage(
 }
 
 /**
+ * ## Build binary message array
+ *
+ * Constructs a binary buffer for multiple messages.
+ *
+ * @param binaryMessageObj - Object specifying allowed message specifications
+ * @param messages - Messages to encode
+ * @returns - Buffer of messages
+ */
+function buildBinaryMessageArray(
+  binaryMessageObj: BinaryMessageObj,
+  messages: ClientBinaryMessage[] | ServerBinaryMessage[]
+): Uint8Array {
+  const binMessages = messages.map(message =>
+    buildBinaryMessage(binaryMessageObj, message)
+  );
+  const result = new Uint8Array(
+    binMessages
+      .map(binMessage => binMessage.length)
+      .reduce((prev, curr) => prev + curr, 0)
+  );
+
+  let currPosition = 0;
+  for (const binMessage of binMessages) {
+    result.set(binMessage, currPosition);
+    currPosition += binMessage.length;
+  }
+  return result;
+}
+
+/**
  * ## Build client binary message
  *
  * Constructs a binary message from binary components based on a common specification
@@ -288,6 +327,20 @@ export function buildClientBinaryMessage(
   message: ClientBinaryMessage
 ): Uint8Array {
   return buildBinaryMessage(clientBinaryMessageObj, message);
+}
+
+/**
+ * ## Build client binary messages
+ *
+ * Construct a binary buffer from multiple client messages.
+ *
+ * @param messages Messages to encode
+ * @returns Buffer of encoded messages
+ */
+export function buildClientBinaryMessageArray(
+  messages: ClientBinaryMessage[]
+): Uint8Array {
+  return buildBinaryMessageArray(clientBinaryMessageObj, messages);
 }
 
 /**
@@ -305,46 +358,99 @@ export function buildServerBinaryMessage(
   return buildBinaryMessage(serverBinaryMessageObj, message);
 }
 
-function parseBinaryMessage(
-  binaryMessageObj: BinaryMessageObj,
-  binMessage: Uint8Array
-): { msgCode: string; components: Record<string, Uint8Array> } {
-  const discriminant = binMessage[0];
+/**
+ * ## Build server binary message array
+ *
+ * Constructs a binary buffer from multiple server messages.
+ *
+ * @param messages - Messages to encode
+ * @returns - Buffer of encoded messages
+ */
+export function buildServerBinaryMessageArray(
+  messages: ServerBinaryMessage[]
+): Uint8Array {
+  return buildBinaryMessageArray(serverBinaryMessageObj, messages);
+}
+//#endregion
 
-  const entry = Object.entries(binaryMessageObj).find(
-    ([_, v]) => v.discriminant === discriminant
+//#region Binary message parsing
+/**
+ * ## Parse binary message
+ *
+ * Parses one message from a binary buffer.
+ *
+ * @param binaryMessageObj Message object specifying the possible messages
+ * @param binMessage - Buffer of one message
+ * @returns Parsed message + Rest of the buffer
+ */
+function parseBinaryMessage(
+  binaryMessageObj: ClientBinaryMessageObj | ServerBinaryMessageObj,
+  binMessage: Uint8Array
+): [ClientBinaryMessage | ServerBinaryMessage, Uint8Array] {
+  const [msgCode, val] = Object.entries(binaryMessageObj).find(
+    ([_, v]) => v.discriminant === binMessage[0]
   );
 
-  if (!entry)
-    throw `Invalid binary message. Unknown discriminant value ${discriminant}`;
-
-  const [msgCode, val] = entry;
-
-  const expectedSize = val.components
-    .map(c => c.size as number)
-    .reduce((prev, curr) => prev + curr, 1);
-
-  if (binMessage.length !== expectedSize)
-    throw `Invalid binary message. Size ${binMessage.length} doesn't match expected ${expectedSize}`;
-
   let currPosition = 1;
-  const components: Record<string, Uint8Array> = {};
+  const components = {};
   for (const { name, size } of val.components) {
     components[name] = binMessage.slice(currPosition, currPosition + size);
     currPosition += size;
   }
 
-  return { msgCode, components };
+  return [
+    { msgCode, components } as ClientBinaryMessage | ServerBinaryMessage,
+    binMessage.slice(currPosition),
+  ];
+}
+
+/**
+ * ## Parse binary message array
+ *
+ * Parses one or more messages from a binary buffer
+ *
+ * @param binaryMessageObj Message object specifying the possible messages
+ * @param binMessageArray - Buffer of one or more binary messages
+ * @returns - Array of parsed messages
+ */
+function parseBinaryMessageArray(
+  binaryMessageObj: ClientBinaryMessageObj | ServerBinaryMessageObj,
+  binMessageArray: Uint8Array
+): ClientBinaryMessage[] | ServerBinaryMessage[] {
+  let remaining = binMessageArray;
+  const result = [];
+  while (binMessageArray.length > 0) {
+    const [message, rest] = parseBinaryMessage(binaryMessageObj, remaining);
+    result.push(message);
+    remaining = rest;
+  }
+  return result;
 }
 
 /**
  * ## Parse client binary message
  *
- * Extracts the message components from a binary message received from a client node.
+ * Extracts the message components from a binary buffer for multiple client messages.
  *
- * @param binMessage Binary client message
- * @returns binary components
- * @throws If the binary message is invalid.
+ * @param binMessageArray - Binary buffer for the messages
+ * @returns - Parsed client messages
+ */
+export function parseClientBinaryMessageArray(
+  binMessageArray: Uint8Array
+): ClientBinaryMessage[] {
+  return parseBinaryMessageArray(
+    clientBinaryMessageObj,
+    binMessageArray
+  ) as ClientBinaryMessage[];
+}
+
+/**
+ * ## Parse client binary message
+ *
+ * Extracts the message components from a binary buffer for a single encoded client message.
+ *
+ * @param binMessage - Binary buffer for the message
+ * @returns Parsed client message
  */
 export function parseClientBinaryMessage(
   binMessage: Uint8Array
@@ -352,17 +458,33 @@ export function parseClientBinaryMessage(
   return parseBinaryMessage(
     clientBinaryMessageObj,
     binMessage
-  ) as ClientBinaryMessage;
+  )[0] as ClientBinaryMessage;
 }
 
 /**
  * ## Parse server binary message
  *
- * Extracts the message components from a binary message received from a server node.
+ * Extracts the message components from a binary buffer for multiple server messages.
  *
- * @param binMessage Binary server message
- * @returns binary components
- * @throws If the binary message is invalid.
+ * @param binMessageArray - Binary buffer for the messages
+ * @returns - Parsed server messages
+ */
+export function parseServerBinaryMessageArray(
+  binMessageArray: Uint8Array
+): ServerBinaryMessage[] {
+  return parseBinaryMessage(
+    serverBinaryMessageObj,
+    binMessageArray
+  ) as ServerBinaryMessage[];
+}
+
+/**
+ * ## Parse server binary message
+ *
+ * Extracts the message components from a binary buffer for a single server message.
+ *
+ * @param binMessage - Binary buffer for the message
+ * @returns Parsed server message
  */
 export function parseServerBinaryMessage(
   binMessage: Uint8Array
@@ -370,37 +492,6 @@ export function parseServerBinaryMessage(
   return parseBinaryMessage(
     serverBinaryMessageObj,
     binMessage
-  ) as ServerBinaryMessage;
+  )[0] as ServerBinaryMessage;
 }
-
-// export function parseClientBinaryMessage(
-//   binMessage: Uint8Array
-// ): ClientBinaryMessage {
-//   const discriminant = binMessage[0];
-
-//   const entry = Object.entries(clientBinaryMessageObj).find(
-//     ([_, v]) => v.discriminant === discriminant
-//   );
-
-//   if (!entry)
-//     throw `Invalid binary message. Unknown discriminant value ${discriminant}`;
-
-//   const [msgCode, val] = entry;
-
-//   const expectedSize = val.components
-//     .map(c => c.size as number)
-//     .reduce((prev, curr) => prev + curr, 1);
-
-//   if (binMessage.length !== expectedSize)
-//     throw `Invalid binary message. Size ${binMessage.length} doesn't match expected ${expectedSize}`;
-
-//   let currPosition = 1;
-//   const components: Record<string, Uint8Array> = {};
-//   for (const { name, size } of val.components) {
-//     components[name] = binMessage.slice(currPosition, currPosition + size);
-//     currPosition += size;
-//   }
-
-//   return { msgCode, components } as unknown as ClientBinaryMessage;
-// }
 //#endregion
