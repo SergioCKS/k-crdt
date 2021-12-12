@@ -42,7 +42,7 @@ worker.addEventListener("install", (event) => {
  */
 worker.addEventListener("activate", (event) => {
 	event.waitUntil(
-		clearOldFiles().then(() => {
+		clearOldFiles().then(async () => {
 			worker.clients.claim();
 		})
 	);

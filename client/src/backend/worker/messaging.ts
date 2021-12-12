@@ -45,9 +45,9 @@ async function broadcastMessage(message: WorkerMessage) {
  * @param client - Connected client
  * @param message - Message to send
  */
-function messageClient(client: Client | MessagePort | ServiceWorker, message: WorkerMessage) {
-	client.postMessage(message);
-}
+// function messageClient(client: Client | MessagePort | ServiceWorker, message: WorkerMessage) {
+// 	client.postMessage(message);
+// }
 //#endregion
 
 /**

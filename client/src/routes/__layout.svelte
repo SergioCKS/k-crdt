@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
+	import { dev } from "$app/env";
 	import { initialized, registers } from "../stores/engine";
 	import { offline, serviceWorkerSupported, messageWorker } from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
@@ -56,6 +57,31 @@
 	 * * Sends an initialization message when the worker becomes active.
 	 */
 	onMount(() => {
+		const dummyWorker = {
+			postMessage(message: AppMessage): boolean {
+				switch (message.msgCode) {
+					case "initialize": {
+						handleWorkerMessage({ msgCode: "initialized" });
+						return true;
+					}
+					case "test": {
+						console.log("TEST");
+						return true;
+					}
+				}
+				return false;
+			}
+		};
+
+		//#region 0. Setup dummy backend for development mode.
+		if (dev) {
+			console.log("Development mode. Using dummy backend (no service worker).");
+			$messageWorker = (message: AppMessage) => dummyWorker.postMessage(message);
+			$messageWorker({ msgCode: "initialize" });
+			return;
+		}
+		//#endregion
+
 		//#region 1. Check if the browser supports service workers.
 		if (!("serviceWorker" in navigator)) {
 			$serviceWorkerSupported = false;
@@ -79,15 +105,18 @@
 		workerContainer.ready.then((registration) => {
 			const worker = registration.active;
 			// 3. Establish channel to worker for other components to use.
-			$messageWorker = (message: AppMessage) => {
-				worker.postMessage(message);
-			};
+			$messageWorker = (message: AppMessage) => worker.postMessage(message);
+
 			// 4. Send initialization message, as soon as the worker becomes active.
-			worker.addEventListener("statechange", () => {
-				if (worker.state === "activated") {
-					$messageWorker({ msgCode: "initialize" });
-				}
-			});
+			if (worker.state === "activated") {
+				$messageWorker({ msgCode: "initialize" });
+			} else {
+				worker.addEventListener("statechange", () => {
+					if (worker.state === "activated") {
+						$messageWorker({ msgCode: "initialize" });
+					}
+				});
+			}
 		});
 	});
 </script>
