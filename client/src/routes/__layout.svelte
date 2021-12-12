@@ -8,11 +8,14 @@
 	@module
 -->
 <script lang="ts">
+	import "virtual:windi.css";
 	import { onMount } from "svelte";
 	import { dev } from "$app/env";
 	import { initialized, registers } from "../stores/engine";
 	import { offline, serviceWorkerSupported, messageWorker } from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
+
+	// if (browser) import "virtual:windi-devtools";
 
 	/**
 	 * ## Handle worker message

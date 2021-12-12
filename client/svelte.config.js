@@ -1,5 +1,6 @@
 import adapter from "@sveltejs/adapter-static";
 import preprocess from 'svelte-preprocess';
+import WindiCSS from "vite-plugin-windicss";
 import path from "path";
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -16,6 +17,9 @@ const config = {
 			serviceWorker: "src/backend/worker/index.ts"
 		},
 		vite: {
+			plugins: [
+				WindiCSS()
+			],
 			resolve: {
 				alias: {
 					"$types": path.resolve("./src/types"),
