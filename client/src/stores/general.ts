@@ -5,6 +5,15 @@ import { writable } from "svelte/store";
 export const serviceWorkerSupported = writable(true);
 export const offline = writable(false);
 
+// Dark mode/Light mode.
+export const darkMode = writable(false);
+
+// Navbar is shown/hidden.
+export const showNavbar = writable(true);
+
+// Mobile menu open/closed.
+export const menuOpen = writable(false);
+
 /**
  * ## Message worker
  *

@@ -3,19 +3,28 @@
 
 	Layout wrapping all components in the application.
 
-	* As the `onMount` callback of the main layout is run regardless of the page visited, it is used to setup the callbacks for messages from the web worker.
+	As the `onMount` callback of the main layout is run regardless of the page visited, it is used to setup application-level functionality:
+
+	* Application-level style definitions.
+	* Preloading of icons and fonts.
+	* Sets up the communication channel between the application and the web worker.
+	* Dark/light mode based on the user's preferred settings.
+	
+
+	The main layout also wraps contents with a navigation bar.
 
 	@module
 -->
 <script lang="ts">
 	import "virtual:windi.css";
+	import "$src/app.css";
 	import { onMount } from "svelte";
 	import { dev } from "$app/env";
 	import { initialized, registers } from "../stores/engine";
-	import { offline, serviceWorkerSupported, messageWorker } from "../stores/general";
+	import { offline, serviceWorkerSupported, messageWorker, darkMode } from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
-
-	// if (browser) import "virtual:windi-devtools";
+	import Iconify from "@iconify/iconify";
+	import Navbar from "$components/Navbar.svelte";
 
 	/**
 	 * ## Handle worker message
@@ -55,8 +64,11 @@
 	 *
 	 * Code run on app initialization regardless of the route being accessed.
 	 *
+	 * * Set up light/dark mode based on user settings
+	 * * Sets up dummy backend for development mode.
 	 * * Checks if the browser supports message workers.
 	 * * Sets up handler for worker messages.
+	 * * Establish channel to worker for other components.
 	 * * Sends an initialization message when the worker becomes active.
 	 */
 	onMount(() => {
@@ -71,12 +83,38 @@
 						console.log("TEST");
 						return true;
 					}
+					case "update-time-offset": {
+						return true;
+					}
+					case "no-sync-connection": {
+						handleWorkerMessage({ msgCode: "offline-value", payload: { value: true } });
+						return true;
+					}
+					case "update-bool-register": {
+						return true;
+					}
 				}
-				return false;
 			}
 		};
 
-		//#region 0. Setup dummy backend for development mode.
+		//#region 1. Set up light/dark mode based on the user settings.
+		function matchDarkMode(e: MediaQueryListEvent | MediaQueryList) {
+			const rootElement = document.documentElement;
+			if (e.matches) {
+				rootElement.classList.remove("light");
+				rootElement.classList.add("dark");
+				$darkMode = true;
+			} else {
+				rootElement.classList.remove("dark");
+				rootElement.classList.add("light");
+				$darkMode = false;
+			}
+		}
+		matchDarkMode(window.matchMedia("(prefers-color-scheme: dark)"));
+		window.matchMedia("(prefers-color-scheme: dark)").addListener(matchDarkMode);
+		//#endregion
+
+		//#region 2. Setup dummy backend for development mode.
 		if (dev) {
 			console.log("Development mode. Using dummy backend (no service worker).");
 			$messageWorker = (message: AppMessage) => dummyWorker.postMessage(message);
@@ -85,7 +123,7 @@
 		}
 		//#endregion
 
-		//#region 1. Check if the browser supports service workers.
+		//#region 3. Check if the browser supports service workers.
 		if (!("serviceWorker" in navigator)) {
 			$serviceWorkerSupported = false;
 			console.error("Service worker not supported by the browser.");
@@ -95,7 +133,7 @@
 
 		const workerContainer = navigator.serviceWorker;
 
-		//#region 2. Attach message handler.
+		//#region 4. Attach message handler.
 		workerContainer.addEventListener("message", ({ data }) => {
 			try {
 				handleWorkerMessage(data);
@@ -107,10 +145,10 @@
 
 		workerContainer.ready.then((registration) => {
 			const worker = registration.active;
-			// 3. Establish channel to worker for other components to use.
+			// 5. Establish channel to worker for other components to use.
 			$messageWorker = (message: AppMessage) => worker.postMessage(message);
 
-			// 4. Send initialization message, as soon as the worker becomes active.
+			// 6. Send initialization message, as soon as the worker becomes active.
 			if (worker.state === "activated") {
 				$messageWorker({ msgCode: "initialize" });
 			} else {
@@ -121,11 +159,43 @@
 				});
 			}
 		});
+		// 7. Preload icons.
+		Iconify.loadIcons(["bi:sun", "bi:moon-fill", "mdi:close"]);
 	});
 </script>
+
+<!-- Preload Fonts -->
+<svelte:head>
+	<link
+		rel="preload"
+		href="/fonts/roboto-v29-latin-regular.woff2"
+		as="font"
+		type="font/woff2"
+		crossorigin="anonymous"
+	/>
+	<link
+		rel="preload"
+		href="/fonts/Inter-VariableFont_slnt,wght.woff2"
+		as="font"
+		type="font/woff2"
+		crossorigin="anonymous"
+	/>
+	<link
+		rel="preload"
+		href="/fonts/Jost-VariableFont_wght.woff2"
+		as="font"
+		type="font/woff2"
+		crossorigin="anonymous"
+	/>
+</svelte:head>
 
 {#if !$serviceWorkerSupported}
 	Your browser does not support service workers.
 {:else}
-	<slot />
+	<!-- Navigation bar -->
+	<Navbar />
+	<!-- Content -->
+	<div class="min-h-screen mt-16 w-full py-8 overflow-hidden">
+		<slot />
+	</div>
 {/if}
