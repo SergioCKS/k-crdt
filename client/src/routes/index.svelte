@@ -56,7 +56,7 @@
 		</table>
 	</div>
 	<div class="flex flex-row space-x-2 w-full p-2 justify-end dark:bg-gray-700 light:bg-white">
-		<GButton text="Accept" color="cyan" />
+		<GButton text="Accept" />
 		<GButton text="Refuse" color="red" />
 		<GButton text="More Info" color="white" />
 	</div>
