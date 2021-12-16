@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { initialized, registers } from "../stores/engine";
 	import { offline, messageWorker, darkMode } from "../stores/general";
-	import GButton from "$components/g-button.svelte";
 
 	const data = [
 		{ a: "Data 1", b: "Data 2", c: "Data 3" },
@@ -25,9 +24,9 @@
 			{JSON.stringify($registers)}
 		</div>
 		<!-- Table -->
-		<table class="rounded my-4 text-center overflow-hidden" w-shadow="uniform-md dark:cyan-400">
+		<table class="rounded my-4 text-center overflow-hidden" u-shadow="uniform-md dark:cyan-400">
 			<!-- Table header -->
-			<thead class="shadow-uniform-sm dark:shadow-cyan-400">
+			<thead u-shadow="uniform-sm dark:cyan-400">
 				<tr>
 					{#each Object.keys(data[0]) as colName}
 						<th>{colName}</th>
@@ -35,12 +34,9 @@
 				</tr>
 			</thead>
 			<!-- Table body -->
-			<tbody w-divide="gray-200 y-[0.5px]">
+			<tbody class="divide-gray-200 divide-y-1">
 				{#each data as row}
-					<tr
-						w-divide="gray-200 x-[0.5px]"
-						w-bg="even:(light:gray-50 dark:darksurface-2) hover:(light:blue-50 dark:darksurface-5)"
-					>
+					<tr class="divide-gray-200 divide-x-1 hover:bg-blue-50  even:bg-gray-100">
 						{#each Object.values(row) as col}
 							<td>{col}</td>
 						{/each}
@@ -48,16 +44,18 @@
 				{/each}
 			</tbody>
 			<!-- Table footer -->
-			<tfoot w-shadow="uniform-md dark:cyan-400">
+			<tfoot u-shadow="uniform-md dark:cyan-400">
 				<tr>
 					<th colspan={data.length}>Footer</th>
 				</tr>
 			</tfoot>
 		</table>
-	</div>
-	<div class="flex flex-row space-x-2 w-full p-2 justify-end dark:bg-gray-700 light:bg-white">
-		<GButton text="Accept" />
-		<GButton text="Refuse" color="red" />
-		<GButton text="More Info" color="white" />
+		<div u-flex="~ row" class="w-full p-2 dark:bg-gray-700 light:bg-white">
+			<div u-flex="~ row" class="space-x-2 ml-auto mr-4">
+				<button class="g-btn-cyan-400">Accept</button>
+				<button class="g-btn-red-500">Reject</button>
+				<button class="g-btn-white">More Info</button>
+			</div>
+		</div>
 	</div>
 {/if}

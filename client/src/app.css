@@ -31,15 +31,20 @@
 	src: url("/Jost-Italic-VariableFont_wght.woff2") format("woff2-variations");
 }
 
-/* Default Styles */
 body {
-	@apply font-inter dark:(bg-darksurface text-white) light:(bg-white text-gray-900) ;
+	margin: 0px;
+	font-family: Iter;
 }
 
-h1 {
-	@apply font-jost font-variation-wght-700 indent-sm md:text-5xl -md:text-3xl dark:text-gray-200 light:text-gray-800;
+input[type="checkbox"] {
+	-webkit-appearance: none;
+	-moz-appearance: none;
 }
 
-input {
-	@apply dark:(bg-darksurface-2 text-white) light:(bg-white text-gray-900) ;
+font-menu: {
+	font-family: "Jost, sans-serif";
+	font-variation-settings: "'wght' 400";
+	font-size: "1.125rem";
+	line-height: "1.75rem";
+	letter-spacing: "0.025em";
 }

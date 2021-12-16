@@ -1,6 +1,6 @@
 import adapter from "@sveltejs/adapter-static";
 import preprocess from 'svelte-preprocess';
-import WindiCSS from "vite-plugin-windicss";
+import Unocss from "unocss/vite";
 import path from "path";
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -18,7 +18,7 @@ const config = {
 		},
 		vite: {
 			plugins: [
-				WindiCSS()
+				Unocss({ configFile: "./uno.config.ts" })
 			],
 			resolve: {
 				alias: {

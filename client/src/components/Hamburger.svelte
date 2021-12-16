@@ -7,7 +7,7 @@
   
   **Props:**
   * **`class`** Appends classes to outmost button element.
- -->
+-->
 <script lang="ts">
 	import { menuOpen } from "$stores/general";
 
@@ -30,7 +30,7 @@
 		: "transform: translateX(-50%);";
 </script>
 
-<button on:click={() => ($menuOpen = !$menuOpen)} class={"h-8 w-8 relative group " + $$props.class}>
+<button on:click={() => ($menuOpen = !$menuOpen)} class={"h-8 w-8 relative " + $$props.class}>
 	<!-- Upper bar -->
 	<div class="top-2.25 hamburger-bar" style={transformTop} />
 	<!-- Lower bar -->

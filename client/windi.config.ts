@@ -1,6 +1,5 @@
 import { defineConfig } from "windicss/helpers";
 import plugin from "windicss/plugin";
-import { safelist } from "./src/types/colors";
 
 /**
  * Custom Utilities Plugin.
@@ -40,7 +39,6 @@ export default defineConfig({
 	attributify: {
 		prefix: "w-"
 	},
-	safelist,
 	theme: {
 		extend: {
 			colors: {

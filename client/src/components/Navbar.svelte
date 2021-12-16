@@ -36,17 +36,17 @@
 
 <header
 	class="flex h-16 w-full overflow-hidden fixed items-center {navBarTop}"
-	w-p="y-1 l-4 r-2"
-	w-transition="top duration-300"
-	w-light="bg-white shadow-bottom"
-	w-dark="bg-darksurface-3"
+	u-p="y-1 l-4 r-2"
+	u-transition="top duration-300"
+	u-light="bg-white shadow-bottom"
+	u-dark="bg-darksurface-3"
 >
 	<!-- Logo-->
 	<LogoFull height="3.5rem" />
 	<!-- Navbar -->
-	<div class="flex font-menu w-full gap-x-4 items-center">
+	<div class="flex font-menu w-full gap-x-4 items-center pr-6">
 		<!-- Navbar: Left Side -->
-		<nav class="w-full">
+		<nav>
 			<ul class="w-full px-6 gap-x-4 justify-center sm:(flex justify-start) -sm:hidden ">
 				{#each navBarItems as { href, title }}
 					<li class="text-center w-16 menu-button">
@@ -56,7 +56,7 @@
 			</ul>
 		</nav>
 		<!-- Navbar: Right Side  -->
-		<div class="flex gap-x-2 items-center">
+		<div class="flex gap-x-2 items-center ml-auto">
 			<Hamburger class="sm:hidden" />
 			<!-- Toggle dark/light -->
 			<DarkModeSwitch />

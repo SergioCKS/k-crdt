@@ -16,14 +16,10 @@
 	xmlns="http://www.w3.org/2000/svg"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
 	viewBox="0 0 116.09 46.86"
+	class="dark:fill-white light:fill-sprout-gray"
 	{height}
 >
 	<defs>
-		<style>
-			.base {
-				@apply dark:fill-white light:fill-sprout-gray;
-			}
-		</style>
 		<linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
 			<stop offset="0%" style="stop-color:rgb(52,245,197);stop-opacity:1" />
 			<stop offset="40%" style="stop-color:rgb(33,208,178);stop-opacity:1" />

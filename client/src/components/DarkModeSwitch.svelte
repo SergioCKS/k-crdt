@@ -95,9 +95,9 @@
 <div class="flex">
 	<label
 		for="dark-mode-switch"
-		class="rounded-full h-7 w-12 relative no-tap-highlight"
-		w-dark="bg-darksurface-2 ring-1 ring-gray-700"
-		w-light="bg-gray-200 ring-1 ring-gray-300"
+		class="rounded-full h-7 w-12 relative no-tap-highlight border-1"
+		u-dark="bg-darksurface-2 border-gray-700"
+		u-light="bg-gray-200 border-gray-300"
 	>
 		<input
 			id="dark-mode-switch"
@@ -105,18 +105,16 @@
 			bind:checked={$darkMode}
 			on:mousedown={handleSwitchMouseDown}
 			on:click={handleSwitchClick}
-			class="rounded-full h-full border-0 w-full ring-0 z-10"
-			w-pos="absolute left-0 top-0"
-			w-bg="!none !transparent"
-			w-transition="shadow duration-300"
-			w-hover="shadow-form-focus ring-form-focus ring-1 cursor-pointer"
-			w-focus="shadow-form-focus ring-offset-0 ring-1 ring-form-focus"
+			class="rounded-full h-full border-0 w-full z-10 absolute left-0 top-0 m-0"
+			u-bg="none transparent"
+			u-transition="shadow duration-300"
+			u-hover="shadow-form-focus ring-form-focus cursor-pointer"
+			u-focus="shadow-form-focus ring-offset-0 ring-form-focus"
 		/>
 		<!-- Switch knob -->
 		<div
-			class="{switchLeft} rounded-full shadow-knob h-5 w-5 z-5"
-			w-pos="absolute top-1"
-			w-transition="all duration-300"
+			class="{switchLeft} rounded-full shadow-knob h-5 w-5 z-5 absolute top-1"
+			u-transition="all duration-300"
 		>
 			<div class="rounded-full h-full w-full relative">
 				<!-- Circle for ping effect -->
@@ -124,9 +122,19 @@
 				<!-- Knob icon -->
 				<div class="bg-white rounded-full flex h-full w-full absolute items-center justify-center">
 					{#if $darkMode}
-						<Icon name="bi:moon-fill" width="0.75rem" height="0.75rem" class="text-sky-500" />
+						<Icon
+							name="bi:moon-fill"
+							width="0.75rem"
+							height="0.75rem"
+							class="text-sky-500 flex items-center justify-center"
+						/>
 					{:else}
-						<Icon name="bi:sun-fill" width="0.75rem" height="0.75rem" class="text-yellow-500" />
+						<Icon
+							name="bi:sun-fill"
+							width="0.75rem"
+							height="0.75rem"
+							class="text-yellow-500 flex items-center justify-center"
+						/>
 					{/if}
 				</div>
 			</div>
@@ -136,13 +144,13 @@
 			name="bi:sun-fill"
 			width="0.75rem"
 			height="0.75rem"
-			class="top-2 left-1.75 text-gray-700 absolute"
+			class="top-1 left-1.75 text-gray-700 absolute"
 		/>
 		<Icon
 			name="bi:moon-fill"
 			width="0.625rem"
 			height="0.625rem"
-			class="top-2.25 right-1.75 text-gray-700 absolute"
+			class="top-0.75 right-1.75 text-gray-700 absolute"
 		/>
 	</label>
 </div>

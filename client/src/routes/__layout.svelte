@@ -16,7 +16,7 @@
 	@module
 -->
 <script lang="ts">
-	import "virtual:windi.css";
+	import "uno.css";
 	import "$src/app.css";
 	import { onMount } from "svelte";
 	import { dev } from "$app/env";
@@ -173,20 +173,20 @@
 		type="font/woff2"
 		crossorigin="anonymous"
 	/>
-	<link
+	<!-- <link
 		rel="preload"
 		href="/fonts/Inter-VariableFont_slnt,wght.woff2"
 		as="font"
 		type="font/woff2"
 		crossorigin="anonymous"
-	/>
-	<link
+	/> -->
+	<!-- <link
 		rel="preload"
 		href="/fonts/Jost-VariableFont_wght.woff2"
 		as="font"
 		type="font/woff2"
 		crossorigin="anonymous"
-	/>
+	/> -->
 </svelte:head>
 
 {#if !$serviceWorkerSupported}
@@ -195,7 +195,9 @@
 	<!-- Navigation bar -->
 	<Navbar />
 	<!-- Content -->
-	<div class="min-h-screen mt-16 w-full py-8 overflow-hidden">
-		<slot />
+	<div u-dark="bg-darksurface text-white" u-light="bg-white text-gray-900">
+		<div class="min-h-screen mt-16 py-8 overflow-hidden">
+			<slot />
+		</div>
 	</div>
 {/if}
