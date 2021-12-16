@@ -11,22 +11,12 @@
 <script lang="ts">
 	import { menuOpen } from "$stores/general";
 
-	/**
-	 * Transform Top Bar
-	 *
-	 * Transforms the top bar depending on wether the menu is open or not.
-	 */
 	$: transformTop = $menuOpen
-		? "transform: translateY(0.3rem) translateX(-50%) rotate(45deg);"
+		? "transform: translateY(0.31rem) translateX(-50%) rotate(45deg);"
 		: "transform: translateX(-50%);";
 
-	/**
-	 * Transform Bottom Bar
-	 *
-	 * Transforms the bottom bar depending on wether the menu is open or not.
-	 */
 	$: transformBottom = $menuOpen
-		? "transform: translateY(-0.3rem) translateX(-50%) rotate(-45deg);"
+		? "transform: translateY(-0.31rem) translateX(-50%) rotate(-45deg);"
 		: "transform: translateX(-50%);";
 </script>
 

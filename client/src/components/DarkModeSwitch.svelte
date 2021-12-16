@@ -95,7 +95,7 @@
 <div class="flex">
 	<label
 		for="dark-mode-switch"
-		class="rounded-full h-7 w-12 relative no-tap-highlight border-1"
+		class="rounded-full border-1 h-7 w-12 relative no-tap-highlight"
 		u-dark="bg-darksurface-2 border-gray-700"
 		u-light="bg-gray-200 border-gray-300"
 	>
@@ -105,7 +105,7 @@
 			bind:checked={$darkMode}
 			on:mousedown={handleSwitchMouseDown}
 			on:click={handleSwitchClick}
-			class="rounded-full h-full border-0 w-full z-10 absolute left-0 top-0 m-0"
+			class="rounded-full h-full border-0 m-0 w-full top-0 left-0 z-10 absolute"
 			u-bg="none transparent"
 			u-transition="shadow duration-300"
 			u-hover="shadow-form-focus ring-form-focus cursor-pointer"
@@ -126,14 +126,14 @@
 							name="bi:moon-fill"
 							width="0.75rem"
 							height="0.75rem"
-							class="text-sky-500 flex items-center justify-center"
+							class="flex text-sky-500 items-center justify-center"
 						/>
 					{:else}
 						<Icon
 							name="bi:sun-fill"
 							width="0.75rem"
 							height="0.75rem"
-							class="text-yellow-500 flex items-center justify-center"
+							class="flex text-yellow-500 items-center justify-center"
 						/>
 					{/if}
 				</div>
@@ -144,13 +144,13 @@
 			name="bi:sun-fill"
 			width="0.75rem"
 			height="0.75rem"
-			class="top-1 left-1.75 text-gray-700 absolute"
+			class="flex flex-col h-full top-0 left-1.75 text-gray-700 justify-center absolute"
 		/>
 		<Icon
 			name="bi:moon-fill"
 			width="0.625rem"
 			height="0.625rem"
-			class="top-0.75 right-1.75 text-gray-700 absolute"
+			class="flex flex-col h-full top-0 right-1.75 text-gray-700 justify-center absolute"
 		/>
 	</label>
 </div>

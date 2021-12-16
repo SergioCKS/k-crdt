@@ -41,10 +41,17 @@ input[type="checkbox"] {
 	-moz-appearance: none;
 }
 
-font-menu: {
-	font-family: "Jost, sans-serif";
-	font-variation-settings: "'wght' 400";
-	font-size: "1.125rem";
-	line-height: "1.75rem";
-	letter-spacing: "0.025em";
+button {
+	border: none;
+	background-color: transparent;
+}
+
+a,
+a:visited {
+	text-decoration: none;
+	color: inherit;
+}
+
+ul {
+	list-style-type: none;
 }

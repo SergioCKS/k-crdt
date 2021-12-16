@@ -10,7 +10,19 @@ export default defineConfig({
 		}),
 		presetUno()
 	],
-	rules: [["no-tap-highlight", { "-webkit-tap-highlight-color": "transparent" }]],
+	rules: [
+		["no-tap-highlight", { "-webkit-tap-highlight-color": "transparent" }],
+		[
+			"font-menu",
+			{
+				"font-family": "Jost, sans-serif",
+				"font-variation-settings": "'wght' 400",
+				"font-size": "1.125rem",
+				"line-height": "1.75rem",
+				"letter-spacing": "0.025em"
+			}
+		]
+	],
 	shortcuts: [
 		{
 			btn: "bg-black border-black font-roboto bg-opacity-5 shadow-neon text-sm py-1 px-6 transition-colors text-opacity-80 tracking-3px duration-400 inline-block uppercase hover:bg-opacity-50 hover:text-opacity-100",

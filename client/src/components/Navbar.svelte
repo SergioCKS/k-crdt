@@ -42,12 +42,12 @@
 	u-dark="bg-darksurface-3"
 >
 	<!-- Logo-->
-	<LogoFull height="3.5rem" />
+	<LogoFull />
 	<!-- Navbar -->
-	<div class="flex font-menu w-full gap-x-4 items-center pr-6">
+	<div class="flex font-menu w-full pr-6 gap-x-4 items-center">
 		<!-- Navbar: Left Side -->
 		<nav>
-			<ul class="w-full px-6 gap-x-4 justify-center sm:(flex justify-start) -sm:hidden ">
+			<ul class="w-full px-6 gap-x-4 justify-center hidden sm:flex ">
 				{#each navBarItems as { href, title }}
 					<li class="text-center w-16 menu-button">
 						<a class="px-2" {href}>{title}</a>
@@ -56,14 +56,18 @@
 			</ul>
 		</nav>
 		<!-- Navbar: Right Side  -->
-		<div class="flex gap-x-2 items-center ml-auto">
-			<Hamburger class="sm:hidden" />
+		<div class="flex ml-auto gap-x-2 items-center">
+			<Hamburger class="sm:hidden hover:cursor-pointer" />
 			<!-- Toggle dark/light -->
 			<DarkModeSwitch />
 			<!-- Login -->
-			<Icon name="mdi:login" class="menu-button sm:hidden -sm:block" href="/" fontSize="24px" />
+			<Icon
+				name="mdi:login"
+				class="flex flex-col h-full menu-button justify-center sm:hidden -sm:block hover:cursor-pointer"
+				fontSize="24px"
+			/>
 			<!-- Login (larger screens) -->
-			<a class="mx-2 px-2 menu-button sm:block -sm:hidden" href="/">Login</a>
+			<a class="mx-2 px-2 menu-button hidden sm:block" href="/">Login</a>
 		</div>
 	</div>
 </header>

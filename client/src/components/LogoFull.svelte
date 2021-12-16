@@ -3,21 +3,11 @@
 
 	SVG logo with dark/light variants and variable size.
 -->
-<script lang="ts">
-	/**
-	 * ## Height
-	 *
-	 * Height of the logo (CSS property).
-	 */
-	export let height: string = "";
-</script>
-
 <svg
 	xmlns="http://www.w3.org/2000/svg"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
 	viewBox="0 0 116.09 46.86"
-	class="dark:fill-white light:fill-sprout-gray"
-	{height}
+	class="min-w-24 max-w-24 dark:fill-white light:fill-sprout-gray"
 >
 	<defs>
 		<linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">

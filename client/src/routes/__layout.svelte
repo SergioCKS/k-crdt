@@ -180,13 +180,13 @@
 		type="font/woff2"
 		crossorigin="anonymous"
 	/> -->
-	<!-- <link
+	<link
 		rel="preload"
 		href="/fonts/Jost-VariableFont_wght.woff2"
 		as="font"
 		type="font/woff2"
 		crossorigin="anonymous"
-	/> -->
+	/>
 </svelte:head>
 
 {#if !$serviceWorkerSupported}
