@@ -25,6 +25,7 @@
 	import type { AppMessage, WorkerMessage } from "$types/messages";
 	import Iconify from "@iconify/iconify";
 	import Navbar from "$components/Navbar.svelte";
+	import UserMenu from "$components/UserMenu.svelte";
 
 	/**
 	 * ## Handle worker message
@@ -204,6 +205,7 @@
 {:else}
 	<!-- Navigation bar -->
 	<Navbar />
+	<UserMenu />
 	<!-- Content -->
 	<div class="min-h-screen mt-16 w-full pt-8 overflow-x-hidden">
 		<slot />

@@ -8,9 +8,8 @@
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { showNavbar } from "$stores/general";
+	import { showNavbar, userMenuOpen } from "$stores/general";
 	import Hamburger from "$components/Hamburger.svelte";
-	import DarkModeSwitch from "$components/DarkModeSwitch.svelte";
 	import UserMenuButton from "$components/UserMenuButton.svelte";
 	import LogoFull from "$components/LogoFull.svelte";
 
@@ -18,6 +17,7 @@
 	let navBarItems = [{ href: "/", title: "Home" }];
 
 	$: navBarTop = $showNavbar ? "top-0" : "-top-16";
+	$: if (!$showNavbar) $userMenuOpen = false;
 
 	onMount(() => {
 		let previousScrollPosition = window.pageYOffset;
@@ -35,24 +35,21 @@
 </script>
 
 <header
-	class="h-16 w-full overflow-hidden fixed {navBarTop} shadow-uniform-md font-menu flex"
+	class="h-16 w-full fixed {navBarTop} shadow-uniform-md font-menu flex z-10"
 	u-transition="top duration-300"
 	u-light="bg-white"
 	u-dark="bg-darksurface-4 shadow-sky-400"
 >
 	<!-- Left group -->
 	<div class="flex mx-2 gap-x-4 items-center sm:mx-4">
-		<!-- Menu hamburger icon -->
 		<div class="flex border-gray-500 border-0 border-r-1 py-2 pr-2 items-center sm:hidden">
 			<Hamburger class="hover:cursor-pointer" />
 		</div>
-		<!-- Logo-->
 		<LogoFull />
 	</div>
 
 	<!-- Right group -->
 	<div class="flex ml-auto mr-2 gap-x-2 items-center" u-sm="mr-4 gap-x-4">
-		<DarkModeSwitch />
 		<UserMenuButton />
 	</div>
 </header>

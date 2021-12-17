@@ -94,7 +94,7 @@
 
 <label
 	for="dark-mode-switch"
-	class="rounded-full h-7 w-12 relative no-tap-highlight"
+	class="rounded-full h-7 w-12 no-tap-highlight relative"
 	u-dark="bg-darksurface-1 text-gray-400 hover:text-gray-200"
 	u-light="bg-gray-200 text-gray-700 hover:text-gray-900"
 	u-hover="shadow-form-focus ring-0.5 ring-form-focus cursor-pointer"
