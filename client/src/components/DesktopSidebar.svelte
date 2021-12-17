@@ -10,7 +10,7 @@
 	$: top = $showNavbar ? "top-16" : "top-0";
 
 	onMount(() => {
-		Iconify.loadIcons(["mdi:chevron-double-left", "mdi:chevron-double-right"]);
+		Iconify.loadIcons(["ph:caret-double-left-light", "ph:caret-double-right-light"]);
 	});
 </script>
 
@@ -36,9 +36,11 @@
 			<p class="whitespace-nowrap">Collapse sidebar:</p>
 		{/if}
 		{#if $desktopSidebarCollapsed}
-			<Icon name="mdi:chevron-double-right" fontSize="24px" />
+			<!-- <Icon name="mdi:chevron-double-right" fontSize="24px" /> -->
+			<Icon name="ph:caret-double-right-light" fontSize="24px" />
 		{:else}
-			<Icon name="mdi:chevron-double-left" fontSize="24px" />
+			<!-- <Icon name="mdi:chevron-double-left" fontSize="24px" /> -->
+			<Icon name="ph:caret-double-left-light" fontSize="24px" />
 		{/if}
 	</button>
 </div>
