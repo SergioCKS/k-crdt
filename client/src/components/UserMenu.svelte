@@ -8,11 +8,11 @@
 	<div
 		in:fly={{ y: -200, duration: 300, opacity: 1 }}
 		out:fly={{ y: -200, duration: 300, opacity: 1 }}
-		class="font-jost h-[200px] shadow-uniform-md top-16 right-0 w-40 absolute justify-end"
+		class="font-jost h-[200px] shadow-uniform-md top-16 right-0 w-40 fixed justify-end"
 		u-p="x-2 y-4"
 		u-flex="~ col"
 		u-light="bg-white"
-		u-dark="bg-darksurface-4 shadow-sky-300"
+		u-dark="bg-darksurface-7 shadow-sky-300"
 	>
 		<div class="flex w-full pt-2 items-center justify-around" u-border="0 t-1 gray-500">
 			Dark mode:

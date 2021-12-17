@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { showNavbar, userMenuOpen } from "$stores/general";
+	import { showNavbar, userMenuOpen, mobileSidebarOpen } from "$stores/general";
 	import Hamburger from "$components/Hamburger.svelte";
 	import UserMenuButton from "$components/UserMenuButton.svelte";
 	import LogoFull from "$components/LogoFull.svelte";

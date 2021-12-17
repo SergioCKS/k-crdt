@@ -21,11 +21,23 @@
 	import { onMount } from "svelte";
 	import { dev } from "$app/env";
 	import { initialized, registers } from "../stores/engine";
-	import { offline, serviceWorkerSupported, messageWorker, darkMode } from "../stores/general";
+	import {
+		offline,
+		serviceWorkerSupported,
+		messageWorker,
+		darkMode,
+		desktopSidebarCollapsed,
+		userMenuOpen,
+		mobileSidebarOpen
+	} from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
 	import Iconify from "@iconify/iconify";
 	import Navbar from "$components/Navbar.svelte";
+	import DesktopSidebar from "$src/components/DesktopSidebar.svelte";
+	import MobileSidebar from "$src/components/MobileSidebar.svelte";
 	import UserMenu from "$components/UserMenu.svelte";
+
+	$: marginLeft = $desktopSidebarCollapsed ? "sm:ml-14" : "sm:ml-60";
 
 	/**
 	 * ## Handle worker message
@@ -173,6 +185,11 @@
 		// 8. Preload icons.
 		Iconify.loadIcons(["bi:sun", "bi:moon-fill", "mdi:close"]);
 	});
+
+	function closeMenus() {
+		$userMenuOpen = false;
+		$mobileSidebarOpen = false;
+	}
 </script>
 
 <!-- Preload Fonts -->
@@ -206,8 +223,14 @@
 	<!-- Navigation bar -->
 	<Navbar />
 	<UserMenu />
+	<DesktopSidebar />
+	<MobileSidebar />
 	<!-- Content -->
-	<div class="min-h-screen mt-16 w-full pt-8 overflow-x-hidden">
+	<div
+		on:click={closeMenus}
+		class="flex min-h-screen mt-16 ml-0 w-full pt-8 pl-4 transition-margin-left duration-300 overflow-x-hidden {marginLeft}"
+	>
+		<!-- <div class="bg-black h-screen w-screen opacity-30  -top-8 absolute" /> -->
 		<slot />
 	</div>
 {/if}

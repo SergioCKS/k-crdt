@@ -18,8 +18,28 @@ export const menuOpen = writable(false);
  * ## User menu is open
  *
  * Determines if the user menu is accessible to the user.
+ *
+ * * Initial: `false` (closed)
  */
 export const userMenuOpen = writable(false);
+
+/**
+ * ## Desktop sidebar is collapsed
+ *
+ * Determines if the desktop sidebar is collapsed or expanded.
+ *
+ * * Initial: `false` (expanded)
+ */
+export const desktopSidebarCollapsed = writable(false);
+
+/**
+ * ## Mobile sidebar is open
+ *
+ * Determines if the mobile sidebar is open or closed.
+ *
+ * * Initial: `false` (closed)
+ */
+export const mobileSidebarOpen = writable(false);
 
 /**
  * ## Message worker

@@ -10,20 +10,20 @@
 	@component
 -->
 <script lang="ts">
-	import { menuOpen } from "$stores/general";
+	import { mobileSidebarOpen } from "$stores/general";
 
-	$: transformTop = $menuOpen
+	$: transformTop = $mobileSidebarOpen
 		? "transform: translateY(0.31rem) translateX(-50%) rotate(45deg);"
 		: "transform: translateX(-50%);";
 
-	$: transformBottom = $menuOpen
+	$: transformBottom = $mobileSidebarOpen
 		? "transform: translateY(-0.31rem) translateX(-50%) rotate(-45deg);"
 		: "transform: translateX(-50%);";
 </script>
 
 <button
-	on:click={() => ($menuOpen = !$menuOpen)}
-	class={"h-8 w-8 relative children:light:bg-gray-500 hover:children:light:bg-gray-700 children:dark:bg-gray-400 hover:children:dark:bg-gray-200 " +
+	on:click={() => ($mobileSidebarOpen = !$mobileSidebarOpen)}
+	class={"h-8 w-8 relative children:light:bg-gray-500 hover:children:light:bg-gray-700 children:dark:bg-gray-400 hover:children:dark:bg-gray-200 no-tap-highlight " +
 		$$props.class}
 	u-focus-visible="outline-none ring-1 ring-form-focus"
 >

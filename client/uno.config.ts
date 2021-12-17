@@ -78,8 +78,8 @@ export default defineConfig({
 			neon: "0px 0px 4px rgba(var(--un-shadow-color), 0.45), inset 0px 0px 4px rgba(var(--un-shadow-color), 0.45)",
 			"neon-bright":
 				"0px 0px 6px rgba(var(--un-shadow-color), .65), inset 0px 0px 6px rgba(var(--un-shadow-color), .65)",
-			"uniform-md": "0px 2px 8px rgba(var(--un-shadow-color), 0.15)",
-			"uniform-sm": "0px 2px 4px rgba(var(--un-shadow-color), 0.15)",
+			"uniform-md": "0px 0px 8px rgba(var(--un-shadow-color), 0.15)",
+			"uniform-sm": "0px 0px 4px rgba(var(--un-shadow-color), 0.15)",
 			bottom: "0 -0.4rem 0.9rem 0.2rem rgb(var(--un-shadow-color))",
 			"form-focus": "0 0 5px rgba(81, 203, 238, 1)"
 		}
