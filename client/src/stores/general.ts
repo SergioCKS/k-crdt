@@ -15,6 +15,13 @@ export const showNavbar = writable(true);
 export const menuOpen = writable(false);
 
 /**
+ * ## User menu is open
+ *
+ * Determines if the user menu is accessible to the user.
+ */
+export const userMenuOpen = writable(false);
+
+/**
  * ## Message worker
  *
  * Send a message to the active web worker.

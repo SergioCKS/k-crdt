@@ -12,7 +12,7 @@
 	font-family: Inter;
 	font-style: normal;
 	font-display: swap;
-	src: url("/Inter-VariableFont_slnt,wght.woff2") format("woff2-variations");
+	src: url("/fonts/Inter-VariableFont_slnt,wght.woff2") format("woff2-variations");
 }
 
 /* Variable Font: Jost */
@@ -20,7 +20,7 @@
 	font-family: Jost;
 	font-style: normal;
 	font-display: swap;
-	src: url("/Jost-VariableFont_wght.woff2") format("woff2-variations");
+	src: url("/fonts/Jost-VariableFont_wght.woff2") format("woff2-variations");
 }
 
 /* Variable Font: Jost Italic */
@@ -28,8 +28,12 @@
 	font-family: Jost-Italic;
 	font-style: italic;
 	font-display: swap;
-	src: url("/Jost-Italic-VariableFont_wght.woff2") format("woff2-variations");
+	src: url("/fonts/Jost-Italic-VariableFont_wght.woff2") format("woff2-variations");
 }
+
+/* html {
+	background-color: rgba(18, 18, 18, 1);
+} */
 
 body {
 	margin: 0px;

@@ -92,65 +92,63 @@
 	//#endregion
 </script>
 
-<div class="flex">
-	<label
-		for="dark-mode-switch"
-		class="rounded-full border-1 h-7 w-12 relative no-tap-highlight"
-		u-dark="bg-darksurface-2 border-gray-700"
-		u-light="bg-gray-200 border-gray-300"
+<label
+	for="dark-mode-switch"
+	class="rounded-full h-7 w-12 relative no-tap-highlight"
+	u-dark="bg-darksurface-1 text-gray-400 hover:text-gray-200"
+	u-light="bg-gray-200 text-gray-700 hover:text-gray-900"
+	u-hover="shadow-form-focus ring-0.5 ring-form-focus cursor-pointer"
+	u-transition="all duration-300"
+	u-focus-visible="outline-none"
+>
+	<input
+		id="dark-mode-switch"
+		type="checkbox"
+		bind:checked={$darkMode}
+		on:mousedown={handleSwitchMouseDown}
+		on:click={handleSwitchClick}
+		class="rounded-full h-full m-0 w-full top-0 left-0 z-10 absolute hover:cursor-pointer"
+		u-focus-visible="outline-none ring-0.5 ring-form-focus shadow-form-focus"
+	/>
+	<!-- Switch knob -->
+	<div
+		class="{switchLeft} rounded-full shadow-knob h-5 w-5 z-5 absolute top-1"
+		u-transition="all duration-300"
 	>
-		<input
-			id="dark-mode-switch"
-			type="checkbox"
-			bind:checked={$darkMode}
-			on:mousedown={handleSwitchMouseDown}
-			on:click={handleSwitchClick}
-			class="rounded-full h-full border-0 m-0 w-full top-0 left-0 z-10 absolute"
-			u-bg="none transparent"
-			u-transition="shadow duration-300"
-			u-hover="shadow-form-focus ring-form-focus cursor-pointer"
-			u-focus="shadow-form-focus ring-offset-0 ring-form-focus"
-		/>
-		<!-- Switch knob -->
-		<div
-			class="{switchLeft} rounded-full shadow-knob h-5 w-5 z-5 absolute top-1"
-			u-transition="all duration-300"
-		>
-			<div class="rounded-full h-full w-full relative">
-				<!-- Circle for ping effect -->
-				<div class="{innerCircleAnimate} bg-white rounded-full h-full w-full absolute" />
-				<!-- Knob icon -->
-				<div class="bg-white rounded-full flex h-full w-full absolute items-center justify-center">
-					{#if $darkMode}
-						<Icon
-							name="bi:moon-fill"
-							width="0.75rem"
-							height="0.75rem"
-							class="flex text-sky-500 items-center justify-center"
-						/>
-					{:else}
-						<Icon
-							name="bi:sun-fill"
-							width="0.75rem"
-							height="0.75rem"
-							class="flex text-yellow-500 items-center justify-center"
-						/>
-					{/if}
-				</div>
+		<div class="rounded-full h-full w-full relative">
+			<!-- Circle for ping effect -->
+			<div class="{innerCircleAnimate} bg-white rounded-full h-full w-full absolute" />
+			<!-- Knob icon -->
+			<div class="bg-white rounded-full flex h-full w-full absolute items-center justify-center">
+				{#if $darkMode}
+					<Icon
+						name="bi:moon-fill"
+						width="0.75rem"
+						height="0.75rem"
+						class="flex text-sky-500 items-center justify-center"
+					/>
+				{:else}
+					<Icon
+						name="bi:sun-fill"
+						width="0.75rem"
+						height="0.75rem"
+						class="flex text-yellow-500 items-center justify-center"
+					/>
+				{/if}
 			</div>
 		</div>
-		<!-- Icons -->
-		<Icon
-			name="bi:sun-fill"
-			width="0.75rem"
-			height="0.75rem"
-			class="flex flex-col h-full top-0 left-1.75 text-gray-700 justify-center absolute"
-		/>
-		<Icon
-			name="bi:moon-fill"
-			width="0.625rem"
-			height="0.625rem"
-			class="flex flex-col h-full top-0 right-1.75 text-gray-700 justify-center absolute"
-		/>
-	</label>
-</div>
+	</div>
+	<!-- Icons -->
+	<Icon
+		name="bi:sun-fill"
+		width="0.75rem"
+		height="0.75rem"
+		class="flex flex-col h-full top-0 left-1.75 justify-center absolute"
+	/>
+	<Icon
+		name="bi:moon-fill"
+		width="0.625rem"
+		height="0.625rem"
+		class="flex flex-col h-full top-0 right-1.75 justify-center absolute"
+	/>
+</label>

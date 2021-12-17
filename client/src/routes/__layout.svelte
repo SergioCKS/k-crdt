@@ -64,7 +64,8 @@
 	 *
 	 * Code run on app initialization regardless of the route being accessed.
 	 *
-	 * * Set up light/dark mode based on user settings
+	 * * Set up light/dark mode based on user settings.
+	 * * Sets up UnoCSS utilities for the body element.
 	 * * Sets up dummy backend for development mode.
 	 * * Checks if the browser supports message workers.
 	 * * Sets up handler for worker messages.
@@ -114,7 +115,16 @@
 		window.matchMedia("(prefers-color-scheme: dark)").addListener(matchDarkMode);
 		//#endregion
 
-		//#region 2. Setup dummy backend for development mode.
+		//#region 2. Set up body style (UnoCSS utilities).
+		document.body.classList.add(
+			"dark:bg-darksurface",
+			"dark:text-white",
+			"light:bg-white",
+			"light:text-gray-900"
+		);
+		//#endregion
+
+		//#region 3. Setup dummy backend for development mode.
 		if (dev) {
 			console.log("Development mode. Using dummy backend (no service worker).");
 			$messageWorker = (message: AppMessage) => dummyWorker.postMessage(message);
@@ -123,7 +133,7 @@
 		}
 		//#endregion
 
-		//#region 3. Check if the browser supports service workers.
+		//#region 4. Check if the browser supports service workers.
 		if (!("serviceWorker" in navigator)) {
 			$serviceWorkerSupported = false;
 			console.error("Service worker not supported by the browser.");
@@ -133,7 +143,7 @@
 
 		const workerContainer = navigator.serviceWorker;
 
-		//#region 4. Attach message handler.
+		//#region 5. Attach message handler.
 		workerContainer.addEventListener("message", ({ data }) => {
 			try {
 				handleWorkerMessage(data);
@@ -145,10 +155,10 @@
 
 		workerContainer.ready.then((registration) => {
 			const worker = registration.active;
-			// 5. Establish channel to worker for other components to use.
+			// 6. Establish channel to worker for other components to use.
 			$messageWorker = (message: AppMessage) => worker.postMessage(message);
 
-			// 6. Send initialization message, as soon as the worker becomes active.
+			// 7. Send initialization message, as soon as the worker becomes active.
 			if (worker.state === "activated") {
 				$messageWorker({ msgCode: "initialize" });
 			} else {
@@ -159,35 +169,35 @@
 				});
 			}
 		});
-		// 7. Preload icons.
+		// 8. Preload icons.
 		Iconify.loadIcons(["bi:sun", "bi:moon-fill", "mdi:close"]);
 	});
 </script>
 
 <!-- Preload Fonts -->
-<svelte:head>
+<!-- <svelte:head>
 	<link
 		rel="preload"
 		href="/fonts/roboto-v29-latin-regular.woff2"
 		as="font"
 		type="font/woff2"
 		crossorigin="anonymous"
-	/>
-	<!-- <link
+	/> -->
+<!-- <link
 		rel="preload"
 		href="/fonts/Inter-VariableFont_slnt,wght.woff2"
 		as="font"
 		type="font/woff2"
 		crossorigin="anonymous"
 	/> -->
-	<link
+<!-- <link
 		rel="preload"
 		href="/fonts/Jost-VariableFont_wght.woff2"
 		as="font"
 		type="font/woff2"
 		crossorigin="anonymous"
 	/>
-</svelte:head>
+</svelte:head> -->
 
 {#if !$serviceWorkerSupported}
 	Your browser does not support service workers.
@@ -195,9 +205,7 @@
 	<!-- Navigation bar -->
 	<Navbar />
 	<!-- Content -->
-	<div u-dark="bg-darksurface text-white" u-light="bg-white text-gray-900">
-		<div class="min-h-screen mt-16 py-8 overflow-hidden">
-			<slot />
-		</div>
+	<div class="min-h-screen mt-16 w-full pt-8 overflow-x-hidden">
+		<slot />
 	</div>
 {/if}
