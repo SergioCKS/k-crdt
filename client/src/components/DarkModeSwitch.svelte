@@ -9,9 +9,11 @@
   * Implemented as an HTML checkbox.
 -->
 <script lang="ts">
+	import { onMount } from "svelte";
 	import { browser } from "$app/env";
 	import { darkMode } from "$stores/general";
 	import Icon from "$components/Icon.svelte";
+	import Iconify from "@iconify/iconify";
 
 	/**
 	 * Toggle dark/light mode.
@@ -90,6 +92,10 @@
 	let animateCircle: boolean = false;
 	$: innerCircleAnimate = animateCircle ? "animate-ping" : "";
 	//#endregion
+
+	onMount(() => {
+		Iconify.loadIcons(["ph:sun-light", "ph:sun-fill", "ph:moon-light", "ph:moon-fill"]);
+	});
 </script>
 
 <label
@@ -122,14 +128,14 @@
 			<div class="bg-white rounded-full flex h-full w-full absolute items-center justify-center">
 				{#if $darkMode}
 					<Icon
-						name="bi:moon-fill"
+						name="ph:moon-fill"
 						width="0.75rem"
 						height="0.75rem"
 						class="flex text-sky-500 items-center justify-center"
 					/>
 				{:else}
 					<Icon
-						name="bi:sun-fill"
+						name="ph:sun-fill"
 						width="0.75rem"
 						height="0.75rem"
 						class="flex text-yellow-500 items-center justify-center"
@@ -140,13 +146,13 @@
 	</div>
 	<!-- Icons -->
 	<Icon
-		name="bi:sun-fill"
+		name="ph:sun-light"
 		width="0.75rem"
 		height="0.75rem"
 		class="flex flex-col h-full top-0 left-1.75 justify-center absolute"
 	/>
 	<Icon
-		name="bi:moon-fill"
+		name="ph:moon-light"
 		width="0.625rem"
 		height="0.625rem"
 		class="flex flex-col h-full top-0 right-1.75 justify-center absolute"

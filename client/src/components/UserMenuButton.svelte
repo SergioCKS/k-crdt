@@ -8,13 +8,12 @@
 -->
 <script lang="ts">
 	import { onMount } from "svelte";
-	import { fly } from "svelte/transition";
 	import Icon from "$components/Icon.svelte";
 	import { userMenuOpen } from "$stores/general";
 	import Iconify from "@iconify/iconify";
 
 	onMount(() => {
-		Iconify.loadIcons(["mdi:chevron-down", "mdi:chevron-up"]);
+		Iconify.loadIcons(["ph:user-fill", "ph:caret-down-light", "ph:caret-up-light"]);
 	});
 </script>
 
@@ -29,16 +28,12 @@
 	u-focus-visible="outline-none"
 	u-transition="shadow duration-300"
 >
-	<Icon name="mdi:account" class="h-full justify-center" u-flex="~ col" fontSize="24px" />
+	<Icon name="ph:user-fill" class="h-full justify-center" u-flex="~ col" fontSize="24px" />
 	<div class="h-[20px] w-[20px] overflow-hidden">
 		{#if $userMenuOpen}
-			<div out:fly={{ y: -20 }}>
-				<Icon name="mdi:chevron-up" fontSize="20px" />
-			</div>
+			<Icon name="ph:caret-up-light" fontSize="20px" />
 		{:else}
-			<div out:fly={{ y: 20 }}>
-				<Icon name="mdi:chevron-down" fontSize="20px" />
-			</div>
+			<Icon name="ph:caret-down-light" fontSize="20px" />
 		{/if}
 	</div>
 </button>

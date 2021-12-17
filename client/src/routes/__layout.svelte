@@ -31,7 +31,6 @@
 		mobileSidebarOpen
 	} from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
-	import Iconify from "@iconify/iconify";
 	import Navbar from "$components/Navbar.svelte";
 	import DesktopSidebar from "$src/components/DesktopSidebar.svelte";
 	import MobileSidebar from "$src/components/MobileSidebar.svelte";
@@ -182,8 +181,6 @@
 				});
 			}
 		});
-		// 8. Preload icons.
-		Iconify.loadIcons(["bi:sun", "bi:moon-fill", "mdi:close"]);
 	});
 
 	function closeMenus() {
