@@ -9,7 +9,13 @@
 	@component
 -->
 <script lang="ts">
-	import { desktopSidebarCollapsed, showNavbar, userMenuOpen } from "$stores/general";
+	import { fly } from "svelte/transition";
+	import {
+		desktopSidebarCollapsed,
+		showNavbar,
+		userMenuOpen,
+		mobileSidebarOpen
+	} from "$stores/general";
 	import Icon from "./Icon.svelte";
 	import SidebarContent from "$components/SidebarContent.svelte";
 
@@ -17,12 +23,25 @@
 	$: paddingTop = $showNavbar ? "pt-16" : "pt-0";
 </script>
 
+<!-- Mobile sidebar -->
+{#if $mobileSidebarOpen}
+	<div
+		in:fly={{ x: -240, opacity: 1 }}
+		out:fly={{ x: -240, opacity: 1 }}
+		on:click={() => ($userMenuOpen = false)}
+		class="flex w-60 sidebar sm:hidden"
+	>
+		<div class={paddingTop} u-transition="padding duration-300">
+			<SidebarContent />
+		</div>
+	</div>
+{/if}
+
+<!-- Desktop sidebar -->
 <div
 	on:click={() => ($userMenuOpen = false)}
-	class="font-jost shadow-uniform-md {width} fixed top-0 left-0 flex-col hidden sm:flex h-full"
+	class="{width} sidebar hidden sm:flex"
 	u-transition="width duration-300"
-	u-light="bg-white shadow-black"
-	u-dark="bg-darksurface-7 shadow-sky-300"
 >
 	<div class={paddingTop} u-transition="padding duration-300">
 		<SidebarContent />

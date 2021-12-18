@@ -8,7 +8,6 @@
 	* Besides the explicitly specified properties, the `class` prop will be passed down to the wrapper element of the icon. Using the class property, it is possible to change the icon color and font-size. The component-specific properties will override those specified via `class`.
 -->
 <script lang="ts">
-	import IconInner from "$components/IconInner.svelte";
 	//#region Props
 	/**
 	 * ## Name
@@ -110,15 +109,6 @@
 	export let height: string | undefined = undefined;
 
 	/**
-	 * ## `href`
-	 *
-	 * If specified, wraps the icon in an anchor (`<a>`) tag that links to the specified URL.
-	 *
-	 * * Default: `undefined`
-	 */
-	export let href: string | undefined = undefined;
-
-	/**
 	 * ## Font Size
 	 *
 	 * If specified, sets the `font-size` CSS property of the icon. The default font size is `1em`.
@@ -127,15 +117,6 @@
 	 * * Default: `undefined`
 	 */
 	export let fontSize: string | undefined = undefined;
-
-	/**
-	 * ## Hover Effect
-	 *
-	 * If true, adds an effect to the icon on mouse hover.
-	 *
-	 * * Default: `false`
-	 */
-	export let hoverEffect: boolean = false;
 	//#endregion
 
 	//#region Computed Iconify props
@@ -162,27 +143,18 @@
 	 */
 	let rotateAntiClockwise = rotate ? rotationTransform[rotate] : undefined;
 	//#endregion
-
-	/**
-	 * Wrapper object for specific component properties passed to inner component.
-	 */
-	$: innerIconProps = {
-		name,
-		inline,
-		align,
-		flip,
-		fontSize,
-		rotateAntiClockwise,
-		width,
-		height,
-		hoverEffect
-	};
 </script>
 
-{#if href}
-	<a {href} class={$$props.class}>
-		<IconInner on:click {...innerIconProps} />
-	</a>
-{:else}
-	<IconInner on:click {...innerIconProps} class={$$props.class} />
-{/if}
+<span on:click class={$$props.class || ""}>
+	<span
+		class="iconify"
+		style={fontSize ? `font-size: ${fontSize};` : undefined}
+		data-width={width}
+		data-height={height}
+		data-icon={name}
+		data-inline={inline}
+		data-align={align}
+		data-flip={flip}
+		data-rotate={rotateAntiClockwise}
+	/>
+</span>

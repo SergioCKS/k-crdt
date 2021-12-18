@@ -9,8 +9,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import { showNavbar, userMenuOpen, mobileSidebarOpen } from "$stores/general";
-	import Hamburger from "$components/Hamburger.svelte";
-	import UserMenuButton from "$components/UserMenuButton.svelte";
+	import Icon from "./Icon.svelte";
 	import LogoFull from "$components/LogoFull.svelte";
 
 	// Items in the main navigation bar.
@@ -18,6 +17,16 @@
 
 	$: navBarTop = $showNavbar ? "top-0" : "-top-16";
 	$: if (!$showNavbar) $userMenuOpen = false;
+
+	//#region Hamburger bar transforms
+	$: transformTop = $mobileSidebarOpen
+		? "transform: translateY(0.31rem) translateX(-50%) rotate(45deg);"
+		: "transform: translateX(-50%);";
+
+	$: transformBottom = $mobileSidebarOpen
+		? "transform: translateY(-0.31rem) translateX(-50%) rotate(-45deg);"
+		: "transform: translateX(-50%);";
+	//#endregion
 
 	onMount(() => {
 		let previousScrollPosition = window.pageYOffset;
@@ -42,14 +51,39 @@
 >
 	<!-- Left group -->
 	<div class="flex mx-2 gap-x-4 items-center sm:mx-4">
-		<div class="flex border-gray-500 border-0 border-r-1 py-2 pr-2 items-center sm:hidden">
-			<Hamburger class="hover:cursor-pointer" />
+		<!-- Menu hamburger -->
+		<div class="flex items-center sm:hidden" u-p="y-2 r-2" u-border="gray-500 0 r-1">
+			<button
+				on:click={() => ($mobileSidebarOpen = !$mobileSidebarOpen)}
+				class="h-8 w-8 relative no-tap-highlight children:dark:bg-gray-400 children:light:bg-gray-500"
+				u-hover="cursor-pointer children:dark:bg-gray-200 children:light:bg-gray-700"
+				u-focus-visible="outline-none ring-1 ring-form-focus"
+			>
+				<!-- Upper bar -->
+				<div class="top-2.25 hamburger-bar" style={transformTop} />
+				<!-- Lower bar -->
+				<div class="bottom-2.25 hamburger-bar" style={transformBottom} />
+			</button>
 		</div>
 		<LogoFull />
 	</div>
 
 	<!-- Right group -->
 	<div class="flex ml-auto mr-2 gap-x-2 items-center" u-sm="mr-4 gap-x-4">
-		<UserMenuButton />
+		<!-- User menu button -->
+		<button
+			on:click={() => ($userMenuOpen = !$userMenuOpen)}
+			class="rounded-full flex items-center menu-button"
+			u-p="y-1 x-4"
+		>
+			<Icon name="ph:user-fill" u-flex="~ col" fontSize="20px" />
+			<div class="h-[20px] w-[20px]">
+				{#if $userMenuOpen}
+					<Icon name="ph:caret-up-light" fontSize="20px" />
+				{:else}
+					<Icon name="ph:caret-down-light" fontSize="20px" />
+				{/if}
+			</div>
+		</button>
 	</div>
 </header>

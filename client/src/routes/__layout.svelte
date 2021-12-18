@@ -32,8 +32,7 @@
 	} from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
 	import Navbar from "$components/Navbar.svelte";
-	import DesktopSidebar from "$src/components/DesktopSidebar.svelte";
-	import MobileSidebar from "$src/components/MobileSidebar.svelte";
+	import Sidebar from "$src/components/Sidebar.svelte";
 	import UserMenu from "$components/UserMenu.svelte";
 
 	$: marginLeft = $desktopSidebarCollapsed ? "sm:ml-14" : "sm:ml-60";
@@ -217,11 +216,9 @@
 {#if !$serviceWorkerSupported}
 	Your browser does not support service workers.
 {:else}
-	<!-- Navigation bar -->
 	<Navbar />
 	<UserMenu />
-	<DesktopSidebar />
-	<MobileSidebar />
+	<Sidebar />
 	<!-- Content -->
 	<div
 		on:click={closeMenus}
