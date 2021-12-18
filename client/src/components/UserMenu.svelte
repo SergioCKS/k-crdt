@@ -6,8 +6,8 @@
 
 {#if $userMenuOpen}
 	<div
-		in:fly={{ y: -200, duration: 300, opacity: 1 }}
-		out:fly={{ y: -200, duration: 300, opacity: 1 }}
+		in:fly={{ y: -264, duration: 400, opacity: 1 }}
+		out:fly={{ y: -264, duration: 400, opacity: 1 }}
 		class="font-jost h-[200px] shadow-uniform-md top-16 right-0 w-40 fixed justify-end"
 		u-p="x-2 y-4"
 		u-flex="~ col"

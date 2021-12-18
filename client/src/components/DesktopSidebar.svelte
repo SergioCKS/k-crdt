@@ -1,36 +1,36 @@
+<!-- 
+	# Desktop sidebar
+
+	Sidebar designed for landscape viewports.
+	
+	* It can be in a collapsed or expanded state.
+	* It adapts to the navbar visibility.
+	* It closes the the user menu on click.
+	@component
+-->
 <script lang="ts">
-	import { onMount } from "svelte";
 	import { desktopSidebarCollapsed, showNavbar, userMenuOpen } from "$stores/general";
 	import Icon from "./Icon.svelte";
-	import Iconify from "@iconify/iconify";
 	import SidebarContent from "$components/SidebarContent.svelte";
 
 	$: width = $desktopSidebarCollapsed ? "w-14" : "w-60";
-	$: height = $showNavbar ? "calc(100vh - 4rem)" : "100vh";
-	$: top = $showNavbar ? "top-16" : "top-0";
-
-	onMount(() => {
-		Iconify.loadIcons(["ph:caret-double-left-light", "ph:caret-double-right-light"]);
-	});
+	$: paddingTop = $showNavbar ? "pt-16" : "pt-0";
 </script>
 
 <div
 	on:click={() => ($userMenuOpen = false)}
-	class="font-jost shadow-uniform-md {width} fixed {top} left-0 flex-col hidden sm:flex"
-	style="height: {height};"
-	u-transition="all duration-300"
-	u-light="bg-white"
+	class="font-jost shadow-uniform-md {width} fixed top-0 left-0 flex-col hidden sm:flex h-full"
+	u-transition="width duration-300"
+	u-light="bg-white shadow-black"
 	u-dark="bg-darksurface-7 shadow-sky-300"
 >
-	<SidebarContent />
+	<div class={paddingTop} u-transition="padding duration-300">
+		<SidebarContent />
+	</div>
+	<!-- Expand/collapse button -->
 	<button
 		on:click={() => ($desktopSidebarCollapsed = !$desktopSidebarCollapsed)}
-		class="flex mt-auto h-16 text-base mb-4 w-full pt-2 items-center justify-around menu-button hover:cursor-pointer"
-		u-dark="bg-darksurface-2 border-gray-700 hover:border-form-focus focus:border-form-focus"
-		u-light="bg-gray-200 border-gray-400 hover:border-form-focus focus:border-form-focus"
-		u-focus="shadow-form-focus"
-		u-focus-visible="outline-none"
-		u-border="0 t-1 gray-500"
+		class="flex mt-auto h-16 w-full items-center justify-around menu-button"
 	>
 		{#if !$desktopSidebarCollapsed}
 			<p class="whitespace-nowrap">Collapse sidebar:</p>

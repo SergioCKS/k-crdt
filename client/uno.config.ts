@@ -29,7 +29,7 @@ export default defineConfig({
 			"hamburger-bar":
 				"rounded-full h-1 transform transition-all left-1/2 w-6 duration-400 absolute",
 			"menu-button":
-				"transition-all duration-300 light:text-gray-600 dark:text-gray-400 hover:(light:text-gray-900 dark:text-gray-100) focus:(light:text-gray-900 dark:text-gray-100) font-jost"
+				"border-1 text-base transition-all duration-300 light:(text-gray-600 bg-gray-200 border-gray-400 hover:border-form-focus focus:border-form-focus) dark:(text-gray-400 bg-darksurface-2 border-gray-700 hover:border-form-focus focus:border-form-focus) hover:(shadow-form-focus light:text-gray-900 dark:text-gray-100) focus:(shadow-form-focus light:text-gray-900 dark:text-gray-100) focus-visible:outline-none font-jost hover:cursor-pointer no-tap-highlight"
 		},
 		[
 			/^g-btn-(.*)$/,

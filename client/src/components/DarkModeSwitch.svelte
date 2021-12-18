@@ -98,15 +98,7 @@
 	});
 </script>
 
-<label
-	for="dark-mode-switch"
-	class="rounded-full h-7 w-12 no-tap-highlight relative"
-	u-dark="bg-darksurface-1 text-gray-400 hover:text-gray-200"
-	u-light="bg-gray-200 text-gray-700 hover:text-gray-900"
-	u-hover="shadow-form-focus ring-0.5 ring-form-focus cursor-pointer"
-	u-transition="all duration-300"
-	u-focus-visible="outline-none"
->
+<label for="dark-mode-switch" class="rounded-full h-7 w-12 relative menu-button">
 	<input
 		id="dark-mode-switch"
 		type="checkbox"
@@ -119,7 +111,7 @@
 	<!-- Switch knob -->
 	<div
 		class="{switchLeft} rounded-full shadow-knob h-5 w-5 z-5 absolute top-1"
-		u-transition="all duration-300"
+		u-transition="left duration-300"
 	>
 		<div class="rounded-full h-full w-full relative">
 			<!-- Circle for ping effect -->

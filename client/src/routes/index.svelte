@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { initialized, registers } from "../stores/engine";
-	import { offline, messageWorker, darkMode, userMenuOpen } from "../stores/general";
+	import { offline, messageWorker, darkMode } from "../stores/general";
 
 	const data = [
 		{ a: "Data 1", b: "Data 2", c: "Data 3" },
@@ -21,7 +21,6 @@
 			<button on:click={() => console.log("TODO: Create new record.")}>New Record</button>
 			Offline: {$offline}
 			Dark mode: {$darkMode}
-			User menu open: {$userMenuOpen}
 			{JSON.stringify($registers)}
 		</div>
 		<!-- Table -->
