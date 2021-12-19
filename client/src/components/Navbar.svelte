@@ -7,7 +7,6 @@
   * Is shown/hidden depending on user scroll.
 -->
 <script lang="ts">
-	import { onMount } from "svelte";
 	import { showNavbar, userMenuOpen, mobileSidebarOpen } from "$stores/general";
 	import Icon from "./Icon.svelte";
 	import LogoFull from "$components/LogoFull.svelte";
@@ -27,20 +26,6 @@
 		? "transform: translateY(-0.31rem) translateX(-50%) rotate(-45deg);"
 		: "transform: translateX(-50%);";
 	//#endregion
-
-	onMount(() => {
-		let previousScrollPosition = window.pageYOffset;
-		window.addEventListener("scroll", () => {
-			const currentScrollPosition = window.pageYOffset;
-			// Scroll down with tampering.
-			if (previousScrollPosition < currentScrollPosition - 2) $showNavbar = false;
-			// Scroll up with tampering or at the top of the page.
-			if (previousScrollPosition > currentScrollPosition + 3 || currentScrollPosition < 30)
-				$showNavbar = true;
-			// Update scroll position.
-			previousScrollPosition = currentScrollPosition;
-		});
-	});
 </script>
 
 <header

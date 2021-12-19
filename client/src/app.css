@@ -35,9 +35,25 @@
 	background-color: rgba(18, 18, 18, 1);
 } */
 
+.custom-scrollbar::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+.light .custom-scrollbar::-webkit-scrollbar-thumb {
+	background-color: #9ca3af;
+	border-radius: 9999px;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+	background-color: #39373d;
+	border-radius: 9999px;
+}
+
 body {
 	margin: 0px;
 	font-family: Iter;
+	overflow: hidden;
 }
 
 input[type="checkbox"] {

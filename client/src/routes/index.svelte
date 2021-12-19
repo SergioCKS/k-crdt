@@ -14,7 +14,7 @@
 {#if !$initialized}
 	Initializing ...
 {:else}
-	<div class="flex flex-col w-full">
+	<div class="flex flex-col">
 		<!-- Controls -->
 		<div class="flex flex-row">
 			<button on:click={() => $messageWorker({ msgCode: "test" })}>Test</button>
@@ -22,6 +22,7 @@
 			Offline: {$offline}
 			Dark mode: {$darkMode}
 			{JSON.stringify($registers)}
+			<div class="bg-white h-10 w-200" />
 		</div>
 		<!-- Table -->
 		<table class="rounded my-4 text-center overflow-hidden" u-shadow="uniform-md dark:cyan-400">

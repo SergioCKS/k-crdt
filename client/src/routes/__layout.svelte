@@ -28,14 +28,18 @@
 		darkMode,
 		desktopSidebarCollapsed,
 		userMenuOpen,
-		mobileSidebarOpen
+		mobileSidebarOpen,
+		showNavbar
 	} from "../stores/general";
 	import type { AppMessage, WorkerMessage } from "$types/messages";
 	import Navbar from "$components/Navbar.svelte";
 	import Sidebar from "$src/components/Sidebar.svelte";
 	import UserMenu from "$components/UserMenu.svelte";
 
-	$: marginLeft = $desktopSidebarCollapsed ? "sm:ml-14" : "sm:ml-60";
+	$: contentMarginLeft = $desktopSidebarCollapsed
+		? "content-ml-0rem sm:content-ml-3.5rem"
+		: "content-ml-0rem sm:content-ml-15rem";
+	$: contentMarginTop = $showNavbar ? "content-mt-4rem" : "content-mt-0rem";
 
 	/**
 	 * ## Handle worker message
@@ -68,6 +72,23 @@
 				return true;
 			}
 		}
+	}
+
+	let previousScrollPosition = 0;
+	/**
+	 * ## Handle content scroll
+	 *
+	 * Listener attached to scroll events on content container.
+	 * @param e - Scroll event
+	 */
+	function handleContentScroll(e: any) {
+		const currentScrollPosition = e.target.scrollTop;
+		// Scroll down with tampering.
+		if (previousScrollPosition < currentScrollPosition - 3) $showNavbar = false;
+		// Scroll up with tampering or at the top of the page.
+		if (previousScrollPosition > currentScrollPosition + 3) $showNavbar = true;
+		// Update scroll position.
+		previousScrollPosition = currentScrollPosition;
 	}
 
 	/**
@@ -222,9 +243,22 @@
 	<!-- Content -->
 	<div
 		on:click={closeMenus}
-		class="flex min-h-screen mt-16 ml-0 w-full pt-8 pl-4 transition-margin-left duration-300 overflow-x-hidden {marginLeft}"
+		on:scroll={handleContentScroll}
+		class="{contentMarginLeft} {contentMarginTop} flex flex-1 pt-8 pl-4 overflow-auto light:duration-300 custom-scrollbar"
+		u-transition="all duration-300"
 	>
+		<div class="flex min-h-min-content">
+			<div class="bg-white h-200 w-10" />
+			<slot />
+		</div>
 		<!-- <div class="bg-black h-screen w-screen opacity-30  -top-8 absolute" /> -->
-		<slot />
 	</div>
 {/if}
+
+<style>
+	.min-h-min-content {
+		min-height: -webkit-min-content;
+		min-height: -moz-min-content;
+		min-height: min-content;
+	}
+</style>

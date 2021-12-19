@@ -21,6 +21,20 @@ export default defineConfig({
 				"line-height": "1.75rem",
 				"letter-spacing": "0.025em"
 			}
+		],
+		[
+			/^content-ml-(.*)$/,
+			([, marginLeft]) => ({
+				width: `calc(100vw - ${marginLeft} - 1rem)`,
+				"margin-left": marginLeft
+			})
+		],
+		[
+			/^content-mt-(.*)$/,
+			([, marginTop]) => ({
+				height: `calc(100vh - ${marginTop} - 2rem)`,
+				"margin-top": marginTop
+			})
 		]
 	],
 	shortcuts: [
